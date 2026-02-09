@@ -1,5 +1,4 @@
 import { GameCard } from './GameCard';
-import { motion } from 'framer-motion';
 
 interface Product {
   id: string;
@@ -15,23 +14,8 @@ interface ProductGridProps {
 }
 
 export function ProductGrid({ products, onBuyNow }: ProductGridProps) {
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
   return (
-    <motion.div
-      variants={container}
-      initial="hidden"
-      animate="show"
-      className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6"
-    >
+    <div className="grid grid-cols-3 gap-4">
       {products.map((product) => (
         <GameCard
           key={product.id}
@@ -43,6 +27,6 @@ export function ProductGrid({ products, onBuyNow }: ProductGridProps) {
           onBuyNow={onBuyNow}
         />
       ))}
-    </motion.div>
+    </div>
   );
 }

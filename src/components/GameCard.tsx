@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart } from 'lucide-react';
 
 interface GameCardProps {
   id: string;
@@ -11,12 +10,8 @@ interface GameCardProps {
   onBuyNow: (id: string) => void;
 }
 
-export function GameCard({ id, name, description, imageUrl, minPrice, onBuyNow }: GameCardProps) {
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('my-MM').format(price);
-  };
-
-  // Game-specific colors for variety
+export function GameCard({ id, name, imageUrl, onBuyNow }: GameCardProps) {
+  // Game-specific colors for placeholder gradients
   const gameColors: Record<string, string> = {
     'Mobile Legends': 'from-blue-600 to-purple-700',
     'PUBG Mobile': 'from-amber-600 to-orange-700',
@@ -34,46 +29,30 @@ export function GameCard({ id, name, description, imageUrl, minPrice, onBuyNow }
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      whileHover={{ scale: 1.02, y: -5 }}
       transition={{ duration: 0.2 }}
-      className="group gaming-card rounded-xl overflow-hidden gaming-card-hover transition-all duration-300"
+      className="flex flex-col items-center gap-2"
     >
-      {/* Image Container */}
-      <div className={`relative h-32 bg-gradient-to-br ${gradientClass} overflow-hidden`}>
-        <div className="absolute inset-0 bg-black/20" />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <h3 className="font-gaming text-lg font-bold text-white text-center px-2 drop-shadow-lg">
-            {name}
-          </h3>
-        </div>
-        {/* Glow effect on hover */}
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-t from-primary/30 to-transparent" />
+      {/* Game Image */}
+      <div className={`w-full aspect-square rounded-2xl overflow-hidden bg-gradient-to-br ${gradientClass}`}>
+        {imageUrl ? (
+          <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center p-3">
+            <span className="font-gaming text-sm font-bold text-white text-center drop-shadow-lg">
+              {name}
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Content */}
-      <div className="p-4 space-y-3">
-        <p className="text-sm text-muted-foreground line-clamp-2">
-          {description || 'Top up your game credits instantly'}
-        </p>
-        
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs text-muted-foreground">Starting from</p>
-            <p className="text-lg font-bold text-primary gaming-glow-text">
-              {formatPrice(minPrice)} ကျပ်
-            </p>
-          </div>
-          
-          <Button
-            onClick={() => onBuyNow(id)}
-            size="sm"
-            className="gaming-btn border-0 gap-1"
-          >
-            <ShoppingCart className="h-4 w-4" />
-            Buy
-          </Button>
-        </div>
-      </div>
+      {/* Buy Now Button */}
+      <Button
+        onClick={() => onBuyNow(id)}
+        variant="outline"
+        className="w-full rounded-lg border-2 border-foreground bg-transparent text-foreground font-semibold hover:bg-foreground hover:text-background transition-colors"
+      >
+        Buy Now
+      </Button>
     </motion.div>
   );
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, Bell, Wallet, User, LogOut } from 'lucide-react';
+import { Menu, X, Bell, Plus, User, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -20,74 +20,39 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full gaming-gradient border-b border-border backdrop-blur-lg">
-      <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="font-gaming text-xl font-bold text-primary gaming-glow-text"
-            >
+    <header className="w-full z-50">
+      <div className="px-4 py-3">
+        <div className="flex items-center justify-between">
+          {/* Wallet Balance */}
+          {user ? (
+            <div className="flex items-center gap-1 px-4 py-2.5 rounded-full bg-muted/80 border border-border">
+              <span className="font-medium text-sm">
+                {formatBalance(profile?.wallet_balance || 0)} ကျပ်
+              </span>
+              <Plus className="h-4 w-4 text-foreground" />
+            </div>
+          ) : (
+            <Link to="/" className="font-gaming text-xl font-bold text-primary gaming-glow-text">
               GAME<span className="text-foreground">TOP</span>
-            </motion.div>
-          </Link>
+            </Link>
+          )}
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-6">
-            {user ? (
-              <>
-                {/* Wallet Balance */}
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg gaming-card"
-                >
-                  <Wallet className="h-4 w-4 text-gaming-gold" />
-                  <span className="font-medium">
-                    {formatBalance(profile?.wallet_balance || 0)} ကျပ်
-                  </span>
-                </motion.div>
+          <div className="flex items-center gap-3">
+            {/* Notification Bell */}
+            <Button variant="ghost" size="icon" className="relative rounded-full bg-muted/80 border border-border h-11 w-11">
+              <Bell className="h-5 w-5 text-foreground" />
+            </Button>
 
-                {/* Notifications */}
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="h-5 w-5" />
-                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] flex items-center justify-center">
-                    3
-                  </span>
-                </Button>
-
-                {/* User Menu */}
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted">
-                    <User className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">{profile?.name || 'User'}</span>
-                  </div>
-                  <Button variant="ghost" size="icon" onClick={handleSignOut}>
-                    <LogOut className="h-5 w-5" />
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <div className="flex items-center gap-3">
-                <Link to="/login">
-                  <Button variant="ghost">Login</Button>
-                </Link>
-                <Link to="/signup">
-                  <Button className="gaming-btn border-0">Sign Up</Button>
-                </Link>
-              </div>
-            )}
-          </nav>
-
-          {/* Mobile Menu Toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setMenuOpen(!menuOpen)}
-          >
-            {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </Button>
+            {/* Menu Toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-xl bg-gaming-gold text-background h-11 w-14 hover:bg-gaming-gold/90"
+              onClick={() => setMenuOpen(!menuOpen)}
+            >
+              {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-7 w-7" />}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -98,20 +63,14 @@ export function Header() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden border-t border-border"
+            className="border-t border-border bg-background/95 backdrop-blur-lg"
           >
-            <div className="container mx-auto px-4 py-4 space-y-4">
+            <div className="px-4 py-4 space-y-3">
               {user ? (
                 <>
-                  <div className="flex items-center justify-between p-3 rounded-lg gaming-card">
-                    <div className="flex items-center gap-2">
-                      <User className="h-5 w-5 text-primary" />
-                      <span className="font-medium">{profile?.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gaming-gold">
-                      <Wallet className="h-4 w-4" />
-                      <span>{formatBalance(profile?.wallet_balance || 0)} ကျပ်</span>
-                    </div>
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-muted">
+                    <User className="h-5 w-5 text-primary" />
+                    <span className="font-medium">{profile?.name || 'User'}</span>
                   </div>
                   <Button
                     variant="ghost"

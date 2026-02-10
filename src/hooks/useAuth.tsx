@@ -6,6 +6,8 @@ interface Profile {
   id: string;
   user_id: string;
   name: string;
+  phone: string | null;
+  user_code: string | null;
   wallet_balance: number;
   created_at: string;
   updated_at: string;
@@ -16,19 +18,25 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  isAdmin: boolean;
+  signUp: (phone: string, password: string, name: string) => Promise<{ error: Error | null }>;
+  signIn: (phone: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function phoneToEmail(phone: string) {
+  return `${phone.replace(/[^0-9]/g, '')}@gametop.app`;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -38,8 +46,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .single();
 
     if (!error && data) {
-      setProfile(data);
+      setProfile(data as Profile);
     }
+  };
+
+  const checkAdmin = async (userId: string) => {
+    const { data } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .eq('role', 'admin');
+    setIsAdmin((data && data.length > 0) || false);
   };
 
   const refreshProfile = async () => {
@@ -53,11 +70,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
-          setTimeout(() => fetchProfile(session.user.id), 0);
+          setTimeout(() => {
+            fetchProfile(session.user.id);
+            checkAdmin(session.user.id);
+          }, 0);
         } else {
           setProfile(null);
+          setIsAdmin(false);
         }
         setLoading(false);
       }
@@ -68,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
+        checkAdmin(session.user.id);
       }
       setLoading(false);
     });
@@ -75,19 +97,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, name: string) => {
+  const signUp = async (phone: string, password: string, name: string) => {
+    const email = phoneToEmail(phone);
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { name },
+        data: { name, phone },
         emailRedirectTo: window.location.origin,
       },
     });
     return { error };
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (phone: string, password: string) => {
+    const email = phoneToEmail(phone);
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -98,10 +122,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setProfile(null);
+    setIsAdmin(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signUp, signIn, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, isAdmin, signUp, signIn, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

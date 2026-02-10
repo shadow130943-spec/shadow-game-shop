@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, User, Gamepad2 } from 'lucide-react';
+import { Phone, Lock, Eye, EyeOff, User, Gamepad2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 
 export default function Signup() {
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -19,7 +19,7 @@ export default function Signup() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (password.length < 6) {
       toast.error('Password must be at least 6 characters');
       return;
@@ -27,12 +27,12 @@ export default function Signup() {
 
     setLoading(true);
 
-    const { error } = await signUp(email, password, name);
+    const { error } = await signUp(phone, password, name);
 
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Account created! Please check your email to verify.');
+      toast.success('Account created successfully!');
       navigate('/login');
     }
 
@@ -46,7 +46,6 @@ export default function Signup() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
-        {/* Logo */}
         <div className="text-center mb-8">
           <motion.div
             initial={{ scale: 0.8 }}
@@ -63,7 +62,6 @@ export default function Signup() {
           <p className="text-muted-foreground mt-1">Join the gaming community</p>
         </div>
 
-        {/* Form */}
         <motion.form
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -88,15 +86,15 @@ export default function Signup() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="phone">Phone Number</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
-                id="email"
-                type="email"
-                placeholder="your@gmail.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="phone"
+                type="tel"
+                placeholder="09xxxxxxxxx"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
                 required
                 className="pl-10 bg-muted border-border"
               />

@@ -32,7 +32,7 @@ export function GameCard({ id, name, imageUrl, minPrice, onBuyNow }: GameCardPro
       className="flex items-center gap-4 p-3 rounded-xl gaming-card gaming-card-hover transition-all cursor-pointer"
     >
       {/* Game Image */}
-      <div className={`w-20 h-20 min-w-[5rem] rounded-xl overflow-hidden bg-gradient-to-br ${gradientClass}`}>
+      <div className={`w-16 h-16 min-w-[4rem] sm:w-20 sm:h-20 sm:min-w-[5rem] rounded-xl overflow-hidden bg-gradient-to-br ${gradientClass}`}>
         {imageUrl ? (
           <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
         ) : (
@@ -46,14 +46,14 @@ export function GameCard({ id, name, imageUrl, minPrice, onBuyNow }: GameCardPro
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <h3 className="font-semibold text-foreground text-base truncate">{name}</h3>
-        <p className="text-sm text-muted-foreground">{minPrice.toLocaleString()} Sold</p>
+        <h3 className="font-semibold text-foreground text-sm sm:text-base truncate">{name}</h3>
+        <p className="text-xs sm:text-sm text-muted-foreground">{minPrice.toLocaleString()} Sold</p>
       </div>
 
       {/* Buy Button */}
       <Button
         onClick={() => onBuyNow(id)}
-        className="gaming-btn border-0 rounded-full px-5 text-sm font-semibold text-primary-foreground shrink-0"
+        className="gaming-btn border-0 rounded-full px-3 sm:px-5 text-xs sm:text-sm font-semibold text-primary-foreground shrink-0"
       >
         ဝယ်မည်
       </Button>

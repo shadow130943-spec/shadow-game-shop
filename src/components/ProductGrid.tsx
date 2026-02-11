@@ -15,7 +15,7 @@ interface ProductGridProps {
 
 export function ProductGrid({ products, onBuyNow }: ProductGridProps) {
   return (
-    <div className="grid grid-cols-3 gap-4">
+    <div className="flex flex-col gap-3">
       {products.map((product) => (
         <GameCard
           key={product.id}

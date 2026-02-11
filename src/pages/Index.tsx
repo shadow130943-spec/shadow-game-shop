@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { Header } from '@/components/Header';
 import { SearchBar } from '@/components/SearchBar';
 import { ProductGrid } from '@/components/ProductGrid';
+import { HeroBanner } from '@/components/HeroBanner';
+import { BottomNav } from '@/components/BottomNav';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Gamepad2 } from 'lucide-react';
@@ -55,31 +57,35 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-[hsl(0_30%_12%)] to-[hsl(0_40%_18%)]">
+    <div className="min-h-screen bg-background pb-20">
       <Header />
 
-      {/* Search Section */}
-      <div className="px-4 py-4">
-        <SearchBar value={searchQuery} onChange={setSearchQuery} />
+      {/* Hero Banner */}
+      <div className="py-3">
+        <HeroBanner />
       </div>
 
-      {/* Myanmar Text */}
-      <div className="px-4 pb-2">
-        <p className="text-sm text-muted-foreground">
-          သင့်ရဲ့နိုင်သည့် Game အမျိုးအစားများ
-        </p>
+      {/* Action Buttons */}
+      <div className="px-4 py-2 flex gap-3">
+        <button className="flex-1 py-2.5 rounded-lg gaming-btn text-sm font-semibold text-primary-foreground">
+          ငွေဖြည့်မည်
+        </button>
+        <button className="flex-1 py-2.5 rounded-lg bg-accent text-sm font-semibold text-accent-foreground">
+          အော်ဒါများ
+        </button>
+      </div>
+
+      {/* Search Section */}
+      <div className="px-4 py-3">
+        <SearchBar value={searchQuery} onChange={setSearchQuery} />
       </div>
 
       {/* Products Section */}
       <section className="px-4 pb-10">
-        <h2 className="font-gaming text-xl font-bold text-center mb-6 tracking-wider">
-          OUR PRODUCTS
-        </h2>
-
         {loading ? (
-          <div className="grid grid-cols-3 gap-4">
-            {[...Array(9)].map((_, i) => (
-              <div key={i} className="aspect-square rounded-2xl bg-muted animate-pulse" />
+          <div className="flex flex-col gap-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />
             ))}
           </div>
         ) : filteredProducts.length > 0 ? (
@@ -92,6 +98,8 @@ const Index = () => {
           </div>
         )}
       </section>
+
+      <BottomNav />
     </div>
   );
 };

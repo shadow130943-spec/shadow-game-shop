@@ -33,7 +33,7 @@ export function Header() {
               </Link>
             </div>
           ) : (
-            <Link to="/" className="font-gaming text-xl font-bold text-primary gaming-glow-text">
+            <Link to="/" className="font-gaming text-xl font-bold text-accent gaming-glow-text">
               GAME<span className="text-foreground">TOP</span>
             </Link>
           )}

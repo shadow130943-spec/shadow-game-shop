@@ -121,13 +121,26 @@ serve(async (req) => {
     }
 
     if (action === "get_pending_deposits") {
-      const { data } = await supabaseAdmin
+      const { data: depositsData } = await supabaseAdmin
         .from("deposits")
-        .select("*, profiles!deposits_user_id_fkey(name, user_code, phone)")
+        .select("*")
         .eq("status", "processing")
         .order("created_at", { ascending: false });
 
-      return new Response(JSON.stringify({ deposits: data }), {
+      // Fetch profiles for each deposit's user_id
+      const userIds = [...new Set((depositsData || []).map(d => d.user_id))];
+      const { data: profilesData } = await supabaseAdmin
+        .from("profiles")
+        .select("user_id, name, user_code, phone")
+        .in("user_id", userIds.length > 0 ? userIds : ['none']);
+
+      const profileMap = new Map((profilesData || []).map(p => [p.user_id, p]));
+      const deposits = (depositsData || []).map(d => ({
+        ...d,
+        profiles: profileMap.get(d.user_id) || null,
+      }));
+
+      return new Response(JSON.stringify({ deposits }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

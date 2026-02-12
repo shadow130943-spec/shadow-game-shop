@@ -32,6 +32,7 @@ const paymentMethods = [
 ];
 
 export default function Deposit() {
+  const [amount, setAmount] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -53,7 +54,7 @@ export default function Deposit() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !file) return;
+    if (!user || !file || !amount) return;
 
     setLoading(true);
     try {
@@ -74,7 +75,7 @@ export default function Deposit() {
         .from('deposits')
         .insert({
           user_id: user.id,
-          amount: 0,
+          amount: parseFloat(amount),
           screenshot_url: urlData.publicUrl,
         });
 
@@ -108,11 +109,19 @@ export default function Deposit() {
             </Button>
           </div>
 
-          {/* Payment Type */}
+          {/* Amount Input */}
           <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">ငွေလွှဲအမျိုးအစားရွေးပါ</p>
+            <p className="text-sm font-medium text-muted-foreground">ငွေပမာဏထည့်ပါ</p>
             <div className="flex items-center gap-2 border border-border rounded-lg px-4 py-3 bg-card">
-              <span>မြန်မာကျပ် 🇲🇲</span>
+              <input
+                type="number"
+                min="0"
+                placeholder="ငွေပမာဏ ထည့်ပါ"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="w-full bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
+              />
+              <span className="text-muted-foreground shrink-0">ကျပ်</span>
             </div>
           </div>
 
@@ -174,7 +183,7 @@ export default function Deposit() {
 
             <Button
               type="submit"
-              disabled={loading || !file}
+              disabled={loading || !file || !amount}
               className="w-full gaming-btn border-0 py-6 text-base font-semibold rounded-xl"
             >
               {loading ? 'Submitting...' : 'ဝယ်ယူမည်'}

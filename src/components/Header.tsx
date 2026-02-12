@@ -73,11 +73,6 @@ export function Header() {
                       <span className="text-xs text-muted-foreground">ID: {profile?.user_code}</span>
                     </div>
                   </div>
-                  <Link to="/deposit" className="block" onClick={() => setMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start">
-                      <Banknote className="h-5 w-5 mr-2" /> Deposit
-                    </Button>
-                  </Link>
                   <Link to="/deposit-history" className="block" onClick={() => setMenuOpen(false)}>
                     <Button variant="ghost" className="w-full justify-start">
                       <History className="h-5 w-5 mr-2" /> Deposit History

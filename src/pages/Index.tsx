@@ -7,6 +7,7 @@ import { BottomNav } from '@/components/BottomNav';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Gamepad2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface Product {
   id: string;
@@ -20,6 +21,7 @@ const Index = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchProducts();
@@ -67,7 +69,7 @@ const Index = () => {
 
       {/* Action Buttons */}
       <div className="px-4 py-2 flex gap-3">
-        <button className="flex-1 py-2.5 rounded-lg gaming-btn text-sm font-semibold text-primary-foreground">
+        <button className="flex-1 py-2.5 rounded-lg gaming-btn text-sm font-semibold text-primary-foreground" onClick={() => navigate('/deposit')}>
           ငွေဖြည့်မည်
         </button>
         <button className="flex-1 py-2.5 rounded-lg bg-accent text-sm font-semibold text-accent-foreground">

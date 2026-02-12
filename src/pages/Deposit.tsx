@@ -1,21 +1,47 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Upload, ArrowLeft, Banknote } from 'lucide-react';
+import { Upload, ArrowLeft, Copy, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+const paymentMethods = [
+  {
+    name: 'WAVEPAY',
+    phone: '09684533849',
+    holder: 'Chue lae aung',
+    color: 'bg-yellow-400',
+    logo: '🌊',
+  },
+  {
+    name: 'KBZ Pay',
+    phone: '09757453851',
+    holder: 'Zaw min tun',
+    color: 'bg-red-600',
+    logo: '🏦',
+  },
+  {
+    name: 'AYA PAY',
+    phone: '09759122980',
+    holder: 'Ye Htet Ko ko',
+    color: 'bg-white border border-red-500',
+    logo: '🏠',
+  },
+];
+
 export default function Deposit() {
-  const [amount, setAmount] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Copied!');
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
@@ -48,7 +74,7 @@ export default function Deposit() {
         .from('deposits')
         .insert({
           user_id: user.id,
-          amount: parseFloat(amount),
+          amount: 0,
           screenshot_url: urlData.publicUrl,
         });
 
@@ -63,49 +89,77 @@ export default function Deposit() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-[hsl(0_30%_12%)] to-[hsl(0_40%_18%)]">
-      <div className="px-4 py-4">
-        <Button variant="ghost" onClick={() => navigate('/')} className="mb-4">
-          <ArrowLeft className="h-5 w-5 mr-2" /> Back
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30">
+      <div className="px-4 py-3">
+        <Button variant="outline" size="sm" onClick={() => navigate('/')} className="mb-3">
+          <ArrowLeft className="h-4 w-4 mr-1" /> Back
         </Button>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="max-w-md mx-auto"
+          className="max-w-md mx-auto space-y-4"
         >
-          <h1 className="font-gaming text-2xl font-bold text-center mb-6">
-            <Banknote className="inline h-7 w-7 mr-2 text-primary" />
-            Deposit Funds
-          </h1>
+          {/* Header */}
+          <div className="flex items-center justify-between gaming-card rounded-xl p-4">
+            <h1 className="font-bold text-lg text-foreground">ငွေဖြည့်မည်</h1>
+            <Button variant="secondary" size="sm" onClick={() => navigate('/deposit-history')}>
+              <History className="h-4 w-4 mr-1" /> မှတ်တမ်း
+            </Button>
+          </div>
 
-          <form onSubmit={handleSubmit} className="gaming-card rounded-2xl p-6 space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount (ကျပ်)</Label>
-              <Input
-                id="amount"
-                type="number"
-                placeholder="Enter amount"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                required
-                min="1"
-                className="bg-muted border-border"
-              />
+          {/* Payment Type */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">ငွေလွှဲအမျိုးအစားရွေးပါ</p>
+            <div className="flex items-center gap-2 border border-border rounded-lg px-4 py-3 bg-card">
+              <span>မြန်မာကျပ် 🇲🇲</span>
             </div>
+          </div>
 
+          {/* Payment Methods */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">ငွေလွှဲနံပါတ်</p>
+            <div className="space-y-3">
+              {paymentMethods.map((method) => (
+                <div key={method.name} className="border border-border rounded-xl p-3 bg-card flex items-center gap-3">
+                  <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-lg ${method.color} flex items-center justify-center text-2xl font-bold shrink-0`}>
+                    <span className="text-xs sm:text-sm font-extrabold leading-tight text-center text-black">{method.name}</span>
+                  </div>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-sm sm:text-base text-foreground">{method.phone}</span>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="text-xs shrink-0"
+                        onClick={() => handleCopy(method.phone)}
+                      >
+                        <Copy className="h-3 w-3 mr-1" /> Copy
+                      </Button>
+                    </div>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{method.holder}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Screenshot Upload */}
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label>Payment Screenshot</Label>
+              <p className="text-sm font-medium text-muted-foreground">
+                Payment Screenshot ( ငွေလွှဲ Id ပါတဲ့ပုံ )
+              </p>
               <div
-                className="border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary transition-colors"
+                className="border-2 border-dashed border-green-500/50 rounded-xl p-6 text-center cursor-pointer hover:border-green-500 transition-colors bg-card"
                 onClick={() => document.getElementById('screenshot')?.click()}
               >
                 {preview ? (
                   <img src={preview} alt="Preview" className="max-h-48 mx-auto rounded-lg" />
                 ) : (
                   <div className="space-y-2">
-                    <Upload className="h-10 w-10 mx-auto text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Click to upload screenshot</p>
+                    <Upload className="h-12 w-12 mx-auto text-primary" />
+                    <p className="text-sm text-primary font-medium">ငွေလွှဲပုံထည့်ရန်နှိပ်ပါ</p>
                   </div>
                 )}
               </div>
@@ -115,16 +169,15 @@ export default function Deposit() {
                 accept="image/*"
                 onChange={handleFileChange}
                 className="hidden"
-                required
               />
             </div>
 
             <Button
               type="submit"
-              disabled={loading || !file || !amount}
-              className="w-full gaming-btn border-0 py-6 text-base font-semibold"
+              disabled={loading || !file}
+              className="w-full gaming-btn border-0 py-6 text-base font-semibold rounded-xl"
             >
-              {loading ? 'Submitting...' : 'Submit Deposit Request'}
+              {loading ? 'Submitting...' : 'ဝယ်ယူမည်'}
             </Button>
           </form>
         </motion.div>

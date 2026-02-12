@@ -127,7 +127,6 @@ serve(async (req) => {
         .eq("status", "processing")
         .order("created_at", { ascending: false });
 
-      // Fetch profiles for each deposit's user_id
       const userIds = [...new Set((depositsData || []).map(d => d.user_id))];
       const { data: profilesData } = await supabaseAdmin
         .from("profiles")
@@ -141,6 +140,30 @@ serve(async (req) => {
       }));
 
       return new Response(JSON.stringify({ deposits }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "get_order_history") {
+      const { data: depositsData } = await supabaseAdmin
+        .from("deposits")
+        .select("*")
+        .in("status", ["success", "failed"])
+        .order("updated_at", { ascending: false });
+
+      const userIds = [...new Set((depositsData || []).map(d => d.user_id))];
+      const { data: profilesData } = await supabaseAdmin
+        .from("profiles")
+        .select("user_id, name, user_code, phone")
+        .in("user_id", userIds.length > 0 ? userIds : ['none']);
+
+      const profileMap = new Map((profilesData || []).map(p => [p.user_id, p]));
+      const orders = (depositsData || []).map(d => ({
+        ...d,
+        profiles: profileMap.get(d.user_id) || null,
+      }));
+
+      return new Response(JSON.stringify({ orders }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

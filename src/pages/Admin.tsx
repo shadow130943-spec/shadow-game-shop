@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, ClipboardList, Users, Send, ArrowLeft, CheckCircle, XCircle, Eye } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, Users, Send, ArrowLeft, CheckCircle, XCircle, Eye, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,6 +26,16 @@ interface PendingDeposit {
   profiles: { name: string; user_code: string; phone: string } | null;
 }
 
+interface OrderHistory {
+  id: string;
+  amount: number;
+  status: string;
+  screenshot_url: string;
+  created_at: string;
+  updated_at: string;
+  profiles: { name: string; user_code: string; phone: string } | null;
+}
+
 interface UserProfile {
   id: string;
   user_id: string;
@@ -41,6 +51,7 @@ export default function Admin() {
   const navigate = useNavigate();
   const [stats, setStats] = useState<Stats>({ userCount: 0, successCount: 0, totalAmount: 0 });
   const [deposits, setDeposits] = useState<PendingDeposit[]>([]);
+  const [orderHistory, setOrderHistory] = useState<OrderHistory[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [transferCode, setTransferCode] = useState('');
   const [transferAmount, setTransferAmount] = useState('');
@@ -59,14 +70,16 @@ export default function Admin() {
 
   const loadData = async () => {
     try {
-      const [statsData, depositsData, usersData] = await Promise.all([
+      const [statsData, depositsData, usersData, historyData] = await Promise.all([
         callAdmin('get_stats'),
         callAdmin('get_pending_deposits'),
         callAdmin('get_all_users'),
+        callAdmin('get_order_history'),
       ]);
       setStats(statsData);
       setDeposits(depositsData.deposits || []);
       setUsers(usersData.users || []);
+      setOrderHistory(historyData.orders || []);
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -152,12 +165,15 @@ export default function Admin() {
 
       <div className="max-w-5xl mx-auto px-4 py-6">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="w-full grid grid-cols-3 bg-muted">
+          <TabsList className="w-full grid grid-cols-4 bg-muted">
             <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <LayoutDashboard className="h-4 w-4 mr-1" /> Overview
             </TabsTrigger>
             <TabsTrigger value="orders" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <ClipboardList className="h-4 w-4 mr-1" /> Orders
+            </TabsTrigger>
+            <TabsTrigger value="history" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <History className="h-4 w-4 mr-1" /> History
             </TabsTrigger>
             <TabsTrigger value="users" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Users className="h-4 w-4 mr-1" /> Users
@@ -263,6 +279,60 @@ export default function Admin() {
                               <XCircle className="h-4 w-4 mr-1" /> Reject
                             </Button>
                           </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+
+          {/* Order History Tab */}
+          <TabsContent value="history">
+            <div className="gaming-card rounded-xl overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Screenshot</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {orderHistory.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        No order history
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    orderHistory.map((o) => (
+                      <TableRow key={o.id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{o.profiles?.name}</p>
+                            <p className="text-xs text-muted-foreground">{o.profiles?.user_code}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-semibold">{formatBalance(o.amount)} ကျပ်</TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            o.status === 'success' 
+                              ? 'bg-gaming-success/20 text-gaming-success' 
+                              : 'bg-destructive/20 text-destructive'
+                          }`}>
+                            {o.status === 'success' ? <CheckCircle className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
+                            {o.status === 'success' ? 'Approved' : 'Rejected'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-sm">{new Date(o.updated_at).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="sm" onClick={() => setScreenshotUrl(o.screenshot_url)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))

@@ -36,7 +36,6 @@ serve(async (req) => {
 
     if (action === "approve_deposit") {
       const { deposit_id } = params;
-      // Get deposit
       const { data: deposit } = await supabaseAdmin
         .from("deposits")
         .select("*")
@@ -44,13 +43,11 @@ serve(async (req) => {
         .single();
       if (!deposit) throw new Error("Deposit not found");
 
-      // Update deposit status
       await supabaseAdmin
         .from("deposits")
         .update({ status: "success" })
         .eq("id", deposit_id);
 
-      // Add to user wallet
       const { data: profile } = await supabaseAdmin
         .from("profiles")
         .select("wallet_balance")
@@ -62,6 +59,13 @@ serve(async (req) => {
         .update({ wallet_balance: (profile?.wallet_balance || 0) + deposit.amount })
         .eq("user_id", deposit.user_id);
 
+      // Send notification to user
+      const formattedAmount = new Intl.NumberFormat('my-MM').format(deposit.amount);
+      await supabaseAdmin.from("notifications").insert({
+        user_id: deposit.user_id,
+        message: `သင်ထည့်ထားသောငွေ ${formattedAmount} ကျပ် ဖြည့်သွင်းပြီးပါပြီ။ SHADOW GAME SHOP ကိုအသုံးပြုသည့်အတွက်ကျေးဇူးတင်ပါတယ်။`,
+      });
+
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -69,10 +73,25 @@ serve(async (req) => {
 
     if (action === "reject_deposit") {
       const { deposit_id } = params;
+      // Get deposit for amount and user_id
+      const { data: deposit } = await supabaseAdmin
+        .from("deposits")
+        .select("*")
+        .eq("id", deposit_id)
+        .single();
+      if (!deposit) throw new Error("Deposit not found");
+
       await supabaseAdmin
         .from("deposits")
         .update({ status: "failed" })
         .eq("id", deposit_id);
+
+      // Send notification to user
+      const formattedAmount = new Intl.NumberFormat('my-MM').format(deposit.amount);
+      await supabaseAdmin.from("notifications").insert({
+        user_id: deposit.user_id,
+        message: `သင်ဖြည့်သွင်းထားသောငွေ ${formattedAmount} ကျပ်အား Admin မှငြင်းပယ်လိုက်ပါသည်။ ငွေလွှဲအမှားကြောင့် ငြင်းပယ်တယ်ဆိုလျှင် သင့် acc အား ban ခံရပါမည်။`,
+      });
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -67,16 +67,14 @@ export default function Deposit() {
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from('screenshots')
-        .getPublicUrl(path);
+      // Store just the path (bucket is now private, signed URLs generated server-side)
 
       const { error: insertError } = await supabase
         .from('deposits')
         .insert({
           user_id: user.id,
           amount: parseFloat(amount),
-          screenshot_url: urlData.publicUrl,
+          screenshot_url: path,
         });
 
       if (insertError) throw insertError;

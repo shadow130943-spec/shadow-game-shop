@@ -1,10 +1,25 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://esm.sh/zod@3.25.76";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Validation schemas
+const DepositActionSchema = z.object({
+  deposit_id: z.string().uuid(),
+});
+
+const TransferSchema = z.object({
+  user_code: z.string().regex(/^GT\d{6}$/, "Invalid user code format"),
+  amount: z.number().positive("Amount must be positive").max(10000000, "Amount too large"),
+});
+
+const ActionSchema = z.object({
+  action: z.string(),
+});
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -32,16 +47,19 @@ serve(async (req) => {
 
     if (!roleData) throw new Error("Not an admin");
 
-    const { action, ...params } = await req.json();
+    const body = await req.json();
+    const { action } = ActionSchema.parse(body);
+    const params = body;
 
     if (action === "approve_deposit") {
-      const { deposit_id } = params;
+      const { deposit_id } = DepositActionSchema.parse(params);
       const { data: deposit } = await supabaseAdmin
         .from("deposits")
         .select("*")
         .eq("id", deposit_id)
         .single();
       if (!deposit) throw new Error("Deposit not found");
+      if (deposit.status !== "processing") throw new Error("Deposit already processed");
 
       await supabaseAdmin
         .from("deposits")
@@ -59,7 +77,6 @@ serve(async (req) => {
         .update({ wallet_balance: (profile?.wallet_balance || 0) + deposit.amount })
         .eq("user_id", deposit.user_id);
 
-      // Send notification to user
       const formattedAmount = new Intl.NumberFormat('my-MM').format(deposit.amount);
       await supabaseAdmin.from("notifications").insert({
         user_id: deposit.user_id,
@@ -72,21 +89,20 @@ serve(async (req) => {
     }
 
     if (action === "reject_deposit") {
-      const { deposit_id } = params;
-      // Get deposit for amount and user_id
+      const { deposit_id } = DepositActionSchema.parse(params);
       const { data: deposit } = await supabaseAdmin
         .from("deposits")
         .select("*")
         .eq("id", deposit_id)
         .single();
       if (!deposit) throw new Error("Deposit not found");
+      if (deposit.status !== "processing") throw new Error("Deposit already processed");
 
       await supabaseAdmin
         .from("deposits")
         .update({ status: "failed" })
         .eq("id", deposit_id);
 
-      // Send notification to user
       const formattedAmount = new Intl.NumberFormat('my-MM').format(deposit.amount);
       await supabaseAdmin.from("notifications").insert({
         user_id: deposit.user_id,
@@ -99,7 +115,7 @@ serve(async (req) => {
     }
 
     if (action === "transfer") {
-      const { user_code, amount } = params;
+      const { user_code, amount } = TransferSchema.parse(params);
       const { data: profile } = await supabaseAdmin
         .from("profiles")
         .select("*")
@@ -153,9 +169,24 @@ serve(async (req) => {
         .in("user_id", userIds.length > 0 ? userIds : ['none']);
 
       const profileMap = new Map((profilesData || []).map(p => [p.user_id, p]));
-      const deposits = (depositsData || []).map(d => ({
-        ...d,
-        profiles: profileMap.get(d.user_id) || null,
+
+      // Generate signed URLs for screenshots
+      const deposits = await Promise.all((depositsData || []).map(async (d) => {
+        let signedUrl = d.screenshot_url;
+        if (d.screenshot_url) {
+          const path = d.screenshot_url.split('/screenshots/')[1];
+          if (path) {
+            const { data: urlData } = await supabaseAdmin.storage
+              .from('screenshots')
+              .createSignedUrl(path, 3600);
+            if (urlData?.signedUrl) signedUrl = urlData.signedUrl;
+          }
+        }
+        return {
+          ...d,
+          screenshot_url: signedUrl,
+          profiles: profileMap.get(d.user_id) || null,
+        };
       }));
 
       return new Response(JSON.stringify({ deposits }), {
@@ -177,9 +208,24 @@ serve(async (req) => {
         .in("user_id", userIds.length > 0 ? userIds : ['none']);
 
       const profileMap = new Map((profilesData || []).map(p => [p.user_id, p]));
-      const orders = (depositsData || []).map(d => ({
-        ...d,
-        profiles: profileMap.get(d.user_id) || null,
+
+      // Generate signed URLs for screenshots
+      const orders = await Promise.all((depositsData || []).map(async (d) => {
+        let signedUrl = d.screenshot_url;
+        if (d.screenshot_url) {
+          const path = d.screenshot_url.split('/screenshots/')[1];
+          if (path) {
+            const { data: urlData } = await supabaseAdmin.storage
+              .from('screenshots')
+              .createSignedUrl(path, 3600);
+            if (urlData?.signedUrl) signedUrl = urlData.signedUrl;
+          }
+        }
+        return {
+          ...d,
+          screenshot_url: signedUrl,
+          profiles: profileMap.get(d.user_id) || null,
+        };
       }));
 
       return new Response(JSON.stringify({ orders }), {
@@ -200,7 +246,10 @@ serve(async (req) => {
 
     throw new Error("Unknown action");
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    const message = error instanceof z.ZodError
+      ? "Invalid input: " + error.errors.map(e => e.message).join(", ")
+      : error.message;
+    return new Response(JSON.stringify({ error: message }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

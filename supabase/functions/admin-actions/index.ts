@@ -13,8 +13,8 @@ const DepositActionSchema = z.object({
 });
 
 const TransferSchema = z.object({
-  user_code: z.string().regex(/^GT\d{6}$/, "Invalid user code format"),
-  amount: z.number().min(100, "Minimum transfer is 100 kyats").max(10000000, "Amount too large"),
+  user_code: z.string().regex(/^GT\d{6}$/, "Invalid user code format").refine(val => val.length === 8, "Invalid user code length"),
+  amount: z.number().int("Amount must be a whole number").min(100, "Minimum transfer is 100 kyats").max(10000000, "Amount too large"),
 });
 
 const ActionSchema = z.object({
@@ -246,11 +246,25 @@ serve(async (req) => {
 
     throw new Error("Unknown action");
   } catch (error) {
-    const message = error instanceof z.ZodError
-      ? "Invalid input: " + error.errors.map(e => e.message).join(", ")
-      : error.message;
-    return new Response(JSON.stringify({ error: message }), {
-      status: 400,
+    console.error('[Admin Action Error]', error instanceof Error ? error.message : error);
+    
+    let status = 400;
+    let clientMessage = "Operation failed";
+    
+    if (error instanceof z.ZodError) {
+      clientMessage = "Invalid request parameters";
+    } else if (error instanceof Error) {
+      if (error.message === "Unauthorized" || error.message === "Not an admin") {
+        status = 403;
+        clientMessage = "Access denied";
+      } else if (error.message === "Unknown action") {
+        clientMessage = "Invalid request";
+      }
+      // All other errors get generic "Operation failed"
+    }
+    
+    return new Response(JSON.stringify({ error: clientMessage }), {
+      status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

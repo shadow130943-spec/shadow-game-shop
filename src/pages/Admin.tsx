@@ -58,6 +58,7 @@ export default function Admin() {
   const [transferLoading, setTransferLoading] = useState(false);
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [serverVerified, setServerVerified] = useState(false);
 
   const callAdmin = async (action: string, params: Record<string, any> = {}) => {
     const { data, error } = await supabase.functions.invoke('admin-actions', {
@@ -87,11 +88,23 @@ export default function Admin() {
   };
 
   useEffect(() => {
-    if (!user || !isAdmin) {
+    if (!user) {
       if (!loading) navigate('/');
       return;
     }
-    loadData();
+
+    // Server-side admin verification
+    const verifyAndLoad = async () => {
+      try {
+        await callAdmin('verify_admin');
+        setServerVerified(true);
+        await loadData();
+      } catch {
+        navigate('/');
+      }
+    };
+
+    verifyAndLoad();
 
     const channel = supabase
       .channel('admin-deposits')
@@ -99,7 +112,7 @@ export default function Admin() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user, isAdmin]);
+  }, [user]);
 
   const handleApprove = async (depositId: string) => {
     try {
@@ -149,7 +162,7 @@ export default function Admin() {
     );
   }
 
-  if (!isAdmin) return null;
+  if (!serverVerified) return null;
 
   return (
     <div className="min-h-screen bg-background">

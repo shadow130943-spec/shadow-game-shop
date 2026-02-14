@@ -66,16 +66,10 @@ serve(async (req) => {
         .update({ status: "success" })
         .eq("id", deposit_id);
 
-      const { data: profile } = await supabaseAdmin
-        .from("profiles")
-        .select("wallet_balance")
-        .eq("user_id", deposit.user_id)
-        .single();
-
-      await supabaseAdmin
-        .from("profiles")
-        .update({ wallet_balance: (profile?.wallet_balance || 0) + deposit.amount })
-        .eq("user_id", deposit.user_id);
+      await supabaseAdmin.rpc('increment_wallet_balance', {
+        p_user_id: deposit.user_id,
+        p_amount: deposit.amount,
+      });
 
       const formattedAmount = new Intl.NumberFormat('my-MM').format(deposit.amount);
       await supabaseAdmin.from("notifications").insert({
@@ -123,10 +117,10 @@ serve(async (req) => {
         .single();
       if (!profile) throw new Error("User not found");
 
-      await supabaseAdmin
-        .from("profiles")
-        .update({ wallet_balance: profile.wallet_balance + amount })
-        .eq("user_code", user_code);
+      await supabaseAdmin.rpc('increment_wallet_balance', {
+        p_user_id: profile.user_id,
+        p_amount: amount,
+      });
 
       return new Response(JSON.stringify({ success: true, user_name: profile.name }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -240,6 +234,12 @@ serve(async (req) => {
         .order("created_at", { ascending: false });
 
       return new Response(JSON.stringify({ users: data }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "verify_admin") {
+      return new Response(JSON.stringify({ isAdmin: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

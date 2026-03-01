@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Deposit from "./pages/Deposit";
 import DepositHistory from "./pages/DepositHistory";
+import ProductDetail from "./pages/ProductDetail";
 import Admin from "./pages/Admin";
 import AdminRoute from "./components/AdminRoute";
 import Notifications from "./pages/Notifications";
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/deposit" element={<Deposit />} />
             <Route path="/deposit-history" element={<DepositHistory />} />
             <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />

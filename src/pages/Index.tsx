@@ -54,8 +54,7 @@ const Index = () => {
   }, [products, searchQuery]);
 
   const handleBuyNow = (id: string) => {
-    const product = products.find((p) => p.id === id);
-    toast.info(`Opening ${product?.name} top-up options...`);
+    navigate(`/product/${id}`);
   };
 
   return (
@@ -71,9 +70,6 @@ const Index = () => {
       <div className="px-4 py-2 flex gap-3">
         <button className="flex-1 py-2.5 rounded-lg gaming-btn text-sm font-semibold text-primary-foreground" onClick={() => navigate('/deposit')}>
           ငွေဖြည့်မည်
-        </button>
-        <button className="flex-1 py-2.5 rounded-lg bg-accent text-sm font-semibold text-accent-foreground">
-          အော်ဒါများ
         </button>
       </div>
 

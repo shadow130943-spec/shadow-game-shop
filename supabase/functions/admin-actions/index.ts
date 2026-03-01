@@ -168,7 +168,10 @@ serve(async (req) => {
       const deposits = await Promise.all((depositsData || []).map(async (d) => {
         let signedUrl = d.screenshot_url;
         if (d.screenshot_url) {
-          const path = d.screenshot_url.split('/screenshots/')[1];
+          // The stored value is either a full URL containing '/screenshots/' or just the path
+          const path = d.screenshot_url.includes('/screenshots/')
+            ? d.screenshot_url.split('/screenshots/')[1]
+            : d.screenshot_url;
           if (path) {
             const { data: urlData } = await supabaseAdmin.storage
               .from('screenshots')
@@ -207,7 +210,9 @@ serve(async (req) => {
       const orders = await Promise.all((depositsData || []).map(async (d) => {
         let signedUrl = d.screenshot_url;
         if (d.screenshot_url) {
-          const path = d.screenshot_url.split('/screenshots/')[1];
+          const path = d.screenshot_url.includes('/screenshots/')
+            ? d.screenshot_url.split('/screenshots/')[1]
+            : d.screenshot_url;
           if (path) {
             const { data: urlData } = await supabaseAdmin.storage
               .from('screenshots')

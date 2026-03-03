@@ -12,6 +12,7 @@ import DepositHistory from "./pages/DepositHistory";
 import ProductDetail from "./pages/ProductDetail";
 import Admin from "./pages/Admin";
 import AdminRoute from "./components/AdminRoute";
+import Account from "./pages/Account";
 import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/deposit" element={<Deposit />} />
             <Route path="/deposit-history" element={<DepositHistory />} />
             <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+            <Route path="/account" element={<Account />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

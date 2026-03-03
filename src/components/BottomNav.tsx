@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Bell, Menu, X, User, LogOut, Shield } from 'lucide-react';
+import { Home, Mail, User, LogOut, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,14 +48,14 @@ export function BottomNav() {
   const navItems = [
     { icon: Home, label: 'Shop', path: '/', onClick: () => navigate('/') },
     {
-      icon: Bell,
+      icon: Mail,
       label: 'Message',
       path: '/notifications',
       onClick: () => navigate('/notifications'),
       badge: unreadCount,
     },
     {
-      icon: Menu,
+      icon: User,
       label: 'Account',
       path: '#menu',
       onClick: () => setMenuOpen(prev => !prev),
@@ -123,11 +123,7 @@ export function BottomNav() {
                 }`}
               >
                 <div className="relative">
-                  {item.path === '#menu' && menuOpen ? (
-                    <X className="h-5 w-5" />
-                  ) : (
-                    <item.icon className="h-5 w-5" />
-                  )}
+                  <item.icon className="h-5 w-5" />
                   {item.badge && item.badge > 0 ? (
                     <span className="absolute -top-1.5 -right-2 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-0.5">
                       {item.badge}

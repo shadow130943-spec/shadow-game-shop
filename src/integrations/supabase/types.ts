@@ -47,6 +47,69 @@ export type Database = {
         }
         Relationships: []
       }
+      game_orders: {
+        Row: {
+          admin_note: string | null
+          created_at: string
+          game_id: string
+          id: string
+          item_name: string
+          price: number
+          product_id: string
+          product_item_id: string
+          product_name: string
+          server_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string | null
+          created_at?: string
+          game_id: string
+          id?: string
+          item_name: string
+          price: number
+          product_id: string
+          product_item_id: string
+          product_name: string
+          server_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_note?: string | null
+          created_at?: string
+          game_id?: string
+          id?: string
+          item_name?: string
+          price?: number
+          product_id?: string
+          product_item_id?: string
+          product_name?: string
+          server_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_orders_product_item_id_fkey"
+            columns: ["product_item_id"]
+            isOneToOne: false
+            referencedRelation: "product_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string

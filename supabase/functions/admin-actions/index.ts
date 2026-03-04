@@ -243,6 +243,112 @@ serve(async (req) => {
       });
     }
 
+    if (action === "get_pending_game_orders") {
+      const { data: ordersData } = await supabaseAdmin
+        .from("game_orders")
+        .select("*")
+        .eq("status", "processing")
+        .order("created_at", { ascending: false });
+
+      const userIds = [...new Set((ordersData || []).map(o => o.user_id))];
+      const { data: profilesData } = await supabaseAdmin
+        .from("profiles")
+        .select("user_id, name, user_code, phone")
+        .in("user_id", userIds.length > 0 ? userIds : ['none']);
+
+      const profileMap = new Map((profilesData || []).map(p => [p.user_id, p]));
+      const orders = (ordersData || []).map(o => ({
+        ...o,
+        profiles: profileMap.get(o.user_id) || null,
+      }));
+
+      return new Response(JSON.stringify({ orders }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "approve_game_order") {
+      const { deposit_id } = DepositActionSchema.parse(params);
+      const { data: order } = await supabaseAdmin
+        .from("game_orders")
+        .select("*")
+        .eq("id", deposit_id)
+        .single();
+      if (!order) throw new Error("Order not found");
+      if (order.status !== "processing") throw new Error("Order already processed");
+
+      await supabaseAdmin
+        .from("game_orders")
+        .update({ status: "success" })
+        .eq("id", deposit_id);
+
+      const formattedAmount = new Intl.NumberFormat('my-MM').format(order.price);
+      await supabaseAdmin.from("notifications").insert({
+        user_id: order.user_id,
+        message: `သင်မှာယူထားသော ${order.item_name} (${order.product_name}) ${formattedAmount} ကျပ် အော်ဒါအား အတည်ပြုပြီးပါပြီ။`,
+      });
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "reject_game_order") {
+      const { deposit_id } = DepositActionSchema.parse(params);
+      const { data: order } = await supabaseAdmin
+        .from("game_orders")
+        .select("*")
+        .eq("id", deposit_id)
+        .single();
+      if (!order) throw new Error("Order not found");
+      if (order.status !== "processing") throw new Error("Order already processed");
+
+      await supabaseAdmin
+        .from("game_orders")
+        .update({ status: "failed" })
+        .eq("id", deposit_id);
+
+      // Refund wallet balance
+      await supabaseAdmin.rpc('increment_wallet_balance', {
+        p_user_id: order.user_id,
+        p_amount: order.price,
+      });
+
+      const formattedAmount = new Intl.NumberFormat('my-MM').format(order.price);
+      await supabaseAdmin.from("notifications").insert({
+        user_id: order.user_id,
+        message: `သင်မှာယူထားသော ${order.item_name} (${order.product_name}) ${formattedAmount} ကျပ် အော်ဒါအား ငြင်းပယ်လိုက်ပါသည်။ ငွေပြန်အမ်းပြီးပါပြီ။`,
+      });
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "get_game_order_history") {
+      const { data: ordersData } = await supabaseAdmin
+        .from("game_orders")
+        .select("*")
+        .in("status", ["success", "failed"])
+        .order("updated_at", { ascending: false });
+
+      const userIds = [...new Set((ordersData || []).map(o => o.user_id))];
+      const { data: profilesData } = await supabaseAdmin
+        .from("profiles")
+        .select("user_id, name, user_code, phone")
+        .in("user_id", userIds.length > 0 ? userIds : ['none']);
+
+      const profileMap = new Map((profilesData || []).map(p => [p.user_id, p]));
+      const orders = (ordersData || []).map(o => ({
+        ...o,
+        profiles: profileMap.get(o.user_id) || null,
+      }));
+
+      return new Response(JSON.stringify({ orders }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (action === "verify_admin") {
       return new Response(JSON.stringify({ isAdmin: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -99,7 +99,7 @@ export default function ProductDetail() {
   };
 
   const handleOrder = async () => {
-    if (!selectedItem || !user) return;
+    if (!selectedItem || !user || !product) return;
     if (!gameId.trim()) {
       toast.error('Game Id ထည့်ပါ');
       return;
@@ -117,11 +117,36 @@ export default function ProductDetail() {
       return;
     }
     setOrdering(true);
-    toast.info(`${selectedItem.name} မှာယူနေပါသည်...`);
-    setTimeout(() => {
-      setOrdering(false);
+    try {
+      // Deduct wallet balance
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ wallet_balance: walletBalance - selectedItem.price })
+        .eq('user_id', user.id);
+      if (updateError) throw updateError;
+
+      // Create game order
+      const { error: orderError } = await supabase
+        .from('game_orders')
+        .insert({
+          user_id: user.id,
+          product_id: product.id,
+          product_item_id: selectedItem.id,
+          product_name: product.name,
+          item_name: selectedItem.name,
+          price: selectedItem.price,
+          game_id: gameId.trim(),
+          server_id: needsServerId ? serverId.trim() : null,
+        });
+      if (orderError) throw orderError;
+
+      setWalletBalance(walletBalance - selectedItem.price);
+      toast.success(`${selectedItem.name} မှာယူပြီးပါပြီ!`);
       setDialogOpen(false);
-    }, 1500);
+    } catch (err: any) {
+      toast.error(err.message || 'မှာယူ၍မရပါ');
+    }
+    setOrdering(false);
   };
 
   if (loading) {

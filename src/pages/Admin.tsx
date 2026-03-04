@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, ClipboardList, Users, Send, ArrowLeft, CheckCircle, XCircle, Eye, History } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, Users, Send, ArrowLeft, CheckCircle, XCircle, Eye, History, Gamepad2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,6 +36,19 @@ interface OrderHistory {
   profiles: { name: string; user_code: string; phone: string } | null;
 }
 
+interface GameOrder {
+  id: string;
+  product_name: string;
+  item_name: string;
+  price: number;
+  game_id: string;
+  server_id: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  profiles: { name: string; user_code: string; phone: string } | null;
+}
+
 interface UserProfile {
   id: string;
   user_id: string;
@@ -52,6 +65,8 @@ export default function Admin() {
   const [stats, setStats] = useState<Stats>({ userCount: 0, successCount: 0, totalAmount: 0 });
   const [deposits, setDeposits] = useState<PendingDeposit[]>([]);
   const [orderHistory, setOrderHistory] = useState<OrderHistory[]>([]);
+  const [gameOrders, setGameOrders] = useState<GameOrder[]>([]);
+  const [gameOrderHistory, setGameOrderHistory] = useState<GameOrder[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [transferCode, setTransferCode] = useState('');
   const [transferAmount, setTransferAmount] = useState('');
@@ -71,16 +86,20 @@ export default function Admin() {
 
   const loadData = async () => {
     try {
-      const [statsData, depositsData, usersData, historyData] = await Promise.all([
+      const [statsData, depositsData, usersData, historyData, gameOrdersData, gameHistoryData] = await Promise.all([
         callAdmin('get_stats'),
         callAdmin('get_pending_deposits'),
         callAdmin('get_all_users'),
         callAdmin('get_order_history'),
+        callAdmin('get_pending_game_orders'),
+        callAdmin('get_game_order_history'),
       ]);
       setStats(statsData);
       setDeposits(depositsData.deposits || []);
       setUsers(usersData.users || []);
       setOrderHistory(historyData.orders || []);
+      setGameOrders(gameOrdersData.orders || []);
+      setGameOrderHistory(gameHistoryData.orders || []);
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -93,7 +112,6 @@ export default function Admin() {
       return;
     }
 
-    // Server-side admin verification
     const verifyAndLoad = async () => {
       try {
         await callAdmin('verify_admin');
@@ -107,8 +125,9 @@ export default function Admin() {
     verifyAndLoad();
 
     const channel = supabase
-      .channel('admin-deposits')
+      .channel('admin-all-orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'deposits' }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'game_orders' }, () => loadData())
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -128,6 +147,26 @@ export default function Admin() {
     try {
       await callAdmin('reject_deposit', { deposit_id: depositId });
       toast.success('Deposit rejected');
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleApproveGameOrder = async (orderId: string) => {
+    try {
+      await callAdmin('approve_game_order', { deposit_id: orderId });
+      toast.success('Game order approved!');
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleRejectGameOrder = async (orderId: string) => {
+    try {
+      await callAdmin('reject_game_order', { deposit_id: orderId });
+      toast.success('Game order rejected & refunded');
       loadData();
     } catch (err: any) {
       toast.error(err.message);
@@ -178,22 +217,33 @@ export default function Admin() {
 
       <div className="max-w-5xl mx-auto px-4 py-6">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="w-full grid grid-cols-4 bg-muted">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+          <TabsList className="w-full grid grid-cols-6 bg-muted">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
               <LayoutDashboard className="h-4 w-4 mr-1" /> Overview
             </TabsTrigger>
-            <TabsTrigger value="orders" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground relative">
-              <ClipboardList className="h-4 w-4 mr-1" /> Orders
+            <TabsTrigger value="orders" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground relative text-xs">
+              <ClipboardList className="h-4 w-4 mr-1" /> Deposits
               {deposits.length > 0 && (
                 <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                   {deposits.length}
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="history" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <History className="h-4 w-4 mr-1" /> History
+            <TabsTrigger value="game-orders" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground relative text-xs">
+              <Gamepad2 className="h-4 w-4 mr-1" /> Games
+              {gameOrders.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {gameOrders.length}
+                </span>
+              )}
             </TabsTrigger>
-            <TabsTrigger value="users" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="history" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
+              <History className="h-4 w-4 mr-1" /> Dep History
+            </TabsTrigger>
+            <TabsTrigger value="game-history" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
+              <Gamepad2 className="h-4 w-4 mr-1" /> Game History
+            </TabsTrigger>
+            <TabsTrigger value="users" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
               <Users className="h-4 w-4 mr-1" /> Users
             </TabsTrigger>
           </TabsList>
@@ -252,7 +302,7 @@ export default function Admin() {
             </div>
           </TabsContent>
 
-          {/* Pending Orders Tab */}
+          {/* Pending Deposit Orders Tab */}
           <TabsContent value="orders">
             <div className="gaming-card rounded-xl overflow-hidden">
               <Table>
@@ -269,7 +319,7 @@ export default function Admin() {
                   {deposits.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        No pending orders
+                        No pending deposits
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -306,7 +356,64 @@ export default function Admin() {
             </div>
           </TabsContent>
 
-          {/* Order History Tab */}
+          {/* Pending Game Orders Tab */}
+          <TabsContent value="game-orders">
+            <div className="gaming-card rounded-xl overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Game</TableHead>
+                    <TableHead>Item</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Game ID</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {gameOrders.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        No pending game orders
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    gameOrders.map((o) => (
+                      <TableRow key={o.id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{o.profiles?.name}</p>
+                            <p className="text-xs text-muted-foreground">{o.profiles?.user_code}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm font-medium">{o.product_name}</TableCell>
+                        <TableCell className="text-sm">{o.item_name}</TableCell>
+                        <TableCell className="font-semibold">{formatBalance(o.price)} ကျပ်</TableCell>
+                        <TableCell>
+                          <span className="font-mono text-sm">{o.game_id}</span>
+                          {o.server_id && <span className="text-xs text-muted-foreground ml-1">({o.server_id})</span>}
+                        </TableCell>
+                        <TableCell className="text-sm">{new Date(o.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => handleApproveGameOrder(o.id)} className="bg-gaming-success hover:bg-gaming-success/80 text-primary-foreground">
+                              <CheckCircle className="h-4 w-4 mr-1" /> Approve
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleRejectGameOrder(o.id)}>
+                              <XCircle className="h-4 w-4 mr-1" /> Reject
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+
+          {/* Deposit History Tab */}
           <TabsContent value="history">
             <div className="gaming-card rounded-xl overflow-hidden">
               <Table>
@@ -323,7 +430,7 @@ export default function Admin() {
                   {orderHistory.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        No order history
+                        No deposit history
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -352,6 +459,63 @@ export default function Admin() {
                             <Eye className="h-4 w-4" />
                           </Button>
                         </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+
+          {/* Game Order History Tab */}
+          <TabsContent value="game-history">
+            <div className="gaming-card rounded-xl overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Game</TableHead>
+                    <TableHead>Item</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Game ID</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {gameOrderHistory.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        No game order history
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    gameOrderHistory.map((o) => (
+                      <TableRow key={o.id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{o.profiles?.name}</p>
+                            <p className="text-xs text-muted-foreground">{o.profiles?.user_code}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm font-medium">{o.product_name}</TableCell>
+                        <TableCell className="text-sm">{o.item_name}</TableCell>
+                        <TableCell className="font-semibold">{formatBalance(o.price)} ကျပ်</TableCell>
+                        <TableCell>
+                          <span className="font-mono text-sm">{o.game_id}</span>
+                          {o.server_id && <span className="text-xs text-muted-foreground ml-1">({o.server_id})</span>}
+                        </TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            o.status === 'success' 
+                              ? 'bg-gaming-success/20 text-gaming-success' 
+                              : 'bg-destructive/20 text-destructive'
+                          }`}>
+                            {o.status === 'success' ? <CheckCircle className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
+                            {o.status === 'success' ? 'Approved' : 'Rejected'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-sm">{new Date(o.updated_at).toLocaleDateString()}</TableCell>
                       </TableRow>
                     ))
                   )}

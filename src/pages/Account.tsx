@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { LogOut, Shield } from 'lucide-react';
+import { LogOut, Shield, History, Gamepad2 } from 'lucide-react';
 import { BottomNav } from '@/components/BottomNav';
 
 export default function Account() {
@@ -58,6 +58,13 @@ export default function Account() {
 
       {/* Actions */}
       <div className="mx-4 mt-4 space-y-3">
+        <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/deposit-history')}>
+          <History className="h-5 w-5 mr-2" /> ငွေဖြည့်မှတ်တမ်း
+        </Button>
+        <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/game-order-history')}>
+          <Gamepad2 className="h-5 w-5 mr-2" /> Game Order မှတ်တမ်း
+        </Button>
+
         {isAdmin && (
           <Button variant="outline" className="w-full justify-start text-primary" onClick={() => navigate('/admin')}>
             <Shield className="h-5 w-5 mr-2" /> Admin Dashboard

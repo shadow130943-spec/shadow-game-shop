@@ -355,6 +355,42 @@ serve(async (req) => {
       });
     }
 
+    if (action === "get_products_with_items") {
+      const { data: products } = await supabaseAdmin
+        .from("products")
+        .select("*")
+        .eq("is_active", true)
+        .order("name");
+
+      const { data: items } = await supabaseAdmin
+        .from("product_items")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order");
+
+      return new Response(JSON.stringify({ products: products || [], items: items || [] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "update_item_price") {
+      const itemId = params.item_id;
+      const newPrice = params.new_price;
+      if (!itemId || typeof newPrice !== "number" || newPrice < 0) {
+        throw new Error("Invalid item_id or new_price");
+      }
+
+      const { error } = await supabaseAdmin
+        .from("product_items")
+        .update({ price: newPrice })
+        .eq("id", itemId);
+      if (error) throw error;
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     throw new Error("Unknown action");
   } catch (error) {
     console.error('[Admin Action Error]', error instanceof Error ? error.message : error);

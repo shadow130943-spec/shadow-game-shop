@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, ClipboardList, Users, Send, ArrowLeft, CheckCircle, XCircle, Eye, History, Gamepad2 } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, Users, Send, ArrowLeft, CheckCircle, XCircle, Eye, History, Gamepad2, Package, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -59,6 +59,23 @@ interface UserProfile {
   created_at: string;
 }
 
+interface AdminProduct {
+  id: string;
+  name: string;
+  image_url: string | null;
+  category: string;
+}
+
+interface AdminProductItem {
+  id: string;
+  product_id: string;
+  name: string;
+  price: number;
+  category: string;
+  image_url: string | null;
+  sort_order: number;
+}
+
 export default function Admin() {
   const { user, isAdmin, session } = useAuth();
   const navigate = useNavigate();
@@ -74,6 +91,11 @@ export default function Admin() {
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [serverVerified, setServerVerified] = useState(false);
+  const [adminProducts, setAdminProducts] = useState<AdminProduct[]>([]);
+  const [adminProductItems, setAdminProductItems] = useState<AdminProductItem[]>([]);
+  const [editingItem, setEditingItem] = useState<AdminProductItem | null>(null);
+  const [editPrice, setEditPrice] = useState('');
+  const [savingPrice, setSavingPrice] = useState(false);
 
   const callAdmin = async (action: string, params: Record<string, any> = {}) => {
     const { data, error } = await supabase.functions.invoke('admin-actions', {
@@ -86,13 +108,14 @@ export default function Admin() {
 
   const loadData = async () => {
     try {
-      const [statsData, depositsData, usersData, historyData, gameOrdersData, gameHistoryData] = await Promise.all([
+      const [statsData, depositsData, usersData, historyData, gameOrdersData, gameHistoryData, productsData] = await Promise.all([
         callAdmin('get_stats'),
         callAdmin('get_pending_deposits'),
         callAdmin('get_all_users'),
         callAdmin('get_order_history'),
         callAdmin('get_pending_game_orders'),
         callAdmin('get_game_order_history'),
+        callAdmin('get_products_with_items'),
       ]);
       setStats(statsData);
       setDeposits(depositsData.deposits || []);
@@ -100,6 +123,8 @@ export default function Admin() {
       setOrderHistory(historyData.orders || []);
       setGameOrders(gameOrdersData.orders || []);
       setGameOrderHistory(gameHistoryData.orders || []);
+      setAdminProducts(productsData.products || []);
+      setAdminProductItems(productsData.items || []);
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -191,6 +216,25 @@ export default function Admin() {
     setTransferLoading(false);
   };
 
+  const handleUpdatePrice = async () => {
+    if (!editingItem) return;
+    const newPrice = parseFloat(editPrice);
+    if (isNaN(newPrice) || newPrice < 0) {
+      toast.error('စျေးနှုန်းမှားနေပါသည်');
+      return;
+    }
+    setSavingPrice(true);
+    try {
+      await callAdmin('update_item_price', { item_id: editingItem.id, new_price: newPrice });
+      toast.success(`${editingItem.name} စျေးနှုန်းပြောင်းပြီးပါပြီ`);
+      setEditingItem(null);
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+    setSavingPrice(false);
+  };
+
   const formatBalance = (n: number) => new Intl.NumberFormat('my-MM').format(n);
 
   if (loading) {
@@ -217,7 +261,7 @@ export default function Admin() {
 
       <div className="max-w-5xl mx-auto px-4 py-6">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="w-full grid grid-cols-6 bg-muted">
+          <TabsList className="w-full grid grid-cols-7 bg-muted">
             <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
               <LayoutDashboard className="h-4 w-4 mr-1" /> Overview
             </TabsTrigger>
@@ -236,6 +280,9 @@ export default function Admin() {
                   {gameOrders.length}
                 </span>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="products" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
+              <Package className="h-4 w-4 mr-1" /> Products
             </TabsTrigger>
             <TabsTrigger value="history" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
               <History className="h-4 w-4 mr-1" /> Dep History
@@ -413,6 +460,63 @@ export default function Admin() {
             </div>
           </TabsContent>
 
+          {/* Products Tab */}
+          <TabsContent value="products" className="space-y-6">
+            {adminProducts.map((product) => {
+              const productItems = adminProductItems.filter(i => i.product_id === product.id);
+              const grouped = productItems.reduce<Record<string, AdminProductItem[]>>((acc, item) => {
+                if (!acc[item.category]) acc[item.category] = [];
+                acc[item.category].push(item);
+                return acc;
+              }, {});
+
+              return (
+                <div key={product.id} className="gaming-card rounded-xl p-5">
+                  <div className="flex items-center gap-3 mb-4">
+                    {product.image_url && (
+                      <img src={product.image_url} alt={product.name} className="w-10 h-10 rounded-lg object-cover" />
+                    )}
+                    <h2 className="font-gaming text-lg font-bold">{product.name}</h2>
+                    <span className="text-xs text-muted-foreground">({productItems.length} items)</span>
+                  </div>
+
+                  {Object.entries(grouped).map(([category, items]) => (
+                    <div key={category} className="mb-4">
+                      <h3 className="text-sm font-semibold text-muted-foreground mb-2">{category}</h3>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        {items.map((item) => (
+                          <div key={item.id} className="bg-muted rounded-lg p-3 flex flex-col items-center text-center gap-2">
+                            <p className="text-xs font-semibold text-foreground line-clamp-2">{item.name}</p>
+                            <p className="text-sm font-bold text-primary">{formatBalance(item.price)} ကျပ်</p>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs"
+                              onClick={() => {
+                                setEditingItem(item);
+                                setEditPrice(String(item.price));
+                              }}
+                            >
+                              <Pencil className="h-3 w-3 mr-1" /> Price
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+
+                  {productItems.length === 0 && (
+                    <p className="text-muted-foreground text-sm text-center py-4">No items</p>
+                  )}
+                </div>
+              );
+            })}
+
+            {adminProducts.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">No products found</div>
+            )}
+          </TabsContent>
+
           {/* Deposit History Tab */}
           <TabsContent value="history">
             <div className="gaming-card rounded-xl overflow-hidden">
@@ -553,6 +657,36 @@ export default function Admin() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Price Edit Dialog */}
+      <Dialog open={!!editingItem} onOpenChange={() => setEditingItem(null)}>
+        <DialogContent className="max-w-sm mx-auto rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-gaming">စျေးနှုန်းပြောင်းရန်</DialogTitle>
+          </DialogHeader>
+          {editingItem && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">{editingItem.name}</p>
+              <div className="space-y-1">
+                <Label>စျေးနှုန်းအသစ် (ကျပ်)</Label>
+                <Input
+                  type="number"
+                  value={editPrice}
+                  onChange={(e) => setEditPrice(e.target.value)}
+                  min="0"
+                  className="bg-muted border-border"
+                />
+              </div>
+              <div className="flex gap-3 justify-end">
+                <Button variant="outline" onClick={() => setEditingItem(null)}>Cancel</Button>
+                <Button onClick={handleUpdatePrice} disabled={savingPrice} className="gaming-btn border-0">
+                  {savingPrice ? 'Saving...' : 'Save Price'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Screenshot Dialog */}
       <Dialog open={!!screenshotUrl} onOpenChange={() => setScreenshotUrl(null)}>

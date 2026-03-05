@@ -36,6 +36,8 @@ export function BottomNav() {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
+  if (!user) return null;
+
   const navItems = [
     { icon: Home, label: 'Shop', path: '/' },
     { icon: Mail, label: 'Message', path: '/notifications', badge: unreadCount },

@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Gamepad2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Product {
   id: string;
@@ -22,6 +23,7 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchProducts();
@@ -68,12 +70,25 @@ const Index = () => {
 
       {/* Action Buttons */}
       <div className="px-4 py-2 flex gap-3">
-        <button className="flex-1 py-2.5 rounded-lg gaming-btn text-sm font-semibold text-primary-foreground" onClick={() => navigate('/deposit')}>
-          ငွေဖြည့်မည်
-        </button>
-        <button className="flex-1 py-2.5 rounded-lg bg-muted border border-border text-sm font-semibold text-foreground" onClick={() => navigate('/deposit-history')}>
-          အော်ဒါများ
-        </button>
+        {user ? (
+          <>
+            <button className="flex-1 py-2.5 rounded-lg gaming-btn text-sm font-semibold text-primary-foreground" onClick={() => navigate('/deposit')}>
+              ငွေဖြည့်မည်
+            </button>
+            <button className="flex-1 py-2.5 rounded-lg bg-muted border border-border text-sm font-semibold text-foreground" onClick={() => navigate('/deposit-history')}>
+              အော်ဒါများ
+            </button>
+          </>
+        ) : (
+          <>
+            <button className="flex-1 py-2.5 rounded-lg gaming-btn text-sm font-semibold text-primary-foreground" onClick={() => navigate('/login')}>
+              အကောင့်ဝင်ရန်
+            </button>
+            <button className="flex-1 py-2.5 rounded-lg gaming-btn text-sm font-semibold text-primary-foreground" onClick={() => navigate('/signup')}>
+              အကောင့်သစ်ဖွင့်ရန်
+            </button>
+          </>
+        )}
       </div>
 
       {/* Search Section */}

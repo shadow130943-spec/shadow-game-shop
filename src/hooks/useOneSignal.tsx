@@ -4,7 +4,7 @@ import OneSignal from 'react-onesignal';
 
 // This will be your OneSignal App ID - set it in your OneSignal dashboard
 // The actual value comes from the environment, but react-onesignal needs it at init time
-const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID || '';
+const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID || 'ea765c7a-4990-44fe-bec8-50dd75c302ca';
 
 export function useOneSignal() {
   const { user, isAdmin } = useAuth();

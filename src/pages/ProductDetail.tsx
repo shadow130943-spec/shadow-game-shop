@@ -61,10 +61,13 @@ export default function ProductDetail() {
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('wallet_balance')
+          .select('wallet_balance, is_reseller')
           .eq('user_id', user.id)
           .single();
-        if (profile) setWalletBalance(profile.wallet_balance);
+        if (profile) {
+          setWalletBalance(profile.wallet_balance);
+          setIsReseller(profile.is_reseller || false);
+        }
       }
 
       setLoading(false);

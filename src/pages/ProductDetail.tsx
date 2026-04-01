@@ -152,7 +152,7 @@ export default function ProductDetail() {
         body: {
           product_name: product.name,
           item_name: selectedItem.name,
-          price: selectedItem.price,
+          price: finalPrice,
           game_id: gameId.trim(),
         },
       }).catch(err => console.error('Push notify error:', err));

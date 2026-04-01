@@ -68,18 +68,35 @@ const Index = () => {
         <HeroBanner />
       </div>
 
-      {/* Action Buttons */}
+      {/* Action Buttons - side by side, non-sticky */}
       <div className="px-4 py-2 flex gap-3">
         {user ? (
-          <button className="flex-1 py-2.5 rounded-lg gaming-btn text-sm font-semibold text-primary-foreground" onClick={() => navigate('/deposit')}>
-            ငွေဖြည့်မည်
-          </button>
+          <>
+            <button
+              className="flex-1 py-2.5 rounded-lg gaming-btn text-sm font-semibold"
+              onClick={() => navigate('/deposit')}
+            >
+              ငွေဖြည့်မည်
+            </button>
+            <button
+              className="flex-1 py-2.5 rounded-lg neon-btn-magenta text-sm font-semibold"
+              onClick={() => navigate('/game-order-history')}
+            >
+              အော်ဒါများ
+            </button>
+          </>
         ) : (
           <>
-            <button className="flex-1 py-2.5 rounded-lg gaming-btn text-sm font-semibold text-primary-foreground" onClick={() => navigate('/login')}>
+            <button
+              className="flex-1 py-2.5 rounded-lg gaming-btn text-sm font-semibold"
+              onClick={() => navigate('/login')}
+            >
               အကောင့်ဝင်ရန်
             </button>
-            <button className="flex-1 py-2.5 rounded-lg gaming-btn text-sm font-semibold text-primary-foreground" onClick={() => navigate('/signup')}>
+            <button
+              className="flex-1 py-2.5 rounded-lg neon-btn-magenta text-sm font-semibold"
+              onClick={() => navigate('/signup')}
+            >
               အကောင့်သစ်ဖွင့်ရန်
             </button>
           </>

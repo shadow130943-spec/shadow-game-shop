@@ -550,6 +550,106 @@ export default function Admin() {
             )}
           </TabsContent>
 
+          {/* Bots & Price Sync Tab */}
+          <TabsContent value="bots" className="space-y-6">
+            {/* Price Sync Action */}
+            <div className="gaming-card rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-gaming text-lg font-bold flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-primary" /> Dynamic Price Sync
+                </h2>
+                <Button
+                  onClick={handleSyncPrices}
+                  disabled={syncingPrices}
+                  className="gaming-btn border-0"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${syncingPrices ? 'animate-spin' : ''}`} />
+                  {syncingPrices ? 'Syncing...' : 'Update Prices from Provider'}
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Provider စျေးနှုန်းကို scrape လုပ်ပြီး 5% profit margin ထည့်ကာ database ကို update လုပ်ပါမယ်။
+                Bot 4 ခုပါပြီး failover system ရှိပါတယ်။
+              </p>
+            </div>
+
+            {/* Bot Health Status */}
+            <div className="gaming-card rounded-xl p-5">
+              <h2 className="font-gaming text-lg font-bold mb-4 flex items-center gap-2">
+                <Bot className="h-5 w-5 text-primary" /> Bot Health Status
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {botHealth.map((bot: any) => (
+                  <div key={bot.bot_index} className="bg-muted rounded-lg p-4 flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-sm text-foreground">Bot {bot.bot_index}</p>
+                      <p className="text-xs text-muted-foreground truncate max-w-[200px]">{bot.name}</p>
+                      {bot.last_run && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Last: {new Date(bot.last_run.created_at).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <div className={`w-3 h-3 rounded-full ${bot.is_healthy ? 'bg-green-500 shadow-[0_0_8px_hsl(145_70%_45%/0.6)]' : 'bg-red-500 shadow-[0_0_8px_hsl(0_84%_60%/0.6)]'}`} />
+                      <span className="text-xs text-muted-foreground">{bot.error_count} errors</span>
+                    </div>
+                  </div>
+                ))}
+                {botHealth.length === 0 && (
+                  <p className="text-muted-foreground text-sm col-span-2 text-center py-4">No bot data yet. Run a price sync first.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Bot Run History */}
+            <div className="gaming-card rounded-xl overflow-hidden">
+              <div className="p-4">
+                <h2 className="font-gaming text-lg font-bold">Run History</h2>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Bot</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Items Updated</TableHead>
+                    <TableHead>Error</TableHead>
+                    <TableHead>Time</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {botRuns.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        No bot runs yet
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    botRuns.map((run: any) => (
+                      <TableRow key={run.id}>
+                        <TableCell className="text-sm font-medium">Bot {run.bot_index}</TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            run.status === 'success'
+                              ? 'bg-green-500/20 text-green-400'
+                              : run.status === 'running'
+                              ? 'bg-blue-500/20 text-blue-400'
+                              : 'bg-destructive/20 text-destructive'
+                          }`}>
+                            {run.status}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-sm">{run.items_updated || 0}</TableCell>
+                        <TableCell className="text-xs text-destructive max-w-[150px] truncate">{run.error_message || '—'}</TableCell>
+                        <TableCell className="text-sm">{new Date(run.created_at).toLocaleString()}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+
           {/* Deposit History Tab */}
           <TabsContent value="history">
             <div className="gaming-card rounded-xl overflow-hidden">

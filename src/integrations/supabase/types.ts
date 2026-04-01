@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      bot_runs: {
+        Row: {
+          bot_index: number
+          bot_name: string
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          items_updated: number | null
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          bot_index?: number
+          bot_name: string
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          items_updated?: number | null
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          bot_index?: number
+          bot_name?: string
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          items_updated?: number | null
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       deposits: {
         Row: {
           admin_note: string | null
@@ -144,6 +180,7 @@ export type Database = {
           name: string
           price: number
           product_id: string
+          provider_price: number | null
           sort_order: number
         }
         Insert: {
@@ -155,6 +192,7 @@ export type Database = {
           name: string
           price?: number
           product_id: string
+          provider_price?: number | null
           sort_order?: number
         }
         Update: {
@@ -166,6 +204,7 @@ export type Database = {
           name?: string
           price?: number
           product_id?: string
+          provider_price?: number | null
           sort_order?: number
         }
         Relationships: [
@@ -215,6 +254,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_reseller: boolean | null
           name: string
           phone: string | null
           updated_at: string
@@ -225,6 +265,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_reseller?: boolean | null
           name: string
           phone?: string | null
           updated_at?: string
@@ -235,6 +276,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_reseller?: boolean | null
           name?: string
           phone?: string | null
           updated_at?: string
@@ -280,7 +322,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user"
+      app_role: "admin" | "moderator" | "user" | "reseller"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -408,7 +450,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user"],
+      app_role: ["admin", "moderator", "user", "reseller"],
     },
   },
 } as const

@@ -47,11 +47,18 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        neon: {
+          cyan: "hsl(var(--neon-cyan))",
+          magenta: "hsl(var(--neon-magenta))",
+          dark: "hsl(var(--neon-dark))",
+          success: "hsl(var(--neon-success))",
+          gold: "hsl(var(--neon-gold))",
+        },
         gaming: {
-          glow: "hsl(var(--gaming-glow))",
-          dark: "hsl(var(--gaming-dark))",
-          success: "hsl(var(--gaming-success))",
-          gold: "hsl(var(--gaming-gold))",
+          glow: "hsl(var(--neon-cyan))",
+          dark: "hsl(var(--neon-dark))",
+          success: "hsl(var(--neon-success))",
+          gold: "hsl(var(--neon-gold))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",

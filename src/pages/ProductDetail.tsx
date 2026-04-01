@@ -35,6 +35,7 @@ export default function ProductDetail() {
   const [product, setProduct] = useState<Product | null>(null);
   const [items, setItems] = useState<ProductItem[]>([]);
   const [walletBalance, setWalletBalance] = useState(0);
+  const [isReseller, setIsReseller] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Order dialog state
@@ -60,10 +61,13 @@ export default function ProductDetail() {
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('wallet_balance')
+          .select('wallet_balance, is_reseller')
           .eq('user_id', user.id)
           .single();
-        if (profile) setWalletBalance(profile.wallet_balance);
+        if (profile) {
+          setWalletBalance(profile.wallet_balance);
+          setIsReseller(profile.is_reseller || false);
+        }
       }
 
       setLoading(false);
@@ -72,6 +76,8 @@ export default function ProductDetail() {
     fetchData();
   }, [id, user]);
 
+  const RESELLER_DISCOUNT = 0.97; // 3% discount
+  const getPrice = (price: number) => isReseller ? Math.floor(price * RESELLER_DISCOUNT) : price;
   const formatBalance = (n: number) => new Intl.NumberFormat('my-MM').format(n);
 
   // Group items by category
@@ -112,7 +118,8 @@ export default function ProductDetail() {
       toast.error('အချက်အလက်များမှန်ကန်ပါတယ် ကို အတည်ပြုပါ');
       return;
     }
-    if (walletBalance < selectedItem.price) {
+    const finalPrice = getPrice(selectedItem.price);
+    if (walletBalance < finalPrice) {
       toast.error('လက်ကျန်ငွေ မလုံလောက်ပါ');
       return;
     }
@@ -121,7 +128,7 @@ export default function ProductDetail() {
       // Deduct wallet balance
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ wallet_balance: walletBalance - selectedItem.price })
+        .update({ wallet_balance: walletBalance - finalPrice })
         .eq('user_id', user.id);
       if (updateError) throw updateError;
 
@@ -134,7 +141,7 @@ export default function ProductDetail() {
           product_item_id: selectedItem.id,
           product_name: product.name,
           item_name: selectedItem.name,
-          price: selectedItem.price,
+          price: finalPrice,
           game_id: gameId.trim(),
           server_id: needsServerId ? serverId.trim() : null,
         });
@@ -145,12 +152,12 @@ export default function ProductDetail() {
         body: {
           product_name: product.name,
           item_name: selectedItem.name,
-          price: selectedItem.price,
+          price: finalPrice,
           game_id: gameId.trim(),
         },
       }).catch(err => console.error('Push notify error:', err));
 
-      setWalletBalance(walletBalance - selectedItem.price);
+      setWalletBalance(walletBalance - finalPrice);
       toast.success(`${selectedItem.name} မှာယူပြီးပါပြီ!`);
       setDialogOpen(false);
     } catch (err: any) {
@@ -246,8 +253,13 @@ export default function ProductDetail() {
 
                     {/* Price */}
                     <p className="text-sm font-bold text-foreground">
-                      {formatBalance(item.price)} ကျပ်
+                      {formatBalance(getPrice(item.price))} ကျပ်
                     </p>
+                    {isReseller && (
+                      <p className="text-[10px] text-muted-foreground line-through">
+                        {formatBalance(item.price)}
+                      </p>
+                    )}
                   </motion.div>
                 ))}
               </div>
@@ -303,7 +315,8 @@ export default function ProductDetail() {
                   {selectedItem?.name}
                 </div>
                 <div className="flex-1 bg-muted rounded-lg px-3 py-2 text-sm font-semibold">
-                  {selectedItem ? formatBalance(selectedItem.price) : 0} ကျပ်
+                  {selectedItem ? formatBalance(getPrice(selectedItem.price)) : 0} ကျပ်
+                  {isReseller && <span className="text-[10px] text-muted-foreground ml-1">(-3%)</span>}
                 </div>
               </div>
             </div>

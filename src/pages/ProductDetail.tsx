@@ -118,7 +118,8 @@ export default function ProductDetail() {
       toast.error('အချက်အလက်များမှန်ကန်ပါတယ် ကို အတည်ပြုပါ');
       return;
     }
-    if (walletBalance < selectedItem.price) {
+    const finalPrice = getPrice(selectedItem.price);
+    if (walletBalance < finalPrice) {
       toast.error('လက်ကျန်ငွေ မလုံလောက်ပါ');
       return;
     }

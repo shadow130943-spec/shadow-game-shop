@@ -9,25 +9,18 @@ import { toast } from 'sonner';
 
 const paymentMethods = [
   {
-    name: 'WAVEPAY',
-    phone: '09684533849',
-    holder: 'Chue lae aung',
+    name: 'Wave Pay',
+    phone: '09680072956',
+    holder: 'Aung Si Moe',
     color: 'bg-yellow-400',
     logo: '🌊',
   },
   {
     name: 'KBZ Pay',
-    phone: '09757453851',
-    holder: 'Zaw min tun',
+    phone: '09683245994',
+    holder: 'AUNG KYAW HEIN HTET',
     color: 'bg-red-600',
     logo: '🏦',
-  },
-  {
-    name: 'AYA PAY',
-    phone: '09759122980',
-    holder: 'Ye Htet Ko ko',
-    color: 'bg-white border border-red-500',
-    logo: '🏠',
   },
 ];
 

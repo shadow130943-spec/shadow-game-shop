@@ -291,7 +291,7 @@ export default function Admin() {
 
       <div className="max-w-5xl mx-auto px-4 py-6">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="w-full grid grid-cols-7 bg-muted">
+          <TabsList className="w-full grid grid-cols-8 bg-muted">
             <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
               <LayoutDashboard className="h-4 w-4 mr-1" /> Overview
             </TabsTrigger>
@@ -313,6 +313,9 @@ export default function Admin() {
             </TabsTrigger>
             <TabsTrigger value="products" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
               <Package className="h-4 w-4 mr-1" /> Products
+            </TabsTrigger>
+            <TabsTrigger value="bots" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
+              <Bot className="h-4 w-4 mr-1" /> Bots
             </TabsTrigger>
             <TabsTrigger value="history" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
               <History className="h-4 w-4 mr-1" /> Dep History

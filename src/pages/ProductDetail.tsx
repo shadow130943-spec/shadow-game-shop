@@ -253,8 +253,13 @@ export default function ProductDetail() {
 
                     {/* Price */}
                     <p className="text-sm font-bold text-foreground">
-                      {formatBalance(item.price)} ကျပ်
+                      {formatBalance(getPrice(item.price))} ကျပ်
                     </p>
+                    {isReseller && (
+                      <p className="text-[10px] text-muted-foreground line-through">
+                        {formatBalance(item.price)}
+                      </p>
+                    )}
                   </motion.div>
                 ))}
               </div>

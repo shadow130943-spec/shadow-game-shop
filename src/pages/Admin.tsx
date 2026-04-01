@@ -96,6 +96,9 @@ export default function Admin() {
   const [editingItem, setEditingItem] = useState<AdminProductItem | null>(null);
   const [editPrice, setEditPrice] = useState('');
   const [savingPrice, setSavingPrice] = useState(false);
+  const [syncingPrices, setSyncingPrices] = useState(false);
+  const [botHealth, setBotHealth] = useState<any[]>([]);
+  const [botRuns, setBotRuns] = useState<any[]>([]);
 
   const callAdmin = async (action: string, params: Record<string, any> = {}) => {
     const { data, error } = await supabase.functions.invoke('admin-actions', {

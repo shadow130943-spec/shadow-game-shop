@@ -315,7 +315,8 @@ export default function ProductDetail() {
                   {selectedItem?.name}
                 </div>
                 <div className="flex-1 bg-muted rounded-lg px-3 py-2 text-sm font-semibold">
-                  {selectedItem ? formatBalance(selectedItem.price) : 0} ကျပ်
+                  {selectedItem ? formatBalance(getPrice(selectedItem.price)) : 0} ကျပ်
+                  {isReseller && <span className="text-[10px] text-muted-foreground ml-1">(-3%)</span>}
                 </div>
               </div>
             </div>

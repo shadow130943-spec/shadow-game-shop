@@ -141,7 +141,7 @@ export default function ProductDetail() {
           product_item_id: selectedItem.id,
           product_name: product.name,
           item_name: selectedItem.name,
-          price: selectedItem.price,
+          price: finalPrice,
           game_id: gameId.trim(),
           server_id: needsServerId ? serverId.trim() : null,
         });

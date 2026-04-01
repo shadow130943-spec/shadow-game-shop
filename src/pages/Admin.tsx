@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, ClipboardList, Users, Send, ArrowLeft, CheckCircle, XCircle, Eye, History, Gamepad2, Package, Pencil } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, Users, Send, ArrowLeft, CheckCircle, XCircle, Eye, History, Gamepad2, Package, Pencil, Bot, RefreshCw, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

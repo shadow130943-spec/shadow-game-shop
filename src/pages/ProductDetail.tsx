@@ -76,6 +76,8 @@ export default function ProductDetail() {
     fetchData();
   }, [id, user]);
 
+  const RESELLER_DISCOUNT = 0.97; // 3% discount
+  const getPrice = (price: number) => isReseller ? Math.floor(price * RESELLER_DISCOUNT) : price;
   const formatBalance = (n: number) => new Intl.NumberFormat('my-MM').format(n);
 
   // Group items by category

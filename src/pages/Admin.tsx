@@ -238,6 +238,32 @@ export default function Admin() {
     setSavingPrice(false);
   };
 
+  const handleSyncPrices = async () => {
+    setSyncingPrices(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('price-sync');
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Price sync complete! ${data.items_updated} items updated via ${data.bot_used}`);
+      loadData();
+      loadBotData();
+    } catch (err: any) {
+      toast.error(err.message || 'Price sync failed');
+    }
+    setSyncingPrices(false);
+  };
+
+  const loadBotData = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('bot-status');
+      if (error) throw error;
+      setBotHealth(data?.bot_health || []);
+      setBotRuns(data?.bot_runs || []);
+    } catch (err) {
+      console.error('Failed to load bot data:', err);
+    }
+  };
+
   const formatBalance = (n: number) => new Intl.NumberFormat('my-MM').format(n);
 
   if (loading) {

@@ -145,6 +145,7 @@ export default function Admin() {
         await callAdmin('verify_admin');
         setServerVerified(true);
         await loadData();
+        loadBotData();
       } catch {
         navigate('/');
       }

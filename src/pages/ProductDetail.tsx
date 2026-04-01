@@ -157,7 +157,7 @@ export default function ProductDetail() {
         },
       }).catch(err => console.error('Push notify error:', err));
 
-      setWalletBalance(walletBalance - selectedItem.price);
+      setWalletBalance(walletBalance - finalPrice);
       toast.success(`${selectedItem.name} မှာယူပြီးပါပြီ!`);
       setDialogOpen(false);
     } catch (err: any) {

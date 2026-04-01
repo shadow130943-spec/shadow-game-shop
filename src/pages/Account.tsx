@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { LogOut, Shield, History, Gamepad2 } from 'lucide-react';
 import { BottomNav } from '@/components/BottomNav';
+import { TopBuyers } from '@/components/TopBuyers';
 
 export default function Account() {
   const { user, profile, isAdmin, signOut } = useAuth();
@@ -31,14 +32,14 @@ export default function Account() {
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Profile Card */}
-      <div className="mx-4 mt-4 rounded-xl overflow-hidden border border-border">
+      <div className="mx-4 mt-4 rounded-xl overflow-hidden border border-primary/20 neon-glow-cyan">
         <div className="bg-muted p-4 flex items-center gap-4">
-          <div className="h-16 w-16 rounded-xl bg-primary/20 flex items-center justify-center text-primary font-bold text-xl">
+          <div className="h-16 w-16 rounded-xl bg-primary/20 flex items-center justify-center text-primary font-bold text-xl neon-text-cyan">
             {(profile?.name || 'U').charAt(0).toUpperCase()}
           </div>
           <div>
             <h2 className="font-bold text-lg text-foreground">{profile?.name || 'User'}</h2>
-            <p className="text-sm text-muted-foreground">{formatBalance(profile?.wallet_balance || 0)} ကျပ်</p>
+            <p className="text-sm text-primary">{formatBalance(profile?.wallet_balance || 0)} ကျပ်</p>
           </div>
         </div>
 
@@ -58,15 +59,15 @@ export default function Account() {
 
       {/* Actions */}
       <div className="mx-4 mt-4 space-y-3">
-        <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/deposit-history')}>
+        <Button variant="outline" className="w-full justify-start border-primary/20 hover:border-primary/50" onClick={() => navigate('/deposit-history')}>
           <History className="h-5 w-5 mr-2" /> ငွေဖြည့်မှတ်တမ်း
         </Button>
-        <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/game-order-history')}>
+        <Button variant="outline" className="w-full justify-start border-primary/20 hover:border-primary/50" onClick={() => navigate('/game-order-history')}>
           <Gamepad2 className="h-5 w-5 mr-2" /> Game Order မှတ်တမ်း
         </Button>
 
         {isAdmin && (
-          <Button variant="outline" className="w-full justify-start text-primary" onClick={() => navigate('/admin')}>
+          <Button variant="outline" className="w-full justify-start text-primary border-primary/30" onClick={() => navigate('/admin')}>
             <Shield className="h-5 w-5 mr-2" /> Admin Dashboard
           </Button>
         )}
@@ -74,6 +75,11 @@ export default function Account() {
         <Button variant="outline" className="w-full justify-start border-destructive/50 text-destructive hover:bg-destructive/10" onClick={handleSignOut}>
           <LogOut className="h-5 w-5 mr-2" /> Logout
         </Button>
+      </div>
+
+      {/* Top Buyers Leaderboard */}
+      <div className="mx-4 mt-6">
+        <TopBuyers />
       </div>
 
       <BottomNav />

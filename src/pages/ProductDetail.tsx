@@ -128,7 +128,7 @@ export default function ProductDetail() {
       // Deduct wallet balance
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ wallet_balance: walletBalance - selectedItem.price })
+        .update({ wallet_balance: walletBalance - finalPrice })
         .eq('user_id', user.id);
       if (updateError) throw updateError;
 

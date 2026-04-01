@@ -35,6 +35,7 @@ export default function ProductDetail() {
   const [product, setProduct] = useState<Product | null>(null);
   const [items, setItems] = useState<ProductItem[]>([]);
   const [walletBalance, setWalletBalance] = useState(0);
+  const [isReseller, setIsReseller] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Order dialog state

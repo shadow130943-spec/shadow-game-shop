@@ -38,11 +38,20 @@ export default function Deposit() {
     toast.success('Copied!');
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (selected) {
-      setFile(selected);
-      setPreview(URL.createObjectURL(selected));
+      try {
+        const compressed = await compressImage(selected);
+        setFile(compressed);
+        setPreview(URL.createObjectURL(compressed));
+        if (compressed.size < selected.size) {
+          toast.success(`Image compressed: ${(selected.size / 1024).toFixed(0)}KB → ${(compressed.size / 1024).toFixed(0)}KB`);
+        }
+      } catch {
+        setFile(selected);
+        setPreview(URL.createObjectURL(selected));
+      }
     }
   };
 

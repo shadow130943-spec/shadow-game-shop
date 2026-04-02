@@ -99,6 +99,8 @@ export default function Admin() {
   const [syncingPrices, setSyncingPrices] = useState(false);
   const [botHealth, setBotHealth] = useState<any[]>([]);
   const [botRuns, setBotRuns] = useState<any[]>([]);
+  const [ocrLoading, setOcrLoading] = useState<string | null>(null);
+  const [ocrResult, setOcrResult] = useState<string | null>(null);
 
   const callAdmin = async (action: string, params: Record<string, any> = {}) => {
     const { data, error } = await supabase.functions.invoke('admin-actions', {

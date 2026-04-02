@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ShoppingCart, Link2 } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Link2, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -25,8 +26,20 @@ interface Product {
   image_url: string | null;
 }
 
-// Games that need Server ID in addition to Game ID
 const GAMES_WITH_SERVER_ID = ['Mobile Legends'];
+
+const SERVERS = [
+  { value: 'global', label: 'Global' },
+  { value: 'malaysia', label: 'Malaysia' },
+  { value: 'philippine', label: 'Philippine' },
+  { value: 'singapore', label: 'Singapore' },
+  { value: 'indonesia', label: 'Indonesia' },
+];
+
+const CURRENCIES = [
+  { value: 'mmk', label: 'မြန်မာကျပ် 🇲🇲', rate: 1 },
+  { value: 'myr', label: 'မလေးRM 🇲🇾', rate: 0.0014 },
+];
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
@@ -37,8 +50,9 @@ export default function ProductDetail() {
   const [walletBalance, setWalletBalance] = useState(0);
   const [isReseller, setIsReseller] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedServer, setSelectedServer] = useState('global');
+  const [selectedCurrency, setSelectedCurrency] = useState('mmk');
 
-  // Order dialog state
   const [selectedItem, setSelectedItem] = useState<ProductItem | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [gameId, setGameId] = useState('');
@@ -48,16 +62,13 @@ export default function ProductDetail() {
 
   useEffect(() => {
     if (!id) return;
-
     const fetchData = async () => {
       const [productRes, itemsRes] = await Promise.all([
         supabase.from('products').select('id, name, image_url').eq('id', id).single(),
         supabase.from('product_items').select('*').eq('product_id', id).eq('is_active', true).order('sort_order'),
       ]);
-
       if (productRes.data) setProduct(productRes.data);
       if (itemsRes.data) setItems(itemsRes.data as ProductItem[]);
-
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -69,26 +80,28 @@ export default function ProductDetail() {
           setIsReseller(profile.is_reseller || false);
         }
       }
-
       setLoading(false);
     };
-
     fetchData();
   }, [id, user]);
 
-  const RESELLER_DISCOUNT = 0.97; // 3% discount
+  const RESELLER_DISCOUNT = 0.97;
   const getPrice = (price: number) => isReseller ? Math.floor(price * RESELLER_DISCOUNT) : price;
   const formatBalance = (n: number) => new Intl.NumberFormat('my-MM').format(n);
 
-  // Group items by category
+  const currencyRate = CURRENCIES.find(c => c.value === selectedCurrency)?.rate || 1;
+  const formatPrice = (price: number) => {
+    const converted = price * currencyRate;
+    if (selectedCurrency === 'mmk') return `${formatBalance(Math.round(converted))} ကျပ်`;
+    return `RM ${converted.toFixed(2)}`;
+  };
+
   const groupedItems = items.reduce<Record<string, ProductItem[]>>((acc, item) => {
     if (!acc[item.category]) acc[item.category] = [];
     acc[item.category].push(item);
     return acc;
   }, {});
-
   const categories = Object.keys(groupedItems);
-
   const needsServerId = product ? GAMES_WITH_SERVER_ID.includes(product.name) : false;
 
   const handleItemClick = (item: ProductItem) => {
@@ -106,33 +119,19 @@ export default function ProductDetail() {
 
   const handleOrder = async () => {
     if (!selectedItem || !user || !product) return;
-    if (!gameId.trim()) {
-      toast.error('Game Id ထည့်ပါ');
-      return;
-    }
-    if (needsServerId && !serverId.trim()) {
-      toast.error('Server Id ထည့်ပါ');
-      return;
-    }
-    if (!confirmed) {
-      toast.error('အချက်အလက်များမှန်ကန်ပါတယ် ကို အတည်ပြုပါ');
-      return;
-    }
+    if (!gameId.trim()) { toast.error('Game Id ထည့်ပါ'); return; }
+    if (needsServerId && !serverId.trim()) { toast.error('Server Id ထည့်ပါ'); return; }
+    if (!confirmed) { toast.error('အချက်အလက်များမှန်ကန်ပါတယ် ကို အတည်ပြုပါ'); return; }
     const finalPrice = getPrice(selectedItem.price);
-    if (walletBalance < finalPrice) {
-      toast.error('လက်ကျန်ငွေ မလုံလောက်ပါ');
-      return;
-    }
+    if (walletBalance < finalPrice) { toast.error('လက်ကျန်ငွေ မလုံလောက်ပါ'); return; }
     setOrdering(true);
     try {
-      // Deduct wallet balance
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ wallet_balance: walletBalance - finalPrice })
         .eq('user_id', user.id);
       if (updateError) throw updateError;
 
-      // Create game order
       const { error: orderError } = await supabase
         .from('game_orders')
         .insert({
@@ -147,14 +146,8 @@ export default function ProductDetail() {
         });
       if (orderError) throw orderError;
 
-      // Send push notification to admins
       supabase.functions.invoke('notify-admins', {
-        body: {
-          product_name: product.name,
-          item_name: selectedItem.name,
-          price: finalPrice,
-          game_id: gameId.trim(),
-        },
+        body: { product_name: product.name, item_name: selectedItem.name, price: finalPrice, game_id: gameId.trim() },
       }).catch(err => console.error('Push notify error:', err));
 
       setWalletBalance(walletBalance - finalPrice);
@@ -169,7 +162,7 @@ export default function ProductDetail() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse font-gaming text-lg text-muted-foreground">Loading...</div>
+        <div className="animate-pulse text-lg text-muted-foreground">Loading...</div>
       </div>
     );
   }
@@ -192,10 +185,49 @@ export default function ProductDetail() {
         <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="font-gaming text-lg font-bold truncate flex-1 text-center">{product.name}</h1>
+        <h1 className="text-lg font-bold truncate flex-1 text-center text-foreground">{product.name}</h1>
         <div className="text-sm font-semibold text-primary whitespace-nowrap">
           {formatBalance(walletBalance)} ကျပ်
         </div>
+      </div>
+
+      {/* Server Selection */}
+      {needsServerId && (
+        <div className="px-4 pt-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Globe className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold text-foreground">ဆာဗာရွေးချယ်ရန်</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {SERVERS.map((server) => (
+              <button
+                key={server.value}
+                onClick={() => setSelectedServer(server.value)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  selectedServer === server.value
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card border border-border text-foreground hover:border-primary/50'
+                }`}
+              >
+                {server.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Currency Selection */}
+      <div className="px-4 pt-4">
+        <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+          <SelectTrigger className="w-full bg-card border-border">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {CURRENCIES.map((c) => (
+              <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Categories & Items */}
@@ -211,10 +243,10 @@ export default function ProductDetail() {
                 <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
                   {catIdx + 1}
                 </span>
-                <h2 className="font-gaming text-lg font-bold">{category}</h2>
+                <h2 className="text-base font-bold text-foreground">{category}</h2>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 {groupedItems[category].map((item) => (
                   <motion.div
                     key={item.id}
@@ -222,42 +254,26 @@ export default function ProductDetail() {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.2 }}
                     onClick={() => handleItemClick(item)}
-                    className="gaming-card rounded-xl p-3 cursor-pointer gaming-card-hover flex flex-col items-center text-center relative overflow-hidden"
+                    className="gaming-card rounded-xl p-3 cursor-pointer gaming-card-hover flex flex-col items-center text-center"
                   >
-                    {/* Order badge */}
-                    <div className="absolute top-1 right-0 bg-primary text-primary-foreground text-[9px] font-bold px-2 py-0.5 rounded-l-md">
-                      မှာမည်ရပါ
-                    </div>
-
-                    {/* Item icon/number */}
-                    <div className="absolute top-1 left-1 flex items-center gap-0.5">
-                      <span className="text-xs font-bold text-foreground">1</span>
-                      <ShoppingCart className="h-3 w-3 text-primary" />
-                    </div>
-
-                    {/* Image */}
-                    <div className="w-16 h-16 mt-4 mb-2 flex items-center justify-center">
+                    <div className="w-14 h-14 mb-2 flex items-center justify-center">
                       {item.image_url ? (
                         <img src={item.image_url} alt={item.name} className="w-full h-full object-contain" />
                       ) : (
                         <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
-                          <ShoppingCart className="h-6 w-6 text-muted-foreground" />
+                          <ShoppingCart className="h-5 w-5 text-muted-foreground" />
                         </div>
                       )}
                     </div>
-
-                    {/* Name */}
-                    <p className="text-xs font-semibold text-foreground leading-tight mb-1 line-clamp-2">
+                    <p className="text-xs font-medium text-foreground leading-tight mb-1 line-clamp-2">
                       {item.name}
                     </p>
-
-                    {/* Price */}
-                    <p className="text-sm font-bold text-foreground">
-                      {formatBalance(getPrice(item.price))} ကျပ်
+                    <p className="text-sm font-bold text-primary">
+                      {formatPrice(getPrice(item.price))}
                     </p>
                     {isReseller && (
                       <p className="text-[10px] text-muted-foreground line-through">
-                        {formatBalance(item.price)}
+                        {formatPrice(item.price)}
                       </p>
                     )}
                   </motion.div>
@@ -276,7 +292,6 @@ export default function ProductDetail() {
           </DialogTitle>
 
           <div className="space-y-4 pt-2">
-            {/* Account Info */}
             <div className="flex items-center gap-2 text-sm font-semibold">
               <Link2 className="h-4 w-4" />
               {needsServerId ? 'Account Info' : 'Game Id'}
@@ -284,74 +299,42 @@ export default function ProductDetail() {
 
             {needsServerId ? (
               <div className="flex items-center gap-1">
-                <Input
-                  placeholder="Game Id"
-                  value={gameId}
-                  onChange={(e) => setGameId(e.target.value)}
-                  className="flex-1"
-                />
+                <Input placeholder="Game Id" value={gameId} onChange={(e) => setGameId(e.target.value)} className="flex-1" />
                 <span className="text-muted-foreground font-bold">(</span>
-                <Input
-                  placeholder="Server Id"
-                  value={serverId}
-                  onChange={(e) => setServerId(e.target.value)}
-                  className="flex-1"
-                />
+                <Input placeholder="Server Id" value={serverId} onChange={(e) => setServerId(e.target.value)} className="flex-1" />
                 <span className="text-muted-foreground font-bold">)</span>
               </div>
             ) : (
-              <Input
-                placeholder="Game Id"
-                value={gameId}
-                onChange={(e) => setGameId(e.target.value)}
-              />
+              <Input placeholder="Game Id" value={gameId} onChange={(e) => setGameId(e.target.value)} />
             )}
 
-            {/* Selected item info */}
             <div>
               <p className="text-sm font-semibold text-muted-foreground mb-1">ပမာဏ</p>
               <div className="flex gap-2">
+                <div className="flex-1 bg-muted rounded-lg px-3 py-2 text-sm font-semibold">{selectedItem?.name}</div>
                 <div className="flex-1 bg-muted rounded-lg px-3 py-2 text-sm font-semibold">
-                  {selectedItem?.name}
-                </div>
-                <div className="flex-1 bg-muted rounded-lg px-3 py-2 text-sm font-semibold">
-                  {selectedItem ? formatBalance(getPrice(selectedItem.price)) : 0} ကျပ်
+                  {selectedItem ? formatPrice(getPrice(selectedItem.price)) : '0 ကျပ်'}
                   {isReseller && <span className="text-[10px] text-muted-foreground ml-1">(-3%)</span>}
                 </div>
               </div>
             </div>
 
-            {/* Wallet balance */}
             <div className="bg-primary/10 rounded-lg px-4 py-3 text-sm font-semibold text-center">
               လက်ကျန်ငွေ = {formatBalance(walletBalance)} ကျပ်
             </div>
 
-            {/* Confirmation checkbox */}
             <div className="flex items-center gap-2">
-              <Checkbox
-                id="confirm-order"
-                checked={confirmed}
-                onCheckedChange={(checked) => setConfirmed(checked === true)}
-              />
+              <Checkbox id="confirm-order" checked={confirmed} onCheckedChange={(checked) => setConfirmed(checked === true)} />
               <label htmlFor="confirm-order" className="text-sm font-semibold text-destructive cursor-pointer">
                 အချက်အလက်များမှန်ကန်ပါတယ်
               </label>
             </div>
 
-            {/* Action buttons */}
             <div className="flex gap-3 justify-center pt-2">
-              <Button
-                variant="outline"
-                className="rounded-full px-6"
-                onClick={() => setDialogOpen(false)}
-              >
+              <Button variant="outline" className="rounded-full px-6" onClick={() => setDialogOpen(false)}>
                 မဝယ်သေးပါ
               </Button>
-              <Button
-                className="rounded-full px-6"
-                onClick={handleOrder}
-                disabled={ordering}
-              >
+              <Button className="rounded-full px-6 gaming-btn border-0" onClick={handleOrder} disabled={ordering}>
                 {ordering ? 'မှာယူနေပါသည်...' : 'ဝယ်မည်'}
               </Button>
             </div>

@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { Header } from '@/components/Header';
 import { SearchBar } from '@/components/SearchBar';
 import { ProductGrid } from '@/components/ProductGrid';
-import { HeroBanner } from '@/components/HeroBanner';
 import { BottomNav } from '@/components/BottomNav';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -38,7 +37,6 @@ const Index = () => {
 
     if (error) {
       toast.error('Failed to load games');
-      console.error(error);
     } else {
       setProducts(data || []);
     }
@@ -60,15 +58,10 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-6">
+    <div className="min-h-screen bg-background pb-20">
       <Header />
 
-      {/* Hero Banner */}
-      <div className="py-3">
-        <HeroBanner />
-      </div>
-
-      {/* Action Buttons - side by side, non-sticky */}
+      {/* Action Buttons */}
       <div className="px-4 py-2 flex gap-3">
         {user ? (
           <>
@@ -79,7 +72,7 @@ const Index = () => {
               ငွေဖြည့်မည်
             </button>
             <button
-              className="flex-1 py-2.5 rounded-lg neon-btn-magenta text-sm font-semibold"
+              className="flex-1 py-2.5 rounded-lg btn-secondary-action text-sm font-semibold"
               onClick={() => navigate('/game-order-history')}
             >
               အော်ဒါများ
@@ -94,7 +87,7 @@ const Index = () => {
               အကောင့်ဝင်ရန်
             </button>
             <button
-              className="flex-1 py-2.5 rounded-lg neon-btn-magenta text-sm font-semibold"
+              className="flex-1 py-2.5 rounded-lg btn-secondary-action text-sm font-semibold"
               onClick={() => navigate('/signup')}
             >
               အကောင့်သစ်ဖွင့်ရန်
@@ -103,17 +96,17 @@ const Index = () => {
         )}
       </div>
 
-      {/* Search Section */}
+      {/* Search */}
       <div className="px-4 py-3">
         <SearchBar value={searchQuery} onChange={setSearchQuery} />
       </div>
 
-      {/* Products Section */}
-      <section className="px-4 pb-10">
+      {/* Products */}
+      <section className="px-4">
         {loading ? (
           <div className="flex flex-col gap-3">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />
+              <div key={i} className="h-20 rounded-xl bg-card animate-pulse" />
             ))}
           </div>
         ) : filteredProducts.length > 0 ? (
@@ -121,8 +114,8 @@ const Index = () => {
         ) : (
           <div className="text-center py-16">
             <Gamepad2 className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="font-gaming text-xl mb-2">No games found</h3>
-            <p className="text-muted-foreground">Try a different search term</p>
+            <h3 className="text-xl font-bold mb-2 text-foreground">ဂိမ်းရှာမတွေ့ပါ</h3>
+            <p className="text-muted-foreground">တခြား search term နဲ့ ထပ်ကြိုးစားကြည့်ပါ</p>
           </div>
         )}
       </section>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, ClipboardList, Users, Send, ArrowLeft, CheckCircle, XCircle, Eye, History, Gamepad2, Package, Pencil, Bot, RefreshCw, Zap } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, Users, Send, ArrowLeft, CheckCircle, XCircle, Eye, History, Gamepad2, Package, Pencil, Bot, RefreshCw, Zap, Copy, ScanText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -99,6 +99,8 @@ export default function Admin() {
   const [syncingPrices, setSyncingPrices] = useState(false);
   const [botHealth, setBotHealth] = useState<any[]>([]);
   const [botRuns, setBotRuns] = useState<any[]>([]);
+  const [ocrLoading, setOcrLoading] = useState<string | null>(null);
+  const [ocrResult, setOcrResult] = useState<string | null>(null);
 
   const callAdmin = async (action: string, params: Record<string, any> = {}) => {
     const { data, error } = await supabase.functions.invoke('admin-actions', {
@@ -821,14 +823,51 @@ export default function Admin() {
         </DialogContent>
       </Dialog>
 
-      {/* Screenshot Dialog */}
-      <Dialog open={!!screenshotUrl} onOpenChange={() => setScreenshotUrl(null)}>
+      {/* Screenshot Dialog with OCR */}
+      <Dialog open={!!screenshotUrl} onOpenChange={() => { setScreenshotUrl(null); setOcrResult(null); }}>
         <DialogContent className="bg-card border-border max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-gaming">Payment Screenshot</DialogTitle>
           </DialogHeader>
           {screenshotUrl && (
-            <img src={screenshotUrl} alt="Payment screenshot" className="w-full rounded-lg" />
+            <div className="space-y-3">
+              <img src={screenshotUrl} alt="Payment screenshot" className="w-full rounded-lg" />
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={ocrLoading === screenshotUrl}
+                  onClick={async () => {
+                    setOcrLoading(screenshotUrl);
+                    setOcrResult(null);
+                    try {
+                      const { data, error } = await supabase.functions.invoke('ocr-receipt', {
+                        body: { screenshot_path: screenshotUrl },
+                      });
+                      if (error) throw error;
+                      setOcrResult(data?.transaction_id || 'NOT_FOUND');
+                    } catch (err: any) {
+                      toast.error('OCR failed: ' + (err.message || 'Unknown error'));
+                    }
+                    setOcrLoading(null);
+                  }}
+                >
+                  <ScanText className="h-4 w-4 mr-1" />
+                  {ocrLoading === screenshotUrl ? 'Scanning...' : 'Extract Transaction ID'}
+                </Button>
+                {ocrResult && ocrResult !== 'NOT_FOUND' && (
+                  <div className="flex items-center gap-1 bg-muted px-3 py-1 rounded-lg">
+                    <span className="text-sm font-mono text-primary">{ocrResult}</span>
+                    <Button variant="ghost" size="sm" onClick={() => { navigator.clipboard.writeText(ocrResult); toast.success('Copied!'); }}>
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+                {ocrResult === 'NOT_FOUND' && (
+                  <span className="text-sm text-muted-foreground">Transaction ID not found</span>
+                )}
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>

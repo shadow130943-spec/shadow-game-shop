@@ -83,7 +83,7 @@ export default function Admin() {
   const [deposits, setDeposits] = useState<PendingDeposit[]>([]);
   const [orderHistory, setOrderHistory] = useState<OrderHistory[]>([]);
   const [gameOrders, setGameOrders] = useState<GameOrder[]>([]);
-  const [gameOrderHistory, setGameOrderHistory] = useState<GameOrder[]>([]);
+  
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [transferCode, setTransferCode] = useState('');
   const [transferAmount, setTransferAmount] = useState('');
@@ -113,13 +113,12 @@ export default function Admin() {
 
   const loadData = async () => {
     try {
-      const [statsData, depositsData, usersData, historyData, gameOrdersData, gameHistoryData, productsData] = await Promise.all([
+      const [statsData, depositsData, usersData, historyData, gameOrdersData, productsData] = await Promise.all([
         callAdmin('get_stats'),
         callAdmin('get_pending_deposits'),
         callAdmin('get_all_users'),
         callAdmin('get_order_history'),
         callAdmin('get_pending_game_orders'),
-        callAdmin('get_game_order_history'),
         callAdmin('get_products_with_items'),
       ]);
       setStats(statsData);
@@ -127,7 +126,6 @@ export default function Admin() {
       setUsers(usersData.users || []);
       setOrderHistory(historyData.orders || []);
       setGameOrders(gameOrdersData.orders || []);
-      setGameOrderHistory(gameHistoryData.orders || []);
       setAdminProducts(productsData.products || []);
       setAdminProductItems(productsData.items || []);
     } catch (err: any) {
@@ -321,9 +319,6 @@ export default function Admin() {
             </TabsTrigger>
             <TabsTrigger value="history" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
               <History className="h-4 w-4 mr-1" /> Dep History
-            </TabsTrigger>
-            <TabsTrigger value="game-history" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
-              <Gamepad2 className="h-4 w-4 mr-1" /> Game History
             </TabsTrigger>
             <TabsTrigger value="users" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
               <Users className="h-4 w-4 mr-1" /> Users
@@ -698,63 +693,6 @@ export default function Admin() {
                             <Eye className="h-4 w-4" />
                           </Button>
                         </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
-
-          {/* Game Order History Tab */}
-          <TabsContent value="game-history">
-            <div className="gaming-card rounded-xl overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Game</TableHead>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Game ID</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {gameOrderHistory.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                        No game order history
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    gameOrderHistory.map((o) => (
-                      <TableRow key={o.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{o.profiles?.name}</p>
-                            <p className="text-xs text-muted-foreground">{o.profiles?.user_code}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm font-medium">{o.product_name}</TableCell>
-                        <TableCell className="text-sm">{o.item_name}</TableCell>
-                        <TableCell className="font-semibold">{formatBalance(o.price)} ကျပ်</TableCell>
-                        <TableCell>
-                          <span className="font-mono text-sm">{o.game_id}</span>
-                          {o.server_id && <span className="text-xs text-muted-foreground ml-1">({o.server_id})</span>}
-                        </TableCell>
-                        <TableCell>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            o.status === 'success' 
-                              ? 'bg-gaming-success/20 text-gaming-success' 
-                              : 'bg-destructive/20 text-destructive'
-                          }`}>
-                            {o.status === 'success' ? <CheckCircle className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
-                            {o.status === 'success' ? 'Approved' : 'Rejected'}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-sm">{new Date(o.updated_at).toLocaleDateString()}</TableCell>
                       </TableRow>
                     ))
                   )}

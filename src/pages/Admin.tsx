@@ -83,7 +83,7 @@ export default function Admin() {
   const [deposits, setDeposits] = useState<PendingDeposit[]>([]);
   const [orderHistory, setOrderHistory] = useState<OrderHistory[]>([]);
   const [gameOrders, setGameOrders] = useState<GameOrder[]>([]);
-  const [gameOrderHistory, setGameOrderHistory] = useState<GameOrder[]>([]);
+  
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [transferCode, setTransferCode] = useState('');
   const [transferAmount, setTransferAmount] = useState('');

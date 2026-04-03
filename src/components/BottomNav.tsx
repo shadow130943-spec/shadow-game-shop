@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Mail, User } from 'lucide-react';
+import { Home, Mail, User, RotateCw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -41,6 +41,7 @@ export function BottomNav() {
   const navItems = [
     { icon: Home, label: 'Shop', path: '/' },
     { icon: Mail, label: 'Message', path: '/notifications', badge: unreadCount },
+    { icon: RotateCw, label: 'Spin', path: '/spin' },
     { icon: User, label: 'Account', path: '/account' },
   ];
 

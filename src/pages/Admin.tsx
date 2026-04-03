@@ -113,13 +113,12 @@ export default function Admin() {
 
   const loadData = async () => {
     try {
-      const [statsData, depositsData, usersData, historyData, gameOrdersData, gameHistoryData, productsData] = await Promise.all([
+      const [statsData, depositsData, usersData, historyData, gameOrdersData, productsData] = await Promise.all([
         callAdmin('get_stats'),
         callAdmin('get_pending_deposits'),
         callAdmin('get_all_users'),
         callAdmin('get_order_history'),
         callAdmin('get_pending_game_orders'),
-        callAdmin('get_game_order_history'),
         callAdmin('get_products_with_items'),
       ]);
       setStats(statsData);
@@ -127,7 +126,6 @@ export default function Admin() {
       setUsers(usersData.users || []);
       setOrderHistory(historyData.orders || []);
       setGameOrders(gameOrdersData.orders || []);
-      setGameOrderHistory(gameHistoryData.orders || []);
       setAdminProducts(productsData.products || []);
       setAdminProductItems(productsData.items || []);
     } catch (err: any) {

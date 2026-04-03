@@ -701,63 +701,6 @@ export default function Admin() {
             </div>
           </TabsContent>
 
-          {/* Game Order History Tab */}
-          <TabsContent value="game-history">
-            <div className="gaming-card rounded-xl overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Game</TableHead>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Game ID</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {gameOrderHistory.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                        No game order history
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    gameOrderHistory.map((o) => (
-                      <TableRow key={o.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{o.profiles?.name}</p>
-                            <p className="text-xs text-muted-foreground">{o.profiles?.user_code}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm font-medium">{o.product_name}</TableCell>
-                        <TableCell className="text-sm">{o.item_name}</TableCell>
-                        <TableCell className="font-semibold">{formatBalance(o.price)} ကျပ်</TableCell>
-                        <TableCell>
-                          <span className="font-mono text-sm">{o.game_id}</span>
-                          {o.server_id && <span className="text-xs text-muted-foreground ml-1">({o.server_id})</span>}
-                        </TableCell>
-                        <TableCell>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            o.status === 'success' 
-                              ? 'bg-gaming-success/20 text-gaming-success' 
-                              : 'bg-destructive/20 text-destructive'
-                          }`}>
-                            {o.status === 'success' ? <CheckCircle className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
-                            {o.status === 'success' ? 'Approved' : 'Rejected'}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-sm">{new Date(o.updated_at).toLocaleDateString()}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
-
           {/* Users Tab */}
           <TabsContent value="users">
             <div className="gaming-card rounded-xl overflow-hidden">

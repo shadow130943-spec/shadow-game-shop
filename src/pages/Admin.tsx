@@ -320,9 +320,6 @@ export default function Admin() {
             <TabsTrigger value="history" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
               <History className="h-4 w-4 mr-1" /> Dep History
             </TabsTrigger>
-            <TabsTrigger value="game-history" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
-              <Gamepad2 className="h-4 w-4 mr-1" /> Game History
-            </TabsTrigger>
             <TabsTrigger value="users" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">
               <Users className="h-4 w-4 mr-1" /> Users
             </TabsTrigger>

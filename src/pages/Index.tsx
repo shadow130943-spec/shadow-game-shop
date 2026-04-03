@@ -3,6 +3,7 @@ import { Header } from '@/components/Header';
 import { SearchBar } from '@/components/SearchBar';
 import { ProductGrid } from '@/components/ProductGrid';
 import { BottomNav } from '@/components/BottomNav';
+import { HeroBanner } from '@/components/HeroBanner';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Gamepad2 } from 'lucide-react';
@@ -60,6 +61,11 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header />
+
+      {/* Hero Banner */}
+      <div className="py-2">
+        <HeroBanner />
+      </div>
 
       {/* Action Buttons */}
       <div className="px-4 py-2 flex gap-3">

@@ -16,6 +16,7 @@ import Admin from "./pages/Admin";
 import AdminRoute from "./components/AdminRoute";
 import Account from "./pages/Account";
 import Notifications from "./pages/Notifications";
+import Spin from "./pages/Spin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
             <Route path="/account" element={<Account />} />
             <Route path="/notifications" element={<Notifications />} />
+            <Route path="/spin" element={<Spin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

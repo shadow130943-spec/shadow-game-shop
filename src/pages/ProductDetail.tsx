@@ -143,7 +143,11 @@ export default function ProductDetail() {
   }, [gameId, serverId]);
 
   const handleNameCheck = async () => {
-    if (!product || !gameType) return;
+    console.log('[NameCheck] triggered', { product: product?.name, gameType, gameId, serverId });
+    if (!product || !gameType) {
+      console.log('[NameCheck] aborted: no product or gameType');
+      return;
+    }
     if (!gameId.trim()) { toast.error('Game Id ထည့်ပါ'); return; }
     if (gameType === 'mlbb' && !serverId.trim()) { toast.error('Server Id ထည့်ပါ'); return; }
 
@@ -151,13 +155,14 @@ export default function ProductDetail() {
     setCheckedName(null);
     setNameCheckSuccess(false);
 
-    try {
-      const payload = {
-        game: gameType,
-        game_id: gameId.trim(),
-        server_id: gameType === 'mlbb' ? serverId.trim() : '',
-      };
+    const payload = {
+      game: gameType,
+      game_id: gameId.trim(),
+      server_id: gameType === 'mlbb' ? serverId.trim() : '',
+    };
+    console.log('[NameCheck] sending payload:', payload);
 
+    try {
       const res = await fetch(`${REPLIT_API_BASE}/api/check-name`, {
         method: 'POST',
         headers: {
@@ -168,16 +173,18 @@ export default function ProductDetail() {
       });
 
       const data = await res.json();
+      console.log('[NameCheck] response:', { status: res.status, data });
 
-      if (res.ok && data.name) {
+      if (data.success === true && data.name) {
         setCheckedName(data.name);
         setNameCheckSuccess(true);
-        toast.success('အကောင့်အမည် တွေ့ပါပြီ!');
+        toast.success(`အကောင့်အမည်: ${data.name}`);
       } else {
-        toast.error(data.error || data.message || 'အကောင့် ရှာမတွေ့ပါ');
+        toast.error(data.message || 'အကောင့် ရှာမတွေ့ပါ');
         setNameCheckSuccess(false);
       }
     } catch (err: any) {
+      console.error('[NameCheck] error:', err);
       toast.error('API ချိတ်ဆက်မှု မအောင်မြင်ပါ');
       setNameCheckSuccess(false);
     }

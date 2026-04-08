@@ -201,6 +201,7 @@ export default function ProductDetail() {
           game_id: gameId.trim(),
           server_id: gameType === 'mlbb' ? serverId.trim() : '',
           product_key: selectedItem.name,
+          pmethod: 'usecoin',
         };
 
         const buyRes = await fetch(`${REPLIT_API_BASE}/api/buy`, {
@@ -213,8 +214,8 @@ export default function ProductDetail() {
         });
 
         const buyData = await buyRes.json();
-        if (!buyRes.ok) {
-          throw new Error(buyData.error || buyData.message || 'API purchase failed');
+        if (!buyData.success) {
+          throw new Error(buyData.message || 'API purchase failed');
         }
       }
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ShoppingCart, Link2, Globe } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Link2, Globe, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -26,7 +26,11 @@ interface Product {
   image_url: string | null;
 }
 
+const REPLIT_API_BASE = 'https://3e974ca8-e680-465e-ab44-9a44f94305ea-00-2ydkonjceaflg.janeway.replit.dev';
+const REPLIT_API_KEY = 'Shadow1309434872';
+
 const GAMES_WITH_SERVER_ID = ['Mobile Legends'];
+const PUBG_NAMES = ['PUBG', 'PUBG Mobile', 'PUBG MOBILE'];
 
 const SERVERS = [
   { value: 'global', label: 'Global' },
@@ -40,6 +44,12 @@ const CURRENCIES = [
   { value: 'mmk', label: 'မြန်မာကျပ် 🇲🇲', rate: 1 },
   { value: 'myr', label: 'မလေးRM 🇲🇾', rate: 0.0014 },
 ];
+
+function getGameType(productName: string): 'mlbb' | 'pubg' | null {
+  if (GAMES_WITH_SERVER_ID.includes(productName)) return 'mlbb';
+  if (PUBG_NAMES.some(n => productName.toLowerCase().includes(n.toLowerCase()))) return 'pubg';
+  return null;
+}
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
@@ -59,6 +69,11 @@ export default function ProductDetail() {
   const [serverId, setServerId] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [ordering, setOrdering] = useState(false);
+
+  // Name check state
+  const [checkedName, setCheckedName] = useState<string | null>(null);
+  const [nameCheckLoading, setNameCheckLoading] = useState(false);
+  const [nameCheckSuccess, setNameCheckSuccess] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -103,6 +118,8 @@ export default function ProductDetail() {
   }, {});
   const categories = Object.keys(groupedItems);
   const needsServerId = product ? GAMES_WITH_SERVER_ID.includes(product.name) : false;
+  const gameType = product ? getGameType(product.name) : null;
+  const supportsNameCheck = gameType !== null;
 
   const handleItemClick = (item: ProductItem) => {
     if (!user) {
@@ -114,18 +131,93 @@ export default function ProductDetail() {
     setGameId('');
     setServerId('');
     setConfirmed(false);
+    setCheckedName(null);
+    setNameCheckSuccess(false);
     setDialogOpen(true);
+  };
+
+  // Reset name check when IDs change
+  useEffect(() => {
+    setCheckedName(null);
+    setNameCheckSuccess(false);
+  }, [gameId, serverId]);
+
+  const handleNameCheck = async () => {
+    if (!product || !gameType) return;
+    if (!gameId.trim()) { toast.error('Game Id ထည့်ပါ'); return; }
+    if (gameType === 'mlbb' && !serverId.trim()) { toast.error('Server Id ထည့်ပါ'); return; }
+
+    setNameCheckLoading(true);
+    setCheckedName(null);
+    setNameCheckSuccess(false);
+
+    try {
+      const payload = {
+        game: gameType,
+        game_id: gameId.trim(),
+        server_id: gameType === 'mlbb' ? serverId.trim() : '',
+      };
+
+      const res = await fetch(`${REPLIT_API_BASE}/api/check-name`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-KEY': REPLIT_API_KEY,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.name) {
+        setCheckedName(data.name);
+        setNameCheckSuccess(true);
+        toast.success('အကောင့်အမည် တွေ့ပါပြီ!');
+      } else {
+        toast.error(data.error || data.message || 'အကောင့် ရှာမတွေ့ပါ');
+        setNameCheckSuccess(false);
+      }
+    } catch (err: any) {
+      toast.error('API ချိတ်ဆက်မှု မအောင်မြင်ပါ');
+      setNameCheckSuccess(false);
+    }
+    setNameCheckLoading(false);
   };
 
   const handleOrder = async () => {
     if (!selectedItem || !user || !product) return;
     if (!gameId.trim()) { toast.error('Game Id ထည့်ပါ'); return; }
     if (needsServerId && !serverId.trim()) { toast.error('Server Id ထည့်ပါ'); return; }
+    if (supportsNameCheck && !nameCheckSuccess) { toast.error('အကောင့်အမည် အရင်စစ်ဆေးပါ'); return; }
     if (!confirmed) { toast.error('အချက်အလက်များမှန်ကန်ပါတယ် ကို အတည်ပြုပါ'); return; }
     const finalPrice = getPrice(selectedItem.price);
     if (walletBalance < finalPrice) { toast.error('လက်ကျန်ငွေ မလုံလောက်ပါ'); return; }
     setOrdering(true);
     try {
+      // Call Replit buy API if supported
+      if (gameType) {
+        const buyPayload = {
+          game: gameType,
+          game_id: gameId.trim(),
+          server_id: gameType === 'mlbb' ? serverId.trim() : '',
+          product_key: selectedItem.name,
+        };
+
+        const buyRes = await fetch(`${REPLIT_API_BASE}/api/buy`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-KEY': REPLIT_API_KEY,
+          },
+          body: JSON.stringify(buyPayload),
+        });
+
+        const buyData = await buyRes.json();
+        if (!buyRes.ok) {
+          throw new Error(buyData.error || buyData.message || 'API purchase failed');
+        }
+      }
+
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ wallet_balance: walletBalance - finalPrice })
@@ -177,6 +269,8 @@ export default function ProductDetail() {
       </div>
     );
   }
+
+  const buyButtonDisabled = ordering || (supportsNameCheck && !nameCheckSuccess);
 
   return (
     <div className="min-h-screen bg-background pb-8">
@@ -303,9 +397,59 @@ export default function ProductDetail() {
                 <span className="text-muted-foreground font-bold">(</span>
                 <Input placeholder="Server Id" value={serverId} onChange={(e) => setServerId(e.target.value)} className="flex-1" />
                 <span className="text-muted-foreground font-bold">)</span>
+                {supportsNameCheck && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={handleNameCheck}
+                    disabled={nameCheckLoading || !gameId.trim() || !serverId.trim()}
+                    className="shrink-0 h-9 w-9"
+                  >
+                    {nameCheckLoading ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    ) : (
+                      <CheckCircle className={`h-5 w-5 ${nameCheckSuccess ? 'text-green-400' : 'text-muted-foreground'}`} />
+                    )}
+                  </Button>
+                )}
               </div>
             ) : (
-              <Input placeholder="Game Id" value={gameId} onChange={(e) => setGameId(e.target.value)} />
+              <div className="flex items-center gap-1">
+                <Input placeholder="Game Id" value={gameId} onChange={(e) => setGameId(e.target.value)} className="flex-1" />
+                {supportsNameCheck && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={handleNameCheck}
+                    disabled={nameCheckLoading || !gameId.trim()}
+                    className="shrink-0 h-9 w-9"
+                  >
+                    {nameCheckLoading ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    ) : (
+                      <CheckCircle className={`h-5 w-5 ${nameCheckSuccess ? 'text-green-400' : 'text-muted-foreground'}`} />
+                    )}
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* Name check result - magenta neon */}
+            {checkedName && nameCheckSuccess && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-lg px-4 py-2 text-center"
+                style={{
+                  color: '#ff00ff',
+                  textShadow: '0 0 8px rgba(255, 0, 255, 0.6), 0 0 20px rgba(255, 0, 255, 0.3)',
+                  background: 'rgba(255, 0, 255, 0.08)',
+                  border: '1px solid rgba(255, 0, 255, 0.25)',
+                }}
+              >
+                <p className="text-xs text-muted-foreground mb-0.5">အကောင့်အမည်</p>
+                <p className="text-base font-bold">{checkedName}</p>
+              </motion.div>
             )}
 
             <div>
@@ -334,8 +478,17 @@ export default function ProductDetail() {
               <Button variant="outline" className="rounded-full px-6" onClick={() => setDialogOpen(false)}>
                 မဝယ်သေးပါ
               </Button>
-              <Button className="rounded-full px-6 gaming-btn border-0" onClick={handleOrder} disabled={ordering}>
-                {ordering ? 'မှာယူနေပါသည်...' : 'ဝယ်မည်'}
+              <Button
+                className={`rounded-full px-6 border-0 ${buyButtonDisabled ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'gaming-btn'}`}
+                onClick={handleOrder}
+                disabled={buyButtonDisabled}
+              >
+                {ordering ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    မှာယူနေပါသည်...
+                  </span>
+                ) : 'ဝယ်မည်'}
               </Button>
             </div>
           </div>

@@ -204,29 +204,34 @@ export default function ProductDetail() {
     if (walletBalance < finalPrice) { toast.error('လက်ကျန်ငွေ မလုံလောက်ပါ'); return; }
     setOrdering(true);
     try {
-      // Call Replit buy API if supported
-      if (gameType) {
+      if (gameType === 'mlbb') {
+        // Use Apify proxy edge function for MLBB
+        const { data: buyData, error: buyError } = await supabase.functions.invoke('apify-proxy', {
+          body: {
+            mode: 'buy',
+            userId: gameId.trim(),
+            zoneId: serverId.trim(),
+            packageName: selectedItem.name,
+          },
+        });
+        if (buyError) throw new Error(buyError.message || 'Edge function error');
+        if (!buyData?.success) throw new Error(buyData?.message || 'Purchase failed');
+      } else if (gameType === 'pubg') {
+        // Use Replit API for PUBG
         const buyPayload = {
-          game: gameType,
+          game: 'pubg',
           game_id: gameId.trim(),
-          server_id: gameType === 'mlbb' ? serverId.trim() : '',
+          server_id: '',
           product_key: selectedItem.name,
           pmethod: 'usecoin',
         };
-
         const buyRes = await fetch(`${REPLIT_API_BASE}/api/buy`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-API-KEY': REPLIT_API_KEY,
-          },
+          headers: { 'Content-Type': 'application/json', 'X-API-KEY': REPLIT_API_KEY },
           body: JSON.stringify(buyPayload),
         });
-
         const buyData = await buyRes.json();
-        if (!buyData.success) {
-          throw new Error(buyData.message || 'API purchase failed');
-        }
+        if (!buyData.success) throw new Error(buyData.message || 'API purchase failed');
       }
 
       const { error: updateError } = await supabase

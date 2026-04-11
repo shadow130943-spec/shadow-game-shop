@@ -144,10 +144,7 @@ export default function ProductDetail() {
 
   const handleNameCheck = async () => {
     console.log('[NameCheck] triggered', { product: product?.name, gameType, gameId, serverId });
-    if (!product || !gameType) {
-      console.log('[NameCheck] aborted: no product or gameType');
-      return;
-    }
+    if (!product || !gameType) return;
     if (!gameId.trim()) { toast.error('Game Id ထည့်ပါ'); return; }
     if (gameType === 'mlbb' && !serverId.trim()) { toast.error('Server Id ထည့်ပါ'); return; }
 
@@ -155,38 +152,44 @@ export default function ProductDetail() {
     setCheckedName(null);
     setNameCheckSuccess(false);
 
-    const payload = {
-      game: gameType,
-      game_id: gameId.trim(),
-      server_id: gameType === 'mlbb' ? serverId.trim() : '',
-    };
-    console.log('[NameCheck] sending payload:', payload);
-
     try {
-      const res = await fetch(`${REPLIT_API_BASE}/api/check-name`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-KEY': REPLIT_API_KEY,
-        },
-        body: JSON.stringify(payload),
-      });
+      if (gameType === 'mlbb') {
+        // Use Apify proxy edge function for MLBB
+        const { data, error } = await supabase.functions.invoke('apify-proxy', {
+          body: { mode: 'check', userId: gameId.trim(), zoneId: serverId.trim() },
+        });
+        console.log('[NameCheck] apify-proxy response:', { data, error });
 
-      const data = await res.json();
-      console.log('[NameCheck] response:', { status: res.status, data });
-
-      if (data.success === true && data.name) {
-        setCheckedName(data.name);
-        setNameCheckSuccess(true);
-        toast.success(`အကောင့်အမည်: ${data.name}`);
+        if (error) throw new Error(error.message || 'Edge function error');
+        if (data?.success === true && data?.name) {
+          setCheckedName(data.name);
+          setNameCheckSuccess(true);
+          toast.success(`အကောင့်အမည်: ${data.name}`);
+        } else {
+          toast.error(data?.message || 'အကောင့် ရှာမတွေ့ပါ');
+        }
       } else {
-        toast.error(data.message || 'အကောင့် ရှာမတွေ့ပါ');
-        setNameCheckSuccess(false);
+        // Use Replit API for PUBG
+        const payload = { game: gameType, game_id: gameId.trim(), server_id: '' };
+        const res = await fetch(`${REPLIT_API_BASE}/api/check-name`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-API-KEY': REPLIT_API_KEY },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        console.log('[NameCheck] replit response:', { status: res.status, data });
+
+        if (data.success === true && data.name) {
+          setCheckedName(data.name);
+          setNameCheckSuccess(true);
+          toast.success(`အကောင့်အမည်: ${data.name}`);
+        } else {
+          toast.error(data.message || 'အကောင့် ရှာမတွေ့ပါ');
+        }
       }
     } catch (err: any) {
       console.error('[NameCheck] error:', err);
       toast.error('API ချိတ်ဆက်မှု မအောင်မြင်ပါ');
-      setNameCheckSuccess(false);
     }
     setNameCheckLoading(false);
   };
@@ -201,29 +204,34 @@ export default function ProductDetail() {
     if (walletBalance < finalPrice) { toast.error('လက်ကျန်ငွေ မလုံလောက်ပါ'); return; }
     setOrdering(true);
     try {
-      // Call Replit buy API if supported
-      if (gameType) {
+      if (gameType === 'mlbb') {
+        // Use Apify proxy edge function for MLBB
+        const { data: buyData, error: buyError } = await supabase.functions.invoke('apify-proxy', {
+          body: {
+            mode: 'buy',
+            userId: gameId.trim(),
+            zoneId: serverId.trim(),
+            packageName: selectedItem.name,
+          },
+        });
+        if (buyError) throw new Error(buyError.message || 'Edge function error');
+        if (!buyData?.success) throw new Error(buyData?.message || 'Purchase failed');
+      } else if (gameType === 'pubg') {
+        // Use Replit API for PUBG
         const buyPayload = {
-          game: gameType,
+          game: 'pubg',
           game_id: gameId.trim(),
-          server_id: gameType === 'mlbb' ? serverId.trim() : '',
+          server_id: '',
           product_key: selectedItem.name,
           pmethod: 'usecoin',
         };
-
         const buyRes = await fetch(`${REPLIT_API_BASE}/api/buy`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-API-KEY': REPLIT_API_KEY,
-          },
+          headers: { 'Content-Type': 'application/json', 'X-API-KEY': REPLIT_API_KEY },
           body: JSON.stringify(buyPayload),
         });
-
         const buyData = await buyRes.json();
-        if (!buyData.success) {
-          throw new Error(buyData.message || 'API purchase failed');
-        }
+        if (!buyData.success) throw new Error(buyData.message || 'API purchase failed');
       }
 
       const { error: updateError } = await supabase

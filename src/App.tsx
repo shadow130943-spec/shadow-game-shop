@@ -19,6 +19,7 @@ import Notifications from "./pages/Notifications";
 import Spin from "./pages/Spin";
 import DigitalShop from "./pages/DigitalShop";
 import DigitalShopCategory from "./pages/DigitalShopCategory";
+import DigitalOrders from "./pages/DigitalOrders";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

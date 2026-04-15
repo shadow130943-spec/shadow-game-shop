@@ -17,6 +17,8 @@ import AdminRoute from "./components/AdminRoute";
 import Account from "./pages/Account";
 import Notifications from "./pages/Notifications";
 import Spin from "./pages/Spin";
+import DigitalShop from "./pages/DigitalShop";
+import DigitalShopCategory from "./pages/DigitalShopCategory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +48,8 @@ const App = () => (
             <Route path="/account" element={<Account />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/spin" element={<Spin />} />
+            <Route path="/digital-shop" element={<DigitalShop />} />
+            <Route path="/digital-shop/:category" element={<DigitalShopCategory />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

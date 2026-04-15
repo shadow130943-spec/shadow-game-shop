@@ -286,6 +286,54 @@ export type Database = {
         }
         Relationships: []
       }
+      services: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          max: number
+          min: number
+          name: string
+          rate: number
+          selling_rate: number
+          service_id: number
+          type: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max?: number
+          min?: number
+          name: string
+          rate?: number
+          selling_rate?: number
+          service_id: number
+          type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max?: number
+          min?: number
+          name?: string
+          rate?: number
+          selling_rate?: number
+          service_id?: number
+          type?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string

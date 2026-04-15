@@ -70,13 +70,16 @@ Deno.serve(async (req) => {
 
     if (action === 'add') {
       // Place order
-      const { service, link, quantity } = params
+      const { service, link, quantity, comments } = params
       const formData = new URLSearchParams()
       formData.append('key', API_KEY)
       formData.append('action', 'add')
       formData.append('service', String(service))
       formData.append('link', link || '')
       formData.append('quantity', String(quantity))
+      if (comments) {
+        formData.append('comments', comments)
+      }
 
       const res = await fetch(SHWEBOOST_API, {
         method: 'POST',

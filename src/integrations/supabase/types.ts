@@ -83,6 +83,48 @@ export type Database = {
         }
         Relationships: []
       }
+      digital_orders: {
+        Row: {
+          charge: number
+          created_at: string
+          external_order_id: string | null
+          id: string
+          link: string
+          quantity: number
+          service_id: number
+          service_name: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          charge?: number
+          created_at?: string
+          external_order_id?: string | null
+          id?: string
+          link: string
+          quantity: number
+          service_id: number
+          service_name: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          charge?: number
+          created_at?: string
+          external_order_id?: string | null
+          id?: string
+          link?: string
+          quantity?: number
+          service_id?: number
+          service_name?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       game_orders: {
         Row: {
           admin_note: string | null

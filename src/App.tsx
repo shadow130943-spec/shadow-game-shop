@@ -51,6 +51,7 @@ const App = () => (
             <Route path="/spin" element={<Spin />} />
             <Route path="/digital-shop" element={<DigitalShop />} />
             <Route path="/digital-shop/:category" element={<DigitalShopCategory />} />
+            <Route path="/digital-orders" element={<DigitalOrders />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

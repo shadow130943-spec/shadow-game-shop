@@ -83,48 +83,6 @@ export type Database = {
         }
         Relationships: []
       }
-      digital_orders: {
-        Row: {
-          charge: number
-          created_at: string
-          external_order_id: string | null
-          id: string
-          link: string
-          quantity: number
-          service_id: number
-          service_name: string
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          charge?: number
-          created_at?: string
-          external_order_id?: string | null
-          id?: string
-          link: string
-          quantity: number
-          service_id: number
-          service_name: string
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          charge?: number
-          created_at?: string
-          external_order_id?: string | null
-          id?: string
-          link?: string
-          quantity?: number
-          service_id?: number
-          service_name?: string
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       game_orders: {
         Row: {
           admin_note: string | null
@@ -133,8 +91,8 @@ export type Database = {
           id: string
           item_name: string
           price: number
-          product_id: string
-          product_item_id: string
+          product_id: string | null
+          product_item_id: string | null
           product_name: string
           server_id: string | null
           status: string
@@ -148,8 +106,8 @@ export type Database = {
           id?: string
           item_name: string
           price: number
-          product_id: string
-          product_item_id: string
+          product_id?: string | null
+          product_item_id?: string | null
           product_name: string
           server_id?: string | null
           status?: string
@@ -163,8 +121,8 @@ export type Database = {
           id?: string
           item_name?: string
           price?: number
-          product_id?: string
-          product_item_id?: string
+          product_id?: string | null
+          product_item_id?: string | null
           product_name?: string
           server_id?: string | null
           status?: string
@@ -325,54 +283,6 @@ export type Database = {
           user_code?: string | null
           user_id?: string
           wallet_balance?: number
-        }
-        Relationships: []
-      }
-      services: {
-        Row: {
-          category: string
-          created_at: string
-          description: string | null
-          id: string
-          is_active: boolean
-          max: number
-          min: number
-          name: string
-          rate: number
-          selling_rate: number
-          service_id: number
-          type: string | null
-          updated_at: string
-        }
-        Insert: {
-          category: string
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          max?: number
-          min?: number
-          name: string
-          rate?: number
-          selling_rate?: number
-          service_id: number
-          type?: string | null
-          updated_at?: string
-        }
-        Update: {
-          category?: string
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          max?: number
-          min?: number
-          name?: string
-          rate?: number
-          selling_rate?: number
-          service_id?: number
-          type?: string | null
-          updated_at?: string
         }
         Relationships: []
       }

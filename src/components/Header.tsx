@@ -11,7 +11,7 @@ export function Header() {
   return (
     <header className="w-full px-4 py-3 flex items-center justify-between">
       <Link to="/" className="text-lg font-bold text-foreground">
-        Y Gyi
+        YK Game Shop
       </Link>
       {user && (
         <div className="px-4 py-1.5 rounded-full bg-card border border-border text-sm font-medium text-foreground">

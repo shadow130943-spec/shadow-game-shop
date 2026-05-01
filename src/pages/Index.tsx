@@ -6,7 +6,7 @@ import { BottomNav } from '@/components/BottomNav';
 import { HeroBanner } from '@/components/HeroBanner';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Gamepad2, Sparkles } from 'lucide-react';
+import { Gamepad2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -105,24 +105,6 @@ const Index = () => {
       {/* Search */}
       <div className="px-4 py-3">
         <SearchBar value={searchQuery} onChange={setSearchQuery} />
-      </div>
-
-      {/* Digital Shop Banner */}
-      <div className="px-4 py-2">
-        <button
-          onClick={() => navigate('/digital-shop')}
-          className="w-full relative overflow-hidden rounded-xl p-4 border border-cyan-500/20 bg-gradient-to-r from-cyan-500/10 via-card to-fuchsia-500/10 hover:border-cyan-500/40 transition-all text-left"
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-cyan-500/10">
-              <Sparkles className="h-5 w-5 text-cyan-400" />
-            </div>
-            <div>
-              <h3 className="font-bold text-foreground text-sm">Digital Shop</h3>
-              <p className="text-xs text-muted-foreground">TikTok, Facebook, Telegram & More</p>
-            </div>
-          </div>
-        </button>
       </div>
 
       {/* Products */}

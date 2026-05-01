@@ -74,7 +74,7 @@ serve(async (req) => {
       const formattedAmount = new Intl.NumberFormat('my-MM').format(deposit.amount);
       await supabaseAdmin.from("notifications").insert({
         user_id: deposit.user_id,
-        message: `သင်ထည့်ထားသောငွေ ${formattedAmount} ကျပ် ဖြည့်သွင်းပြီးပါပြီ။ SHADOW GAME SHOP ကိုအသုံးပြုသည့်အတွက်ကျေးဇူးတင်ပါတယ်။`,
+        message: `သင်ထည့်ထားသောငွေ ${formattedAmount} ကျပ် ဖြည့်သွင်းပြီးပါပြီ။ YK Game Shop ကိုအသုံးပြုသည့်အတွက်ကျေးဇူးတင်ပါတယ်။`,
       });
 
       return new Response(JSON.stringify({ success: true }), {

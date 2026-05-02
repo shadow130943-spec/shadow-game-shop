@@ -11,26 +11,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
-interface ProductItem {
-  id: string;
-  category: string;
-  name: string;
-  price: number;
-  image_url: string | null;
-  sort_order: number;
+interface Package {
+  product_id: string;
+  catalogue_name: string;
+  price_usd: number;
+  price_mmk: number;
+  reseller_price_mmk: number;
+  hidden?: boolean;
 }
 
-interface Product {
-  id: string;
-  name: string;
-  image_url: string | null;
+interface GameData {
+  game_code: string;
+  game_name: string;
+  packages: Package[];
 }
 
-const REPLIT_API_BASE = 'https://3e974ca8-e680-465e-ab44-9a44f94305ea-00-2ydkonjceaflg.janeway.replit.dev';
-const REPLIT_API_KEY = 'Shadow1309434872';
-
-const GAMES_WITH_SERVER_ID = ['Mobile Legends'];
-const PUBG_NAMES = ['PUBG', 'PUBG Mobile', 'PUBG MOBILE'];
+const GAMES_WITH_SERVER_ID = ['mlbb', 'magic_chess_gogo'];
 
 const SERVERS = [
   { value: 'global', label: 'Global' },
@@ -41,49 +37,48 @@ const SERVERS = [
 ];
 
 const CURRENCIES = [
-  { value: 'mmk', label: 'မြန်မာကျပ် 🇲🇲', rate: 1 },
-  { value: 'myr', label: 'မလေးRM 🇲🇾', rate: 0.0014 },
+  { value: 'mmk', label: 'မြန်မာကျပ် 🇲🇲' },
+  { value: 'usd', label: 'USD 💵' },
 ];
 
-function getGameType(productName: string): 'mlbb' | 'pubg' | null {
-  if (GAMES_WITH_SERVER_ID.includes(productName)) return 'mlbb';
-  if (PUBG_NAMES.some(n => productName.toLowerCase().includes(n.toLowerCase()))) return 'pubg';
-  return null;
-}
-
 export default function ProductDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams<{ id: string }>(); // id = game_code
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [items, setItems] = useState<ProductItem[]>([]);
+  const [game, setGame] = useState<GameData | null>(null);
   const [walletBalance, setWalletBalance] = useState(0);
   const [isReseller, setIsReseller] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedServer, setSelectedServer] = useState('global');
   const [selectedCurrency, setSelectedCurrency] = useState('mmk');
 
-  const [selectedItem, setSelectedItem] = useState<ProductItem | null>(null);
+  const [selectedPkg, setSelectedPkg] = useState<Package | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [gameId, setGameId] = useState('');
   const [serverId, setServerId] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [ordering, setOrdering] = useState(false);
 
-  // Name check state
   const [checkedName, setCheckedName] = useState<string | null>(null);
   const [nameCheckLoading, setNameCheckLoading] = useState(false);
   const [nameCheckSuccess, setNameCheckSuccess] = useState(false);
 
+  const needsServerId = id ? GAMES_WITH_SERVER_ID.includes(id) : false;
+
   useEffect(() => {
     if (!id) return;
-    const fetchData = async () => {
-      const [productRes, itemsRes] = await Promise.all([
-        supabase.from('products').select('id, name, image_url').eq('id', id).single(),
-        supabase.from('product_items').select('*').eq('product_id', id).eq('is_active', true).order('sort_order'),
-      ]);
-      if (productRes.data) setProduct(productRes.data);
-      if (itemsRes.data) setItems(itemsRes.data as ProductItem[]);
+    const load = async () => {
+      setLoading(true);
+      const { data, error } = await supabase.functions.invoke('shadow-gameshop', {
+        body: { action: 'listProducts' },
+      });
+      if (error || !data?.success) {
+        toast.error('ပစ္စည်းများ ဆွဲထုတ်၍မရပါ');
+      } else {
+        const found = (data.games || []).find((g: GameData) => g.game_code === id);
+        if (found) setGame(found);
+      }
+
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -97,37 +92,29 @@ export default function ProductDetail() {
       }
       setLoading(false);
     };
-    fetchData();
+    load();
   }, [id, user]);
 
-  const RESELLER_DISCOUNT = 0.97;
-  const getPrice = (price: number) => isReseller ? Math.floor(price * RESELLER_DISCOUNT) : price;
   const formatBalance = (n: number) => new Intl.NumberFormat('my-MM').format(n);
 
-  const currencyRate = CURRENCIES.find(c => c.value === selectedCurrency)?.rate || 1;
-  const formatPrice = (price: number) => {
-    const converted = price * currencyRate;
-    if (selectedCurrency === 'mmk') return `${formatBalance(Math.round(converted))} ကျပ်`;
-    return `RM ${converted.toFixed(2)}`;
+  const getMmkPrice = (pkg: Package) => isReseller ? pkg.reseller_price_mmk : pkg.price_mmk;
+  const formatPrice = (pkg: Package) => {
+    if (selectedCurrency === 'usd') return `$${pkg.price_usd.toFixed(2)}`;
+    return `${formatBalance(getMmkPrice(pkg))} ကျပ်`;
   };
 
-  const groupedItems = items.reduce<Record<string, ProductItem[]>>((acc, item) => {
-    if (!acc[item.category]) acc[item.category] = [];
-    acc[item.category].push(item);
-    return acc;
-  }, {});
-  const categories = Object.keys(groupedItems);
-  const needsServerId = product ? GAMES_WITH_SERVER_ID.includes(product.name) : false;
-  const gameType = product ? getGameType(product.name) : null;
-  const supportsNameCheck = gameType !== null;
+  useEffect(() => {
+    setCheckedName(null);
+    setNameCheckSuccess(false);
+  }, [gameId, serverId]);
 
-  const handleItemClick = (item: ProductItem) => {
+  const handlePackageClick = (pkg: Package) => {
     if (!user) {
       toast.error('ကျေးဇူးပြု၍ အကောင့်ဝင်ပါ');
       navigate('/login');
       return;
     }
-    setSelectedItem(item);
+    setSelectedPkg(pkg);
     setGameId('');
     setServerId('');
     setConfirmed(false);
@@ -136,103 +123,64 @@ export default function ProductDetail() {
     setDialogOpen(true);
   };
 
-  // Reset name check when IDs change
-  useEffect(() => {
-    setCheckedName(null);
-    setNameCheckSuccess(false);
-  }, [gameId, serverId]);
-
   const handleNameCheck = async () => {
-    console.log('[NameCheck] triggered', { product: product?.name, gameType, gameId, serverId });
-    if (!product || !gameType) return;
+    if (!game) return;
     if (!gameId.trim()) { toast.error('Game Id ထည့်ပါ'); return; }
-    if (gameType === 'mlbb' && !serverId.trim()) { toast.error('Server Id ထည့်ပါ'); return; }
+    if (needsServerId && !serverId.trim()) { toast.error('Server Id ထည့်ပါ'); return; }
 
     setNameCheckLoading(true);
     setCheckedName(null);
     setNameCheckSuccess(false);
 
     try {
-      if (gameType === 'mlbb') {
-        // Use Apify proxy edge function for MLBB
-        const { data, error } = await supabase.functions.invoke('apify-proxy', {
-          body: { mode: 'check', userId: gameId.trim(), zoneId: serverId.trim() },
-        });
-        console.log('[NameCheck] apify-proxy response:', { data, error });
+      const { data, error } = await supabase.functions.invoke('shadow-gameshop', {
+        body: {
+          action: 'checkPlayerId',
+          game: game.game_code,
+          user_id: gameId.trim(),
+          server_id: needsServerId ? serverId.trim() : '',
+        },
+      });
+      if (error) throw new Error(error.message || 'API error');
 
-        if (error) throw new Error(error.message || 'Edge function error');
-        if (data?.success === true && data?.name) {
-          setCheckedName(data.name);
-          setNameCheckSuccess(true);
-          toast.success(`အကောင့်အမည်: ${data.name}`);
-        } else {
-          toast.error(data?.message || 'အကောင့် ရှာမတွေ့ပါ');
-        }
+      if (data?.valid === 'valid' && data?.name) {
+        setCheckedName(data.name);
+        setNameCheckSuccess(true);
+        toast.success(`အကောင့်အမည်: ${data.name}`);
       } else {
-        // Use Replit API for PUBG
-        const payload = { game: gameType, game_id: gameId.trim(), server_id: '' };
-        const res = await fetch(`${REPLIT_API_BASE}/api/check-name`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-API-KEY': REPLIT_API_KEY },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json();
-        console.log('[NameCheck] replit response:', { status: res.status, data });
-
-        if (data.success === true && data.name) {
-          setCheckedName(data.name);
-          setNameCheckSuccess(true);
-          toast.success(`အကောင့်အမည်: ${data.name}`);
-        } else {
-          toast.error(data.message || 'အကောင့် ရှာမတွေ့ပါ');
-        }
+        toast.error(data?.message || 'အကောင့် ရှာမတွေ့ပါ');
       }
     } catch (err: any) {
-      console.error('[NameCheck] error:', err);
-      toast.error('API ချိတ်ဆက်မှု မအောင်မြင်ပါ');
+      console.error('[checkPlayerId] error:', err);
+      toast.error(err.message || 'API ချိတ်ဆက်မှု မအောင်မြင်ပါ');
     }
     setNameCheckLoading(false);
   };
 
   const handleOrder = async () => {
-    if (!selectedItem || !user || !product) return;
+    if (!selectedPkg || !user || !game) return;
     if (!gameId.trim()) { toast.error('Game Id ထည့်ပါ'); return; }
     if (needsServerId && !serverId.trim()) { toast.error('Server Id ထည့်ပါ'); return; }
-    if (supportsNameCheck && !nameCheckSuccess) { toast.error('အကောင့်အမည် အရင်စစ်ဆေးပါ'); return; }
+    if (!nameCheckSuccess) { toast.error('အကောင့်အမည် အရင်စစ်ဆေးပါ'); return; }
     if (!confirmed) { toast.error('အချက်အလက်များမှန်ကန်ပါတယ် ကို အတည်ပြုပါ'); return; }
-    const finalPrice = getPrice(selectedItem.price);
+
+    const finalPrice = getMmkPrice(selectedPkg);
     if (walletBalance < finalPrice) { toast.error('လက်ကျန်ငွေ မလုံလောက်ပါ'); return; }
+
     setOrdering(true);
     try {
-      if (gameType === 'mlbb') {
-        // Use Apify proxy edge function for MLBB
-        const { data: buyData, error: buyError } = await supabase.functions.invoke('apify-proxy', {
-          body: {
-            mode: 'buy',
-            userId: gameId.trim(),
-            zoneId: serverId.trim(),
-            packageName: selectedItem.name,
-          },
-        });
-        if (buyError) throw new Error(buyError.message || 'Edge function error');
-        if (!buyData?.success) throw new Error(buyData?.message || 'Purchase failed');
-      } else if (gameType === 'pubg') {
-        // Use Replit API for PUBG
-        const buyPayload = {
-          game: 'pubg',
-          game_id: gameId.trim(),
-          server_id: '',
-          product_key: selectedItem.name,
-          pmethod: 'usecoin',
-        };
-        const buyRes = await fetch(`${REPLIT_API_BASE}/api/buy`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-API-KEY': REPLIT_API_KEY },
-          body: JSON.stringify(buyPayload),
-        });
-        const buyData = await buyRes.json();
-        if (!buyData.success) throw new Error(buyData.message || 'API purchase failed');
-      }
+      const { data, error } = await supabase.functions.invoke('shadow-gameshop', {
+        body: {
+          action: 'placeOrder',
+          game: game.game_code,
+          catalogue_name: selectedPkg.catalogue_name,
+          player_id: gameId.trim(),
+          server_id: needsServerId ? serverId.trim() : '',
+          price_usd: selectedPkg.price_usd,
+        },
+      });
+      if (error) throw new Error(error.message || 'API error');
+      if (!data?.success) throw new Error(data?.message || 'Order failed');
 
       const { error: updateError } = await supabase
         .from('profiles')
@@ -240,26 +188,22 @@ export default function ProductDetail() {
         .eq('user_id', user.id);
       if (updateError) throw updateError;
 
-      const { error: orderError } = await supabase
-        .from('game_orders')
-        .insert({
-          user_id: user.id,
-          product_id: product.id,
-          product_item_id: selectedItem.id,
-          product_name: product.name,
-          item_name: selectedItem.name,
-          price: finalPrice,
-          game_id: gameId.trim(),
-          server_id: needsServerId ? serverId.trim() : null,
-        });
+      const { error: orderError } = await supabase.from('game_orders').insert({
+        user_id: user.id,
+        product_name: game.game_name,
+        item_name: selectedPkg.catalogue_name,
+        price: finalPrice,
+        game_id: gameId.trim(),
+        server_id: needsServerId ? serverId.trim() : null,
+      });
       if (orderError) throw orderError;
 
       supabase.functions.invoke('notify-admins', {
-        body: { product_name: product.name, item_name: selectedItem.name, price: finalPrice, game_id: gameId.trim() },
-      }).catch(err => console.error('Push notify error:', err));
+        body: { product_name: game.game_name, item_name: selectedPkg.catalogue_name, price: finalPrice, game_id: gameId.trim() },
+      }).catch((e) => console.error('Push notify error:', e));
 
       setWalletBalance(walletBalance - finalPrice);
-      toast.success(`${selectedItem.name} မှာယူပြီးပါပြီ!`);
+      toast.success(data.message || `${selectedPkg.catalogue_name} မှာယူပြီးပါပြီ!`);
       setDialogOpen(false);
     } catch (err: any) {
       toast.error(err.message || 'မှာယူ၍မရပါ');
@@ -275,10 +219,10 @@ export default function ProductDetail() {
     );
   }
 
-  if (!product) {
+  if (!game) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground">Product not found</p>
+        <p className="text-muted-foreground">Game not found</p>
         <Button variant="ghost" onClick={() => navigate('/')}>
           <ArrowLeft className="h-4 w-4 mr-2" /> Back
         </Button>
@@ -286,22 +230,21 @@ export default function ProductDetail() {
     );
   }
 
-  const buyButtonDisabled = ordering || (supportsNameCheck && !nameCheckSuccess);
+  const visiblePackages = game.packages.filter((p) => !p.hidden && p.price_mmk > 0);
+  const buyButtonDisabled = ordering || !nameCheckSuccess;
 
   return (
     <div className="min-h-screen bg-background pb-8">
-      {/* Header */}
       <div className="px-4 py-3 flex items-center justify-between border-b border-border">
         <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-lg font-bold truncate flex-1 text-center text-foreground">{product.name}</h1>
+        <h1 className="text-lg font-bold truncate flex-1 text-center text-foreground">{game.game_name}</h1>
         <div className="text-sm font-semibold text-primary whitespace-nowrap">
           {formatBalance(walletBalance)} ကျပ်
         </div>
       </div>
 
-      {/* Server Selection */}
       {needsServerId && (
         <div className="px-4 pt-4">
           <div className="flex items-center gap-2 mb-2">
@@ -326,7 +269,6 @@ export default function ProductDetail() {
         </div>
       )}
 
-      {/* Currency Selection */}
       <div className="px-4 pt-4">
         <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
           <SelectTrigger className="w-full bg-card border-border">
@@ -340,61 +282,42 @@ export default function ProductDetail() {
         </Select>
       </div>
 
-      {/* Categories & Items */}
-      <div className="px-4 py-4 space-y-6">
-        {categories.length === 0 ? (
+      <div className="px-4 py-4">
+        {visiblePackages.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
             <p>ပစ္စည်းများ မရှိသေးပါ</p>
           </div>
         ) : (
-          categories.map((category, catIdx) => (
-            <div key={category}>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                  {catIdx + 1}
-                </span>
-                <h2 className="text-base font-bold text-foreground">{category}</h2>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                {groupedItems[category].map((item) => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.2 }}
-                    onClick={() => handleItemClick(item)}
-                    className="gaming-card rounded-xl p-3 cursor-pointer gaming-card-hover flex flex-col items-center text-center"
-                  >
-                    <div className="w-14 h-14 mb-2 flex items-center justify-center">
-                      {item.image_url ? (
-                        <img src={item.image_url} alt={item.name} className="w-full h-full object-contain" />
-                      ) : (
-                        <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
-                          <ShoppingCart className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-xs font-medium text-foreground leading-tight mb-1 line-clamp-2">
-                      {item.name}
-                    </p>
-                    <p className="text-sm font-bold text-primary">
-                      {formatPrice(getPrice(item.price))}
-                    </p>
-                    {isReseller && (
-                      <p className="text-[10px] text-muted-foreground line-through">
-                        {formatPrice(item.price)}
-                      </p>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          ))
+          <div className="grid grid-cols-3 gap-2">
+            {visiblePackages.map((pkg) => (
+              <motion.div
+                key={pkg.product_id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => handlePackageClick(pkg)}
+                className="gaming-card rounded-xl p-3 cursor-pointer gaming-card-hover flex flex-col items-center text-center"
+              >
+                <div className="w-14 h-14 mb-2 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
+                    <ShoppingCart className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                </div>
+                <p className="text-xs font-medium text-foreground leading-tight mb-1 line-clamp-2">
+                  {pkg.catalogue_name}
+                </p>
+                <p className="text-sm font-bold text-primary">{formatPrice(pkg)}</p>
+                {isReseller && selectedCurrency === 'mmk' && (
+                  <p className="text-[10px] text-muted-foreground line-through">
+                    {formatBalance(pkg.price_mmk)} ကျပ်
+                  </p>
+                )}
+              </motion.div>
+            ))}
+          </div>
         )}
       </div>
 
-      {/* Order Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-sm mx-auto rounded-2xl">
           <DialogTitle className="text-center text-lg font-bold bg-muted -mx-6 -mt-6 px-6 py-4 rounded-t-2xl">
@@ -404,7 +327,7 @@ export default function ProductDetail() {
           <div className="space-y-4 pt-2">
             <div className="flex items-center gap-2 text-sm font-semibold">
               <Link2 className="h-4 w-4" />
-              {needsServerId ? 'Account Info' : 'Game Id'}
+              {needsServerId ? 'Account Info' : 'Player Id'}
             </div>
 
             {needsServerId ? (
@@ -413,44 +336,39 @@ export default function ProductDetail() {
                 <span className="text-muted-foreground font-bold">(</span>
                 <Input placeholder="Server Id" value={serverId} onChange={(e) => setServerId(e.target.value)} className="flex-1" />
                 <span className="text-muted-foreground font-bold">)</span>
-                {supportsNameCheck && (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={handleNameCheck}
-                    disabled={nameCheckLoading || !gameId.trim() || !serverId.trim()}
-                    className="shrink-0 h-9 w-9"
-                  >
-                    {nameCheckLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                    ) : (
-                      <CheckCircle className={`h-5 w-5 ${nameCheckSuccess ? 'text-green-400' : 'text-muted-foreground'}`} />
-                    )}
-                  </Button>
-                )}
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={handleNameCheck}
+                  disabled={nameCheckLoading || !gameId.trim() || !serverId.trim()}
+                  className="shrink-0 h-9 w-9"
+                >
+                  {nameCheckLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  ) : (
+                    <CheckCircle className={`h-5 w-5 ${nameCheckSuccess ? 'text-green-400' : 'text-muted-foreground'}`} />
+                  )}
+                </Button>
               </div>
             ) : (
               <div className="flex items-center gap-1">
-                <Input placeholder="Game Id" value={gameId} onChange={(e) => setGameId(e.target.value)} className="flex-1" />
-                {supportsNameCheck && (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={handleNameCheck}
-                    disabled={nameCheckLoading || !gameId.trim()}
-                    className="shrink-0 h-9 w-9"
-                  >
-                    {nameCheckLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                    ) : (
-                      <CheckCircle className={`h-5 w-5 ${nameCheckSuccess ? 'text-green-400' : 'text-muted-foreground'}`} />
-                    )}
-                  </Button>
-                )}
+                <Input placeholder="Player Id" value={gameId} onChange={(e) => setGameId(e.target.value)} className="flex-1" />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={handleNameCheck}
+                  disabled={nameCheckLoading || !gameId.trim()}
+                  className="shrink-0 h-9 w-9"
+                >
+                  {nameCheckLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  ) : (
+                    <CheckCircle className={`h-5 w-5 ${nameCheckSuccess ? 'text-green-400' : 'text-muted-foreground'}`} />
+                  )}
+                </Button>
               </div>
             )}
 
-            {/* Name check result - magenta neon */}
             {checkedName && nameCheckSuccess && (
               <motion.div
                 initial={{ opacity: 0, y: -5 }}
@@ -471,10 +389,10 @@ export default function ProductDetail() {
             <div>
               <p className="text-sm font-semibold text-muted-foreground mb-1">ပမာဏ</p>
               <div className="flex gap-2">
-                <div className="flex-1 bg-muted rounded-lg px-3 py-2 text-sm font-semibold">{selectedItem?.name}</div>
+                <div className="flex-1 bg-muted rounded-lg px-3 py-2 text-sm font-semibold">{selectedPkg?.catalogue_name}</div>
                 <div className="flex-1 bg-muted rounded-lg px-3 py-2 text-sm font-semibold">
-                  {selectedItem ? formatPrice(getPrice(selectedItem.price)) : '0 ကျပ်'}
-                  {isReseller && <span className="text-[10px] text-muted-foreground ml-1">(-3%)</span>}
+                  {selectedPkg ? formatPrice(selectedPkg) : '0 ကျပ်'}
+                  {isReseller && <span className="text-[10px] text-muted-foreground ml-1">(-2%)</span>}
                 </div>
               </div>
             </div>

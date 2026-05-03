@@ -286,6 +286,36 @@ export type Database = {
         }
         Relationships: []
       }
+      profit_margins: {
+        Row: {
+          catalogue_name: string | null
+          created_at: string
+          game_code: string | null
+          id: string
+          margin_percent: number
+          scope: string
+          updated_at: string
+        }
+        Insert: {
+          catalogue_name?: string | null
+          created_at?: string
+          game_code?: string | null
+          id?: string
+          margin_percent?: number
+          scope: string
+          updated_at?: string
+        }
+        Update: {
+          catalogue_name?: string | null
+          created_at?: string
+          game_code?: string | null
+          id?: string
+          margin_percent?: number
+          scope?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string

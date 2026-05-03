@@ -13,6 +13,7 @@ import DepositHistory from "./pages/DepositHistory";
 import GameOrderHistory from "./pages/GameOrderHistory";
 import ProductDetail from "./pages/ProductDetail";
 import Admin from "./pages/Admin";
+import AdminProfitSettings from "./pages/AdminProfitSettings";
 import AdminRoute from "./components/AdminRoute";
 import Account from "./pages/Account";
 import Notifications from "./pages/Notifications";
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/deposit-history" element={<DepositHistory />} />
             <Route path="/game-order-history" element={<GameOrderHistory />} />
             <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+            <Route path="/admin/profit-settings" element={<AdminRoute><AdminProfitSettings /></AdminRoute>} />
             <Route path="/account" element={<Account />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/spin" element={<Spin />} />

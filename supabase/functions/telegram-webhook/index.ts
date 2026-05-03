@@ -9,7 +9,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "content-type, x-telegram-bot-api-secret-token",
 };
 
-const ADMIN_HANDLE = "Shadow137200";
+// Admin username is captured dynamically from each callback_query.from
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -42,6 +42,7 @@ serve(async (req) => {
     const chatId = cb.message?.chat?.id;
     const originalCaption: string = cb.message?.caption || "";
     const actorUsername: string = cb.from?.username || cb.from?.first_name || "unknown";
+    const actorMention = cb.from?.username ? `@${actorUsername}` : actorUsername;
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -118,7 +119,7 @@ serve(async (req) => {
       });
 
       await editCaption(
-        `${originalCaption}\n\n✅ <b>APPROVED</b> by @${escapeHtml(ADMIN_HANDLE)} | New balance: <b>${newBalance} ကျပ်</b>`,
+        `${originalCaption}\n\n✅ <b>APPROVED</b> by ${escapeHtml(actorMention)} | New balance: <b>${newBalance} ကျပ်</b>`,
       );
       await answerCb("Approved ✅");
     } else {
@@ -131,7 +132,7 @@ serve(async (req) => {
       });
 
       await editCaption(
-        `${originalCaption}\n\n❌ <b>REJECTED</b> by @${escapeHtml(ADMIN_HANDLE)}`,
+        `${originalCaption}\n\n❌ <b>REJECTED</b> by ${escapeHtml(actorMention)}`,
       );
       await answerCb("Rejected ❌");
     }

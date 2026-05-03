@@ -391,6 +391,74 @@ serve(async (req) => {
       });
     }
 
+    if (action === "list_profit_margins") {
+      const { data, error } = await supabaseAdmin
+        .from("profit_margins")
+        .select("*")
+        .order("scope", { ascending: true })
+        .order("game_code", { ascending: true, nullsFirst: true })
+        .order("catalogue_name", { ascending: true, nullsFirst: true });
+      if (error) throw error;
+      return new Response(JSON.stringify({ margins: data || [] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "upsert_profit_margin") {
+      const MarginSchema = z.object({
+        scope: z.enum(["global", "game", "package"]),
+        game_code: z.string().trim().min(1).max(64).nullable().optional(),
+        catalogue_name: z.string().trim().min(1).max(128).nullable().optional(),
+        margin_percent: z.number().min(0).max(1000),
+      });
+      const parsed = MarginSchema.parse(params);
+      const row: any = {
+        scope: parsed.scope,
+        game_code: parsed.scope === "global" ? null : (parsed.game_code || null),
+        catalogue_name: parsed.scope === "package" ? (parsed.catalogue_name || null) : null,
+        margin_percent: parsed.margin_percent,
+      };
+      if (parsed.scope === "game" && !row.game_code) throw new Error("game_code required for game scope");
+      if (parsed.scope === "package" && (!row.game_code || !row.catalogue_name))
+        throw new Error("game_code and catalogue_name required for package scope");
+
+      // Manual upsert respecting unique partial indexes
+      let existingId: string | null = null;
+      if (parsed.scope === "global") {
+        const { data } = await supabaseAdmin.from("profit_margins").select("id").eq("scope", "global").maybeSingle();
+        existingId = data?.id || null;
+      } else if (parsed.scope === "game") {
+        const { data } = await supabaseAdmin.from("profit_margins").select("id")
+          .eq("scope", "game").eq("game_code", row.game_code).maybeSingle();
+        existingId = data?.id || null;
+      } else {
+        const { data } = await supabaseAdmin.from("profit_margins").select("id")
+          .eq("scope", "package").eq("game_code", row.game_code).eq("catalogue_name", row.catalogue_name).maybeSingle();
+        existingId = data?.id || null;
+      }
+
+      if (existingId) {
+        const { error } = await supabaseAdmin.from("profit_margins").update({ margin_percent: row.margin_percent }).eq("id", existingId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabaseAdmin.from("profit_margins").insert(row);
+        if (error) throw error;
+      }
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "delete_profit_margin") {
+      const id = params.id;
+      if (!id || typeof id !== "string") throw new Error("Invalid id");
+      const { error } = await supabaseAdmin.from("profit_margins").delete().eq("id", id);
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     throw new Error("Unknown action");
   } catch (error) {
     console.error('[Admin Action Error]', error instanceof Error ? error.message : error);

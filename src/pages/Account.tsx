@@ -97,32 +97,21 @@ export default function Account() {
       </div>
 
       {/* Telegram Links */}
-      <div className="mx-4 mt-4 grid grid-cols-3 gap-2">
-        <a href="https://t.me/ygyigameshop" target="_blank" rel="noopener noreferrer"
+      <div className="mx-4 mt-4 grid grid-cols-2 gap-2">
+        <a href="https://t.me/ykgaming2392024" target="_blank" rel="noopener noreferrer"
           className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-secondary/30 bg-secondary/10 hover:bg-secondary/20 transition-colors">
           <ExternalLink className="h-5 w-5 text-secondary" />
           <span className="text-[10px] text-secondary font-medium">Channel</span>
         </a>
-        <a href="https://t.me/ygyigameshop" target="_blank" rel="noopener noreferrer"
+        <a href="https://t.me/Mgkaung2222010" target="_blank" rel="noopener noreferrer"
           className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-secondary/30 bg-secondary/10 hover:bg-secondary/20 transition-colors">
           <ExternalLink className="h-5 w-5 text-secondary" />
           <span className="text-[10px] text-secondary font-medium">Account</span>
-        </a>
-        <a href="https://t.me/ygyigameshop" target="_blank" rel="noopener noreferrer"
-          className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-secondary/30 bg-secondary/10 hover:bg-secondary/20 transition-colors">
-          <ExternalLink className="h-5 w-5 text-secondary" />
-          <span className="text-[10px] text-secondary font-medium">Group</span>
         </a>
       </div>
 
       {/* Actions */}
       <div className="mx-4 mt-4 space-y-2">
-        <Button variant="outline" className="w-full justify-start border-border hover:border-primary/50" onClick={() => navigate('/deposit-history')}>
-          <History className="h-5 w-5 mr-2" /> ငွေဖြည့်မှတ်တမ်း
-        </Button>
-        <Button variant="outline" className="w-full justify-start border-border hover:border-primary/50" onClick={() => navigate('/game-order-history')}>
-          <Gamepad2 className="h-5 w-5 mr-2" /> Game Order မှတ်တမ်း
-        </Button>
         {isAdmin && (
           <Button variant="outline" className="w-full justify-start text-primary border-primary/30" onClick={() => navigate('/admin')}>
             <Shield className="h-5 w-5 mr-2" /> Admin Dashboard

@@ -72,15 +72,24 @@ export default function Deposit() {
 
       // Store just the path (bucket is now private, signed URLs generated server-side)
 
-      const { error: insertError } = await supabase
+      const { data: inserted, error: insertError } = await supabase
         .from('deposits')
         .insert({
           user_id: user.id,
           amount: parseFloat(amount),
           screenshot_url: path,
-        });
+        })
+        .select('id')
+        .single();
 
       if (insertError) throw insertError;
+
+      // Fire-and-forget Telegram notification (don't block UX on failure)
+      if (inserted?.id) {
+        supabase.functions
+          .invoke('telegram-deposit-notify', { body: { deposit_id: inserted.id } })
+          .catch((e) => console.error('Telegram notify failed', e));
+      }
 
       toast.success('Deposit request submitted! Status: Processing');
       navigate('/deposit-history');

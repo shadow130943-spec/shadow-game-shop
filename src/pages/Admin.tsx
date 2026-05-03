@@ -185,6 +185,20 @@ export default function Admin() {
                 </div>
               </form>
             </div>
+
+            {/* Profit Settings link */}
+            <div className="gaming-card rounded-xl p-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Percent className="h-5 w-5 text-primary" />
+                <div>
+                  <h3 className="font-gaming font-bold">Profit Settings</h3>
+                  <p className="text-xs text-muted-foreground">API ဈေးပေါ်ကို Global / Game / Package margin ထည့်ရန်</p>
+                </div>
+              </div>
+              <Button onClick={() => navigate('/admin/profit-settings')} className="gaming-btn border-0">
+                Manage
+              </Button>
+            </div>
           </TabsContent>
 
           {/* Users Tab */}

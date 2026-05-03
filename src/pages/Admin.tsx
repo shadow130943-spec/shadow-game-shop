@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Users, Send, ArrowLeft } from 'lucide-react';
+import { LayoutDashboard, Users, Send, ArrowLeft, Percent } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

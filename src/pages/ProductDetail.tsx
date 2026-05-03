@@ -97,7 +97,7 @@ export default function ProductDetail() {
 
   const formatBalance = (n: number) => new Intl.NumberFormat('my-MM').format(n);
 
-  const getMmkPrice = (pkg: Package) => isReseller ? pkg.reseller_price_mmk : pkg.price_mmk;
+  const getMmkPrice = (pkg: Package) => pkg.price_mmk;
   const formatPrice = (pkg: Package) => {
     if (selectedCurrency === 'usd') return `$${pkg.price_usd.toFixed(2)}`;
     return `${formatBalance(getMmkPrice(pkg))} ကျပ်`;
@@ -307,11 +307,6 @@ export default function ProductDetail() {
                   {pkg.catalogue_name}
                 </p>
                 <p className="text-sm font-bold text-primary">{formatPrice(pkg)}</p>
-                {isReseller && selectedCurrency === 'mmk' && (
-                  <p className="text-[10px] text-muted-foreground line-through">
-                    {formatBalance(pkg.price_mmk)} ကျပ်
-                  </p>
-                )}
               </motion.div>
             ))}
           </div>
@@ -392,7 +387,6 @@ export default function ProductDetail() {
                 <div className="flex-1 bg-muted rounded-lg px-3 py-2 text-sm font-semibold">{selectedPkg?.catalogue_name}</div>
                 <div className="flex-1 bg-muted rounded-lg px-3 py-2 text-sm font-semibold">
                   {selectedPkg ? formatPrice(selectedPkg) : '0 ကျပ်'}
-                  {isReseller && <span className="text-[10px] text-muted-foreground ml-1">(-2%)</span>}
                 </div>
               </div>
             </div>

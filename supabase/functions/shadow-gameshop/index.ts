@@ -1,6 +1,9 @@
 // Shadow Game Shop API proxy
 // Wraps the live get-products / g2bulk-proxy endpoints with the reseller key
-// stored as a server-side secret.
+// stored as a server-side secret. Applies admin-controlled profit margins
+// hierarchically (package > game > global) to the API base price.
+
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,6 +24,67 @@ function json(body: unknown, status = 200) {
   });
 }
 
+interface MarginRow {
+  scope: "global" | "game" | "package";
+  game_code: string | null;
+  catalogue_name: string | null;
+  margin_percent: number;
+}
+
+async function loadMargins() {
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+  const { data, error } = await supabaseAdmin
+    .from("profit_margins")
+    .select("scope, game_code, catalogue_name, margin_percent");
+  if (error) {
+    console.error("[shadow-gameshop] load margins error:", error.message);
+    return { global: 0, game: new Map<string, number>(), pkg: new Map<string, number>() };
+  }
+  let globalPct = 0;
+  const game = new Map<string, number>();
+  const pkg = new Map<string, number>();
+  for (const r of (data || []) as MarginRow[]) {
+    if (r.scope === "global") globalPct = Number(r.margin_percent) || 0;
+    else if (r.scope === "game" && r.game_code) game.set(r.game_code, Number(r.margin_percent) || 0);
+    else if (r.scope === "package" && r.game_code && r.catalogue_name)
+      pkg.set(`${r.game_code}::${r.catalogue_name}`, Number(r.margin_percent) || 0);
+  }
+  return { global: globalPct, game, pkg };
+}
+
+function pickMargin(
+  margins: { global: number; game: Map<string, number>; pkg: Map<string, number> },
+  gameCode: string,
+  catalogueName: string,
+) {
+  const pkgKey = `${gameCode}::${catalogueName}`;
+  if (margins.pkg.has(pkgKey)) return margins.pkg.get(pkgKey)!;
+  if (margins.game.has(gameCode)) return margins.game.get(gameCode)!;
+  return margins.global;
+}
+
+function applyMargins(payload: any, margins: Awaited<ReturnType<typeof loadMargins>>) {
+  if (!payload || !Array.isArray(payload.games)) return payload;
+  for (const g of payload.games) {
+    const gameCode = g.game_code;
+    if (!Array.isArray(g.packages)) continue;
+    for (const p of g.packages) {
+      const basePriceMmk = Number(p.price_mmk) || 0;
+      if (basePriceMmk <= 0) continue;
+      const pct = pickMargin(margins, gameCode, p.catalogue_name);
+      const finalMmk = Math.round(basePriceMmk * (1 + pct / 100));
+      p.api_price_mmk = basePriceMmk; // expose for admin UI
+      p.margin_percent = pct;
+      p.price_mmk = finalMmk;
+      p.reseller_price_mmk = finalMmk; // remove the 2% reseller bump
+    }
+  }
+  return payload;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -36,7 +100,6 @@ Deno.serve(async (req) => {
 
     if (!action) return json({ success: false, message: "Missing action" }, 400);
 
-    // Live catalog — no body required by upstream
     if (action === "listProducts") {
       const res = await fetch(PRODUCTS_URL, {
         method: "GET",
@@ -46,6 +109,11 @@ Deno.serve(async (req) => {
       let data: any;
       try { data = JSON.parse(text); } catch { data = { raw: text }; }
       console.log("[shadow-gameshop] listProducts status:", res.status);
+
+      if (res.ok && data?.success) {
+        const margins = await loadMargins();
+        data = applyMargins(data, margins);
+      }
       return json(data, res.ok ? 200 : res.status);
     }
 

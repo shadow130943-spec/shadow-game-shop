@@ -133,78 +133,6 @@ Deno.serve(async (req) => {
       return { res, data, text };
     }
 
-    // Probe upstream for the reseller balance. Tries several action names
-    // and returns the first one that responds successfully.
-    async function fetchResellerBalance(): Promise<{ balance: number | null; raw: any; debug: any[] }> {
-      const candidates = [
-        { action: "getBalance" },
-        { action: "balance" },
-        { action: "getAccount" },
-        { action: "account" },
-        { action: "accountInfo" },
-        { action: "getProfile" },
-        { action: "profile" },
-        { action: "me" },
-        { action: "wallet" },
-        { action: "getWallet" },
-        { action: "userInfo" },
-        { action: "getUserInfo" },
-      ];
-      const debug: any[] = [];
-      for (const c of candidates) {
-        try {
-          const { res, data, text } = await callUpstream(c);
-          debug.push({ action: c.action, status: res.status, body: text.slice(0, 200) });
-          if (res.ok) {
-            const bal =
-              data?.balance ??
-              data?.balance_usd ??
-              data?.account_balance ??
-              data?.wallet ??
-              data?.data?.balance ??
-              data?.data?.balance_usd ??
-              null;
-            const num = typeof bal === "string" ? Number(bal) : bal;
-            if (typeof num === "number" && !Number.isNaN(num)) {
-              return { balance: num, raw: data, debug };
-            }
-          }
-        } catch (e) {
-          debug.push({ action: c.action, error: (e as Error).message });
-        }
-      }
-      // Also try a sibling GET endpoint (mirrors how listProducts is hosted at /get-products)
-      const altUrls = [
-        ORDER_URL.replace(/\/g2bulk-proxy$/, "/get-balance"),
-        ORDER_URL.replace(/\/g2bulk-proxy$/, "/get-account"),
-        ORDER_URL.replace(/\/g2bulk-proxy$/, "/get-profile"),
-      ];
-      for (const url of altUrls) {
-        try {
-          const r = await fetch(url, { headers: { Authorization: `Bearer ${API_KEY}` } });
-          const t = await r.text();
-          debug.push({ url, status: r.status, body: t.slice(0, 200) });
-          if (r.ok) {
-            const d = JSON.parse(t);
-            const bal = d?.balance ?? d?.balance_usd ?? d?.data?.balance ?? null;
-            const num = typeof bal === "string" ? Number(bal) : bal;
-            if (typeof num === "number" && !Number.isNaN(num)) return { balance: num, raw: d, debug };
-          }
-        } catch (e) {
-          debug.push({ url, error: (e as Error).message });
-        }
-      }
-      return { balance: null, raw: null, debug };
-    }
-
-    if (action === "getBalance") {
-      const { balance, raw, debug } = await fetchResellerBalance();
-      if (balance == null) {
-        return json({ success: false, message: "Reseller balance unavailable", upstream: raw, debug }, 502);
-      }
-      return json({ success: true, balance });
-    }
-
     if (action === "checkPlayerId") {
       const { res, data } = await callUpstream(body);
       console.log(`[shadow-gameshop] checkPlayerId status:`, res.status);
@@ -212,26 +140,38 @@ Deno.serve(async (req) => {
     }
 
     if (action === "placeOrder") {
-      // Validation: ensure reseller account on Shadow Game Shop has enough
-      // balance to cover the order at the reseller-tier USD price.
+      // Order request is sent to Shadow Game Shop using the reseller API key
+      // (configured server-side via SHADOW_GAMESHOP_API_KEY). Shadow Game Shop
+      // deducts the reseller-tier USD price directly from the reseller account
+      // balance. If the reseller account has insufficient balance, the upstream
+      // call fails and we surface a clear error so the user's wallet is NOT
+      // deducted on the YK side.
       const priceUsd = Number((body as any)?.price_usd);
       if (!Number.isFinite(priceUsd) || priceUsd <= 0) {
         return json({ success: false, message: "Invalid price_usd" }, 400);
       }
 
-      const { balance } = await fetchResellerBalance();
-      if (balance != null && balance < priceUsd) {
-        console.log(`[shadow-gameshop] insufficient reseller balance: have ${balance}, need ${priceUsd}`);
+      const { res, data, text } = await callUpstream(body);
+      console.log(`[shadow-gameshop] placeOrder status:`, res.status, "resp:", text.slice(0, 300));
+
+      // Detect "insufficient reseller balance" errors from upstream and surface
+      // a friendlier message. Different upstream versions phrase this slightly
+      // differently, so match a few common patterns.
+      const msg: string = (data?.message || data?.error || "").toString().toLowerCase();
+      const insufficient =
+        msg.includes("insufficient") ||
+        msg.includes("not enough") ||
+        msg.includes("balance") && (msg.includes("low") || msg.includes("short"));
+      if (!data?.success && insufficient) {
         return json({
           success: false,
-          message: `Reseller account balance ($${balance.toFixed(2)}) is insufficient for this order ($${priceUsd.toFixed(2)}). Please top up the reseller account.`,
-          reseller_balance: balance,
-          required: priceUsd,
+          insufficient_reseller_balance: true,
+          message:
+            "Reseller account balance on Shadow Game Shop is insufficient for this order. Please top up the reseller account before retrying.",
+          upstream: data,
         }, 402);
       }
 
-      const { res, data, text } = await callUpstream(body);
-      console.log(`[shadow-gameshop] placeOrder status:`, res.status, "resp:", text.slice(0, 300));
       return json(data, res.ok ? 200 : res.status);
     }
 

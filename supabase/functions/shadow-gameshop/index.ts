@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
 
     // Probe upstream for the reseller balance. Tries several action names
     // and returns the first one that responds successfully.
-    async function fetchResellerBalance(): Promise<{ balance: number | null; raw: any }> {
+    async function fetchResellerBalance(): Promise<{ balance: number | null; raw: any; debug: any[] }> {
       const candidates = [
         { action: "getBalance" },
         { action: "balance" },
@@ -145,38 +145,62 @@ Deno.serve(async (req) => {
         { action: "getProfile" },
         { action: "profile" },
         { action: "me" },
+        { action: "wallet" },
+        { action: "getWallet" },
+        { action: "userInfo" },
+        { action: "getUserInfo" },
       ];
+      const debug: any[] = [];
       for (const c of candidates) {
         try {
-          const { res, data } = await callUpstream(c);
-          if (res.ok && data && data.success !== false) {
+          const { res, data, text } = await callUpstream(c);
+          debug.push({ action: c.action, status: res.status, body: text.slice(0, 200) });
+          if (res.ok) {
             const bal =
-              data.balance ??
-              data.balance_usd ??
-              data.account_balance ??
-              data.wallet ??
-              data.data?.balance ??
-              data.data?.balance_usd ??
+              data?.balance ??
+              data?.balance_usd ??
+              data?.account_balance ??
+              data?.wallet ??
+              data?.data?.balance ??
+              data?.data?.balance_usd ??
               null;
             const num = typeof bal === "string" ? Number(bal) : bal;
             if (typeof num === "number" && !Number.isNaN(num)) {
-              console.log(`[shadow-gameshop] balance via action=${c.action}:`, num);
-              return { balance: num, raw: data };
+              return { balance: num, raw: data, debug };
             }
-            // upstream accepted action but no numeric balance found — keep raw for debug
-            console.log(`[shadow-gameshop] action=${c.action} ok but no balance field. keys:`, Object.keys(data || {}));
           }
         } catch (e) {
-          console.log(`[shadow-gameshop] balance probe ${c.action} threw`, (e as Error).message);
+          debug.push({ action: c.action, error: (e as Error).message });
         }
       }
-      return { balance: null, raw: null };
+      // Also try a sibling GET endpoint (mirrors how listProducts is hosted at /get-products)
+      const altUrls = [
+        ORDER_URL.replace(/\/g2bulk-proxy$/, "/get-balance"),
+        ORDER_URL.replace(/\/g2bulk-proxy$/, "/get-account"),
+        ORDER_URL.replace(/\/g2bulk-proxy$/, "/get-profile"),
+      ];
+      for (const url of altUrls) {
+        try {
+          const r = await fetch(url, { headers: { Authorization: `Bearer ${API_KEY}` } });
+          const t = await r.text();
+          debug.push({ url, status: r.status, body: t.slice(0, 200) });
+          if (r.ok) {
+            const d = JSON.parse(t);
+            const bal = d?.balance ?? d?.balance_usd ?? d?.data?.balance ?? null;
+            const num = typeof bal === "string" ? Number(bal) : bal;
+            if (typeof num === "number" && !Number.isNaN(num)) return { balance: num, raw: d, debug };
+          }
+        } catch (e) {
+          debug.push({ url, error: (e as Error).message });
+        }
+      }
+      return { balance: null, raw: null, debug };
     }
 
     if (action === "getBalance") {
-      const { balance, raw } = await fetchResellerBalance();
+      const { balance, raw, debug } = await fetchResellerBalance();
       if (balance == null) {
-        return json({ success: false, message: "Reseller balance unavailable", upstream: raw }, 502);
+        return json({ success: false, message: "Reseller balance unavailable", upstream: raw, debug }, 502);
       }
       return json({ success: true, balance });
     }

@@ -117,20 +117,61 @@ Deno.serve(async (req) => {
       return json(data, res.ok ? 200 : res.status);
     }
 
-    if (action === "checkPlayerId" || action === "placeOrder") {
-      const upstreamBody = { ...body };
+    // Helper: call upstream g2bulk-proxy with given body
+    async function callUpstream(payload: Record<string, unknown>) {
       const res = await fetch(ORDER_URL, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${API_KEY}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(upstreamBody),
+        body: JSON.stringify(payload),
       });
       const text = await res.text();
       let data: any;
       try { data = JSON.parse(text); } catch { data = { raw: text }; }
-      console.log(`[shadow-gameshop] ${action} status:`, res.status, "resp:", text.slice(0, 300));
+      return { res, data, text };
+    }
+
+    if (action === "checkPlayerId") {
+      const { res, data } = await callUpstream(body);
+      console.log(`[shadow-gameshop] checkPlayerId status:`, res.status);
+      return json(data, res.ok ? 200 : res.status);
+    }
+
+    if (action === "placeOrder") {
+      // Order request is sent to Shadow Game Shop using the reseller API key
+      // (configured server-side via SHADOW_GAMESHOP_API_KEY). Shadow Game Shop
+      // deducts the reseller-tier USD price directly from the reseller account
+      // balance. If the reseller account has insufficient balance, the upstream
+      // call fails and we surface a clear error so the user's wallet is NOT
+      // deducted on the YK side.
+      const priceUsd = Number((body as any)?.price_usd);
+      if (!Number.isFinite(priceUsd) || priceUsd <= 0) {
+        return json({ success: false, message: "Invalid price_usd" }, 400);
+      }
+
+      const { res, data, text } = await callUpstream(body);
+      console.log(`[shadow-gameshop] placeOrder status:`, res.status, "resp:", text.slice(0, 300));
+
+      // Detect "insufficient reseller balance" errors from upstream and surface
+      // a friendlier message. Different upstream versions phrase this slightly
+      // differently, so match a few common patterns.
+      const msg: string = (data?.message || data?.error || "").toString().toLowerCase();
+      const insufficient =
+        msg.includes("insufficient") ||
+        msg.includes("not enough") ||
+        msg.includes("balance") && (msg.includes("low") || msg.includes("short"));
+      if (!data?.success && insufficient) {
+        return json({
+          success: false,
+          insufficient_reseller_balance: true,
+          message:
+            "Reseller account balance on Shadow Game Shop is insufficient for this order. Please top up the reseller account before retrying.",
+          upstream: data,
+        }, 402);
+      }
+
       return json(data, res.ok ? 200 : res.status);
     }
 

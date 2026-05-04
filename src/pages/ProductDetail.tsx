@@ -121,6 +121,7 @@ export default function ProductDetail() {
     setConfirmed(false);
     setCheckedName(null);
     setNameCheckSuccess(false);
+    setOrderFailed(false);
     setDialogOpen(true);
   };
 

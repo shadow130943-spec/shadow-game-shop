@@ -117,20 +117,97 @@ Deno.serve(async (req) => {
       return json(data, res.ok ? 200 : res.status);
     }
 
-    if (action === "checkPlayerId" || action === "placeOrder") {
-      const upstreamBody = { ...body };
+    // Helper: call upstream g2bulk-proxy with given body
+    async function callUpstream(payload: Record<string, unknown>) {
       const res = await fetch(ORDER_URL, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${API_KEY}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(upstreamBody),
+        body: JSON.stringify(payload),
       });
       const text = await res.text();
       let data: any;
       try { data = JSON.parse(text); } catch { data = { raw: text }; }
-      console.log(`[shadow-gameshop] ${action} status:`, res.status, "resp:", text.slice(0, 300));
+      return { res, data, text };
+    }
+
+    // Probe upstream for the reseller balance. Tries several action names
+    // and returns the first one that responds successfully.
+    async function fetchResellerBalance(): Promise<{ balance: number | null; raw: any }> {
+      const candidates = [
+        { action: "getBalance" },
+        { action: "balance" },
+        { action: "getAccount" },
+        { action: "account" },
+        { action: "accountInfo" },
+        { action: "getProfile" },
+        { action: "profile" },
+        { action: "me" },
+      ];
+      for (const c of candidates) {
+        try {
+          const { res, data } = await callUpstream(c);
+          if (res.ok && data && data.success !== false) {
+            const bal =
+              data.balance ??
+              data.balance_usd ??
+              data.account_balance ??
+              data.wallet ??
+              data.data?.balance ??
+              data.data?.balance_usd ??
+              null;
+            const num = typeof bal === "string" ? Number(bal) : bal;
+            if (typeof num === "number" && !Number.isNaN(num)) {
+              console.log(`[shadow-gameshop] balance via action=${c.action}:`, num);
+              return { balance: num, raw: data };
+            }
+            // upstream accepted action but no numeric balance found — keep raw for debug
+            console.log(`[shadow-gameshop] action=${c.action} ok but no balance field. keys:`, Object.keys(data || {}));
+          }
+        } catch (e) {
+          console.log(`[shadow-gameshop] balance probe ${c.action} threw`, (e as Error).message);
+        }
+      }
+      return { balance: null, raw: null };
+    }
+
+    if (action === "getBalance") {
+      const { balance, raw } = await fetchResellerBalance();
+      if (balance == null) {
+        return json({ success: false, message: "Reseller balance unavailable", upstream: raw }, 502);
+      }
+      return json({ success: true, balance });
+    }
+
+    if (action === "checkPlayerId") {
+      const { res, data } = await callUpstream(body);
+      console.log(`[shadow-gameshop] checkPlayerId status:`, res.status);
+      return json(data, res.ok ? 200 : res.status);
+    }
+
+    if (action === "placeOrder") {
+      // Validation: ensure reseller account on Shadow Game Shop has enough
+      // balance to cover the order at the reseller-tier USD price.
+      const priceUsd = Number((body as any)?.price_usd);
+      if (!Number.isFinite(priceUsd) || priceUsd <= 0) {
+        return json({ success: false, message: "Invalid price_usd" }, 400);
+      }
+
+      const { balance } = await fetchResellerBalance();
+      if (balance != null && balance < priceUsd) {
+        console.log(`[shadow-gameshop] insufficient reseller balance: have ${balance}, need ${priceUsd}`);
+        return json({
+          success: false,
+          message: `Reseller account balance ($${balance.toFixed(2)}) is insufficient for this order ($${priceUsd.toFixed(2)}). Please top up the reseller account.`,
+          reseller_balance: balance,
+          required: priceUsd,
+        }, 402);
+      }
+
+      const { res, data, text } = await callUpstream(body);
+      console.log(`[shadow-gameshop] placeOrder status:`, res.status, "resp:", text.slice(0, 300));
       return json(data, res.ok ? 200 : res.status);
     }
 

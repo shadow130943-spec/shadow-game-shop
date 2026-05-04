@@ -58,6 +58,7 @@ export default function ProductDetail() {
   const [serverId, setServerId] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [ordering, setOrdering] = useState(false);
+  const [orderFailed, setOrderFailed] = useState(false);
 
   const [checkedName, setCheckedName] = useState<string | null>(null);
   const [nameCheckLoading, setNameCheckLoading] = useState(false);

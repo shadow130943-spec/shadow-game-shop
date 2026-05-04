@@ -179,7 +179,16 @@ export default function ProductDetail() {
           price_usd: selectedPkg.price_usd,
         },
       });
-      if (error) throw new Error(error.message || 'API error');
+      // Edge function returned a non-2xx (e.g. 402 insufficient reseller balance).
+      // Body is in error.context — try to extract its message.
+      if (error) {
+        let serverMsg = error.message || 'API error';
+        try {
+          const ctxBody = await (error as any).context?.json?.();
+          if (ctxBody?.message) serverMsg = ctxBody.message;
+        } catch { /* ignore */ }
+        throw new Error(serverMsg);
+      }
       if (!data?.success) throw new Error(data?.message || 'Order failed');
 
       const { error: updateError } = await supabase

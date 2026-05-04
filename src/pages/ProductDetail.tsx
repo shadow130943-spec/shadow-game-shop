@@ -159,8 +159,11 @@ export default function ProductDetail() {
     setNameCheckLoading(false);
   };
 
+  const STOCK_ERROR_MSG = 'ယခုပစ္စည်းမှာ Stock ကုန်နေပါသည်။ ခေတ္တစောင့်ဆိုင်းပေးပါရန်။';
+
   const handleOrder = async () => {
     if (!selectedPkg || !user || !game) return;
+    if (orderFailed) return;
     if (!gameId.trim()) { toast.error('Game Id ထည့်ပါ'); return; }
     if (needsServerId && !serverId.trim()) { toast.error('Server Id ထည့်ပါ'); return; }
     if (!nameCheckSuccess) { toast.error('အကောင့်အမည် အရင်စစ်ဆေးပါ'); return; }
@@ -181,17 +184,15 @@ export default function ProductDetail() {
           price_usd: selectedPkg.price_usd,
         },
       });
-      // Edge function returned a non-2xx (e.g. 402 insufficient reseller balance).
-      // Body is in error.context — try to extract its message.
-      if (error) {
-        let serverMsg = error.message || 'API error';
-        try {
-          const ctxBody = await (error as any).context?.json?.();
-          if (ctxBody?.message) serverMsg = ctxBody.message;
-        } catch { /* ignore */ }
-        throw new Error(serverMsg);
+
+      // Any upstream/edge failure -> treat as out-of-stock for the user.
+      // (insufficient balance / invalid session / out of stock / network error)
+      if (error || !data?.success) {
+        console.error('[placeOrder] failed:', error || data);
+        setOrderFailed(true);
+        toast.error(STOCK_ERROR_MSG);
+        return;
       }
-      if (!data?.success) throw new Error(data?.message || 'Order failed');
 
       const { error: updateError } = await supabase
         .from('profiles')
@@ -217,7 +218,9 @@ export default function ProductDetail() {
       toast.success(data.message || `${selectedPkg.catalogue_name} မှာယူပြီးပါပြီ!`);
       setDialogOpen(false);
     } catch (err: any) {
-      toast.error(err.message || 'မှာယူ၍မရပါ');
+      console.error('[placeOrder] exception:', err);
+      setOrderFailed(true);
+      toast.error(STOCK_ERROR_MSG);
     }
     setOrdering(false);
   };

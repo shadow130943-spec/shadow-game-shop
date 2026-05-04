@@ -245,7 +245,7 @@ export default function ProductDetail() {
   }
 
   const visiblePackages = game.packages.filter((p) => !p.hidden && p.price_mmk > 0);
-  const buyButtonDisabled = ordering || !nameCheckSuccess;
+  const buyButtonDisabled = ordering || !nameCheckSuccess || orderFailed;
 
   return (
     <div className="min-h-screen bg-background pb-8">

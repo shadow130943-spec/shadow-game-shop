@@ -154,14 +154,26 @@ Deno.serve(async (req) => {
       const { res, data, text } = await callUpstream(body);
       console.log(`[shadow-gameshop] placeOrder status:`, res.status, "resp:", text.slice(0, 300));
 
-      // Detect "insufficient reseller balance" errors from upstream and surface
-      // a friendlier message. Different upstream versions phrase this slightly
-      // differently, so match a few common patterns.
-      const msg: string = (data?.message || data?.error || "").toString().toLowerCase();
+      const rawMsg: string = (data?.message || data?.error || "").toString();
+      const msg = rawMsg.toLowerCase();
+
+      // "Invalid session" from upstream = reseller API key is not authorized
+      // to place orders (expired session, wrong key, or read-only key).
+      if (!data?.success && msg.includes("invalid session")) {
+        return json({
+          success: false,
+          invalid_reseller_session: true,
+          message:
+            "Reseller account session on Shadow Game Shop is invalid or expired. Please re-login to Shadow Game Shop and update the SHADOW_GAMESHOP_API_KEY.",
+          upstream: data,
+        }, 200); // return 200 so frontend reads the body cleanly
+      }
+
+      // Detect insufficient balance.
       const insufficient =
         msg.includes("insufficient") ||
         msg.includes("not enough") ||
-        msg.includes("balance") && (msg.includes("low") || msg.includes("short"));
+        (msg.includes("balance") && (msg.includes("low") || msg.includes("short")));
       if (!data?.success && insufficient) {
         return json({
           success: false,
@@ -169,10 +181,12 @@ Deno.serve(async (req) => {
           message:
             "Reseller account balance on Shadow Game Shop is insufficient for this order. Please top up the reseller account before retrying.",
           upstream: data,
-        }, 402);
+        }, 200);
       }
 
-      return json(data, res.ok ? 200 : res.status);
+      // Always return 200 with the upstream body so the frontend can show the
+      // actual message instead of a blank "Edge function returned 401" error.
+      return json(data, 200);
     }
 
     return json({ success: false, message: `Unknown action: ${action}` }, 400);

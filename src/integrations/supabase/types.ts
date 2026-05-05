@@ -170,6 +170,45 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_methods: {
+        Row: {
+          color: string
+          created_at: string
+          holder: string
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          name: string
+          phone: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          holder: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name: string
+          phone: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          holder?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name?: string
+          phone?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_items: {
         Row: {
           category: string

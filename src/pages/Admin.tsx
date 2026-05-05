@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Users, Send, ArrowLeft, Percent } from 'lucide-react';
+import { LayoutDashboard, Users, Send, ArrowLeft, Percent, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -196,6 +196,20 @@ export default function Admin() {
                 </div>
               </div>
               <Button onClick={() => navigate('/admin/profit-settings')} className="gaming-btn border-0">
+                Manage
+              </Button>
+            </div>
+
+            {/* Payment Methods link */}
+            <div className="gaming-card rounded-xl p-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <CreditCard className="h-5 w-5 text-primary" />
+                <div>
+                  <h3 className="font-gaming font-bold">Payment Methods</h3>
+                  <p className="text-xs text-muted-foreground">Wave Pay / KBZ Pay စတဲ့ ငွေလွှဲနည်းများ ပြင်ရန်</p>
+                </div>
+              </div>
+              <Button onClick={() => navigate('/admin/payment-methods')} className="gaming-btn border-0">
                 Manage
               </Button>
             </div>

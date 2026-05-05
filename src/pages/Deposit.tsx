@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Upload, ArrowLeft, Copy, History } from 'lucide-react';
@@ -8,30 +8,32 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { compressImage } from '@/lib/imageCompression';
 
-const paymentMethods = [
-  {
-    name: 'Wave Pay',
-    phone: '09680072956',
-    holder: 'Aung Si Moe',
-    color: 'bg-yellow-400',
-    logo: '🌊',
-  },
-  {
-    name: 'KBZ Pay',
-    phone: '09683245994',
-    holder: 'AUNG KYAW HEIN HTET',
-    color: 'bg-red-600',
-    logo: '🏦',
-  },
-];
+interface PaymentMethod {
+  id: string;
+  name: string;
+  phone: string;
+  holder: string;
+  logo_url: string | null;
+  color: string;
+}
 
 export default function Deposit() {
   const [amount, setAmount] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    supabase
+      .from('payment_methods')
+      .select('id, name, phone, holder, logo_url, color')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true })
+      .then(({ data }) => setMethods(data || []));
+  }, []);
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -70,8 +72,6 @@ export default function Deposit() {
 
       if (uploadError) throw uploadError;
 
-      // Store just the path (bucket is now private, signed URLs generated server-side)
-
       const { data: inserted, error: insertError } = await supabase
         .from('deposits')
         .insert({
@@ -84,7 +84,6 @@ export default function Deposit() {
 
       if (insertError) throw insertError;
 
-      // Fire-and-forget Telegram notification (don't block UX on failure)
       if (inserted?.id) {
         supabase.functions
           .invoke('telegram-deposit-notify', { body: { deposit_id: inserted.id } })
@@ -111,7 +110,6 @@ export default function Deposit() {
           animate={{ opacity: 1, y: 0 }}
           className="max-w-md mx-auto space-y-4"
         >
-          {/* Header */}
           <div className="flex items-center justify-between gaming-card rounded-xl p-4">
             <h1 className="font-bold text-lg text-foreground">ငွေဖြည့်မည်</h1>
             <Button variant="secondary" size="sm" onClick={() => navigate('/deposit-history')}>
@@ -119,7 +117,6 @@ export default function Deposit() {
             </Button>
           </div>
 
-          {/* Amount Input */}
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">ငွေပမာဏထည့်ပါ</p>
             <div className="flex items-center gap-2 border border-border rounded-lg px-4 py-3 bg-card">
@@ -135,14 +132,17 @@ export default function Deposit() {
             </div>
           </div>
 
-          {/* Payment Methods */}
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">ငွေလွှဲနံပါတ်</p>
             <div className="space-y-3">
-              {paymentMethods.map((method) => (
-                <div key={method.name} className="border border-border rounded-xl p-3 bg-card flex items-center gap-3">
-                  <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-lg ${method.color} flex items-center justify-center text-2xl font-bold shrink-0`}>
-                    <span className="text-xs sm:text-sm font-extrabold leading-tight text-center text-black">{method.name}</span>
+              {methods.map((method) => (
+                <div key={method.id} className="border border-border rounded-xl p-3 bg-card flex items-center gap-3">
+                  <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-lg ${method.color} flex items-center justify-center overflow-hidden shrink-0`}>
+                    {method.logo_url ? (
+                      <img src={method.logo_url} alt={method.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xs sm:text-sm font-extrabold leading-tight text-center text-black px-1">{method.name}</span>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center justify-between">
@@ -160,10 +160,12 @@ export default function Deposit() {
                   </div>
                 </div>
               ))}
+              {methods.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">Payment method မရှိသေးပါ</p>
+              )}
             </div>
           </div>
 
-          {/* Screenshot Upload */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <p className="text-sm font-medium text-muted-foreground">

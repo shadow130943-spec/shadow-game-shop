@@ -7,8 +7,8 @@ const corsHeaders = {
 };
 
 const ACTOR_ID = "quarterly_raccoon~akh-gameshop-actor";
-const DEFAULT_PHONE = "09680072956";
-const DEFAULT_PASSWORD = "130943";
+const DEFAULT_PHONE = Deno.env.get("GAME_ACCOUNT_PHONE") ?? "";
+const DEFAULT_PASSWORD = Deno.env.get("GAME_ACCOUNT_PASSWORD") ?? "";
 
 async function runApifyActor(input: Record<string, unknown>): Promise<any> {
   const token = Deno.env.get("APIFY_ACTOR_TOKEN");

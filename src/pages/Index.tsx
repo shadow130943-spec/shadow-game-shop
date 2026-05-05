@@ -9,6 +9,11 @@ import { toast } from 'sonner';
 import { Gamepad2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import mlbbImg from '@/assets/games/mlbb.jpg';
+import pubgmImg from '@/assets/games/pubgm.jpg';
+import telegramImg from '@/assets/games/telegram.jpg';
+import freefireImg from '@/assets/games/freefire.jpg';
+import magicChessImg from '@/assets/games/magic_chess.jpg';
 
 interface Product {
   id: string;
@@ -19,11 +24,11 @@ interface Product {
 }
 
 const GAME_IMAGES: Record<string, string> = {
-  mlbb: 'https://cdn-icons-png.flaticon.com/512/871/871381.png',
-  magic_chess_gogo: 'https://cdn-icons-png.flaticon.com/512/3534/3534033.png',
-  pubgm: 'https://cdn-icons-png.flaticon.com/512/4712/4712013.png',
-  telegram: 'https://cdn-icons-png.flaticon.com/512/2111/2111646.png',
-  freefire_global: 'https://cdn-icons-png.flaticon.com/512/871/871381.png',
+  mlbb: mlbbImg,
+  magic_chess_gogo: magicChessImg,
+  pubgm: pubgmImg,
+  telegram: telegramImg,
+  freefire_global: freefireImg,
 };
 
 const Index = () => {

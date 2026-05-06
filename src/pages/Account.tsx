@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { LogOut, Shield, History, Gamepad2, Lock, Eye, EyeOff, Clock, ExternalLink } from 'lucide-react';
+import { LogOut, Shield, History, Gamepad2, Lock, Eye, EyeOff, Clock, Send } from 'lucide-react';
 import { BottomNav } from '@/components/BottomNav';
 import { TopBuyers } from '@/components/TopBuyers';
 import { supabase } from '@/integrations/supabase/client';

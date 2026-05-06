@@ -38,15 +38,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, retry = 0) => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (!error && data) {
       setProfile(data as Profile);
+    } else if (retry < 3) {
+      // Retry: profile row may be created by trigger right after signup,
+      // or RLS/session may still be settling.
+      setTimeout(() => fetchProfile(userId, retry + 1), 500 * (retry + 1));
     }
   };
 

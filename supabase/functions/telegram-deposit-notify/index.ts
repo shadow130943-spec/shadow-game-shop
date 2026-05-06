@@ -73,8 +73,7 @@ serve(async (req) => {
       `👤 <b>Name:</b> ${escapeHtml(profile?.name || "—")}\n` +
       `📞 <b>Phone:</b> ${escapeHtml(profile?.phone || "—")}\n` +
       `🆔 <b>User ID:</b> ${escapeHtml(profile?.user_code || "—")}\n` +
-      `💵 <b>Amount:</b> ${formattedAmount} ကျပ်\n` +
-      `🧾 <b>Deposit ID:</b> <code>${deposit.id}</code>`;
+      `💵 <b>Amount:</b> ${formattedAmount} ကျပ်`;
 
     const tgRes = await fetch(
       `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`,

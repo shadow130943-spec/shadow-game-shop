@@ -87,26 +87,24 @@ export default function Account() {
             <span className="text-muted-foreground">User ID</span>
             <span className="font-medium text-foreground">{profile?.user_code || '—'}</span>
           </div>
-          {profile?.phone && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">ဖုန်းနံပါတ်</span>
-              <span className="font-medium text-foreground">{profile.phone}</span>
-            </div>
-          )}
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">ဖုန်းနံပါတ်</span>
+            <span className="font-medium text-foreground">{profile?.phone || '—'}</span>
+          </div>
         </div>
       </div>
 
       {/* Telegram Links */}
       <div className="mx-4 mt-4 grid grid-cols-2 gap-2">
         <a href="https://t.me/ykgaming2392024" target="_blank" rel="noopener noreferrer"
-          className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-secondary/30 bg-secondary/10 hover:bg-secondary/20 transition-colors">
-          <ExternalLink className="h-5 w-5 text-secondary" />
-          <span className="text-[10px] text-secondary font-medium">Channel</span>
+          className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border border-secondary/30 bg-secondary/10 hover:bg-secondary/20 transition-colors">
+          <Send className="h-5 w-5 text-secondary" />
+          <span className="text-[10px] text-secondary font-medium">Telegram Channel</span>
         </a>
         <a href="https://t.me/Mgkaung2222010" target="_blank" rel="noopener noreferrer"
-          className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-secondary/30 bg-secondary/10 hover:bg-secondary/20 transition-colors">
-          <ExternalLink className="h-5 w-5 text-secondary" />
-          <span className="text-[10px] text-secondary font-medium">Account</span>
+          className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border border-secondary/30 bg-secondary/10 hover:bg-secondary/20 transition-colors">
+          <Send className="h-5 w-5 text-secondary" />
+          <span className="text-[10px] text-secondary font-medium">Telegram Support</span>
         </a>
       </div>
 

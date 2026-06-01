@@ -7,6 +7,7 @@ export interface PackageOverride {
   display_name: string | null;
   price_mmk_override: number | null;
   is_hidden: boolean;
+  image_url?: string | null;
 }
 
 export interface GameAsset {

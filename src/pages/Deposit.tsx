@@ -40,20 +40,35 @@ export default function Deposit() {
     toast.success('Copied!');
   };
 
+  const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'];
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
-    if (selected) {
-      try {
-        const compressed = await compressImage(selected);
-        setFile(compressed);
-        setPreview(URL.createObjectURL(compressed));
-        if (compressed.size < selected.size) {
-          toast.success(`Image compressed: ${(selected.size / 1024).toFixed(0)}KB → ${(compressed.size / 1024).toFixed(0)}KB`);
-        }
-      } catch {
-        setFile(selected);
-        setPreview(URL.createObjectURL(selected));
+    if (!selected) return;
+
+    // Validate MIME type (defence in depth, not just accept="image/*")
+    if (!ALLOWED_IMAGE_TYPES.includes(selected.type)) {
+      toast.error('ဓာတ်ပုံဖိုင် (JPG, PNG, WEBP) သာ တင်နိုင်ပါသည်');
+      e.target.value = '';
+      return;
+    }
+    if (selected.size > MAX_FILE_SIZE) {
+      toast.error('ဖိုင်အရွယ်အစား 10MB ထက် မပိုရပါ');
+      e.target.value = '';
+      return;
+    }
+
+    try {
+      const compressed = await compressImage(selected);
+      setFile(compressed);
+      setPreview(URL.createObjectURL(compressed));
+      if (compressed.size < selected.size) {
+        toast.success(`Image compressed: ${(selected.size / 1024).toFixed(0)}KB → ${(compressed.size / 1024).toFixed(0)}KB`);
       }
+    } catch {
+      setFile(selected);
+      setPreview(URL.createObjectURL(selected));
     }
   };
 

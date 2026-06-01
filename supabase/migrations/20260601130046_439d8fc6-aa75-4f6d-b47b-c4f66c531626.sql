@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Public read branding bucket" ON storage.objects;

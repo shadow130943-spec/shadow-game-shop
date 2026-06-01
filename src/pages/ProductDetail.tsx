@@ -20,6 +20,7 @@ interface Package {
   reseller_price_mmk: number;
   hidden?: boolean;
   display_name?: string;
+  image_url?: string | null;
 }
 
 interface GameData {

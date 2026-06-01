@@ -1,0 +1,1 @@
+ALTER TABLE public.package_overrides ADD COLUMN IF NOT EXISTS image_url text;

@@ -20,6 +20,7 @@ interface Package {
   reseller_price_mmk: number;
   hidden?: boolean;
   display_name?: string;
+  image_url?: string | null;
 }
 
 interface GameData {
@@ -329,8 +330,12 @@ export default function ProductDetail() {
                 className="gaming-card rounded-xl p-3 cursor-pointer gaming-card-hover flex flex-col items-center text-center"
               >
                 <div className="w-14 h-14 mb-2 flex items-center justify-center">
-                  <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
-                    <ShoppingCart className="h-5 w-5 text-muted-foreground" />
+                  <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden">
+                    {pkg.image_url ? (
+                      <img src={pkg.image_url} alt={pkg.display_name || pkg.catalogue_name} className="w-full h-full object-cover" />
+                    ) : (
+                      <ShoppingCart className="h-5 w-5 text-muted-foreground" />
+                    )}
                   </div>
                 </div>
                 <p className="text-xs font-medium text-foreground leading-tight mb-1 line-clamp-2">

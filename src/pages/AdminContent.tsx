@@ -10,8 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', 'image/x-icon'];
-const MAX_SIZE = 5 * 1024 * 1024;
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', 'image/x-icon', 'image/gif', 'image/avif'];
 
 interface GameRow {
   game_code: string;
@@ -26,6 +25,7 @@ interface OverrideRow {
   display_name: string | null;
   price_mmk_override: number | null;
   is_hidden: boolean;
+  image_url?: string | null;
 }
 
 const BRANDING_KEYS: Array<{ key: string; label: string; hint: string }> = [
@@ -35,8 +35,7 @@ const BRANDING_KEYS: Array<{ key: string; label: string; hint: string }> = [
 ];
 
 async function uploadToBranding(folder: string, file: File): Promise<string> {
-  if (!ALLOWED_TYPES.includes(file.type)) throw new Error('Image files only (JPG, PNG, WEBP, SVG, ICO)');
-  if (file.size > MAX_SIZE) throw new Error('File must be under 5MB');
+  if (!ALLOWED_TYPES.includes(file.type)) throw new Error('Image files only (JPG, PNG, WEBP, SVG, ICO, GIF, AVIF)');
   const ext = file.name.split('.').pop() || 'png';
   const path = `${folder}/${Date.now()}.${ext}`;
   const { error } = await supabase.storage.from('branding').upload(path, file, { upsert: false });
@@ -145,7 +144,7 @@ export default function AdminContent() {
 
   const saveOverride = async (game_code: string, catalogue_name: string) => {
     const o = getOverride(game_code, catalogue_name);
-    const isEmpty = !o.display_name && o.price_mmk_override == null && !o.is_hidden;
+    const isEmpty = !o.display_name && o.price_mmk_override == null && !o.is_hidden && !o.image_url;
     try {
       if (isEmpty && o.id) {
         const { error } = await supabase.from('package_overrides').delete().eq('id', o.id);
@@ -159,6 +158,7 @@ export default function AdminContent() {
             display_name: o.display_name || null,
             price_mmk_override: o.price_mmk_override,
             is_hidden: o.is_hidden,
+            image_url: o.image_url || null,
             updated_at: new Date().toISOString(),
           },
           { onConflict: 'game_code,catalogue_name' },
@@ -170,6 +170,34 @@ export default function AdminContent() {
     } catch (e: any) {
       toast.error(e.message);
     }
+  };
+
+  const uploadPackageImage = async (game_code: string, catalogue_name: string, file: File) => {
+    const key = `pkg:${game_code}:${catalogue_name}`;
+    setUploadingKey(key);
+    try {
+      const url = await uploadToBranding(`packages/${game_code}`, file);
+      const o = getOverride(game_code, catalogue_name);
+      const { error } = await supabase.from('package_overrides').upsert(
+        {
+          game_code,
+          catalogue_name,
+          display_name: o.display_name || null,
+          price_mmk_override: o.price_mmk_override,
+          is_hidden: o.is_hidden,
+          image_url: url,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'game_code,catalogue_name' },
+      );
+      if (error) throw error;
+      updateLocalOverride(game_code, catalogue_name, { image_url: url });
+      toast.success('Package image updated');
+      loadAll();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+    setUploadingKey(null);
   };
 
   if (loading) {
@@ -293,12 +321,47 @@ export default function AdminContent() {
                   const o = getOverride(currentGame.game_code, p.catalogue_name);
                   return (
                     <div key={p.catalogue_name} className="gaming-card rounded-xl p-4 space-y-3">
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-start gap-3">
+                        <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0">
+                          {o.image_url ? (
+                            <img src={o.image_url} alt={p.catalogue_name} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground">No image</span>
+                          )}
+                        </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-mono text-muted-foreground truncate">{p.catalogue_name}</p>
                           <p className="text-xs text-muted-foreground">
                             API price: <span className="font-semibold text-foreground">{new Intl.NumberFormat('my-MM').format(p.price_mmk)} ကျပ်</span>
                           </p>
+                          <input
+                            id={`pkg-img-${currentGame.game_code}-${p.catalogue_name}`}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) =>
+                              e.target.files?.[0] &&
+                              uploadPackageImage(currentGame.game_code, p.catalogue_name, e.target.files[0])
+                            }
+                          />
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="mt-2"
+                            disabled={uploadingKey === `pkg:${currentGame.game_code}:${p.catalogue_name}`}
+                            onClick={() =>
+                              document
+                                .getElementById(`pkg-img-${currentGame.game_code}-${p.catalogue_name}`)
+                                ?.click()
+                            }
+                          >
+                            <Upload className="h-3 w-3 mr-1" />
+                            {uploadingKey === `pkg:${currentGame.game_code}:${p.catalogue_name}`
+                              ? 'Uploading...'
+                              : o.image_url
+                              ? 'Replace Image'
+                              : 'Upload Image'}
+                          </Button>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {o.is_hidden ? <EyeOff className="h-4 w-4 text-destructive" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
@@ -339,7 +402,7 @@ export default function AdminContent() {
                           className="gaming-btn border-0"
                           onClick={() => saveOverride(currentGame.game_code, p.catalogue_name)}
                         >
-                          <Save className="h-4 w-4 mr-1" /> Save
+                          <Save className="h-4 w-4 mr-1" /> Save Name/Price
                         </Button>
                       </div>
                     </div>

@@ -86,10 +86,6 @@ export default function AdminPaymentMethods() {
       toast.error('Image files only (JPG, PNG, WEBP, SVG)');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Logo must be under 5MB');
-      return;
-    }
     setUploadingId(m.id);
     try {
       const ext = file.name.split('.').pop();

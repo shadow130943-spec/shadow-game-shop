@@ -218,6 +218,7 @@ export type Database = {
           display_name: string | null
           game_code: string
           id: string
+          image_url: string | null
           is_hidden: boolean
           price_mmk_override: number | null
           updated_at: string
@@ -227,6 +228,7 @@ export type Database = {
           display_name?: string | null
           game_code: string
           id?: string
+          image_url?: string | null
           is_hidden?: boolean
           price_mmk_override?: number | null
           updated_at?: string
@@ -236,6 +238,7 @@ export type Database = {
           display_name?: string | null
           game_code?: string
           id?: string
+          image_url?: string | null
           is_hidden?: boolean
           price_mmk_override?: number | null
           updated_at?: string

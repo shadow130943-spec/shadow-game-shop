@@ -10,8 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', 'image/x-icon'];
-const MAX_SIZE = 5 * 1024 * 1024;
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', 'image/x-icon', 'image/gif', 'image/avif'];
 
 interface GameRow {
   game_code: string;
@@ -26,6 +25,7 @@ interface OverrideRow {
   display_name: string | null;
   price_mmk_override: number | null;
   is_hidden: boolean;
+  image_url?: string | null;
 }
 
 const BRANDING_KEYS: Array<{ key: string; label: string; hint: string }> = [

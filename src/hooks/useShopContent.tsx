@@ -70,7 +70,7 @@ export function applyOverrides<T extends { catalogue_name: string; price_mmk: nu
   packages: T[],
   overrides: PackageOverride[],
   gameCode: string,
-): (T & { display_name?: string })[] {
+): (T & { display_name?: string; image_url?: string | null })[] {
   const byName = new Map<string, PackageOverride>();
   overrides
     .filter((o) => o.game_code === gameCode)
@@ -83,6 +83,7 @@ export function applyOverrides<T extends { catalogue_name: string; price_mmk: nu
       price_mmk: o.price_mmk_override ?? p.price_mmk,
       hidden: o.is_hidden || p.hidden,
       display_name: o.display_name ?? undefined,
+      image_url: o.image_url ?? undefined,
     };
   });
 }

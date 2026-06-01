@@ -50,6 +50,27 @@ export type Database = {
         }
         Relationships: []
       }
+      branding_assets: {
+        Row: {
+          id: string
+          image_url: string
+          key: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          image_url: string
+          key: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          image_url?: string
+          key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       deposits: {
         Row: {
           admin_note: string | null
@@ -80,6 +101,27 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      game_assets: {
+        Row: {
+          game_code: string
+          id: string
+          logo_url: string
+          updated_at: string
+        }
+        Insert: {
+          game_code: string
+          id?: string
+          logo_url: string
+          updated_at?: string
+        }
+        Update: {
+          game_code?: string
+          id?: string
+          logo_url?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -167,6 +209,36 @@ export type Database = {
           is_read?: boolean
           message?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      package_overrides: {
+        Row: {
+          catalogue_name: string
+          display_name: string | null
+          game_code: string
+          id: string
+          is_hidden: boolean
+          price_mmk_override: number | null
+          updated_at: string
+        }
+        Insert: {
+          catalogue_name: string
+          display_name?: string | null
+          game_code: string
+          id?: string
+          is_hidden?: boolean
+          price_mmk_override?: number | null
+          updated_at?: string
+        }
+        Update: {
+          catalogue_name?: string
+          display_name?: string | null
+          game_code?: string
+          id?: string
+          is_hidden?: boolean
+          price_mmk_override?: number | null
+          updated_at?: string
         }
         Relationships: []
       }

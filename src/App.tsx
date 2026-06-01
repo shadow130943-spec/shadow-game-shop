@@ -15,6 +15,7 @@ import ProductDetail from "./pages/ProductDetail";
 import Admin from "./pages/Admin";
 import AdminProfitSettings from "./pages/AdminProfitSettings";
 import AdminPaymentMethods from "./pages/AdminPaymentMethods";
+import AdminContent from "./pages/AdminContent";
 import AdminRoute from "./components/AdminRoute";
 import Account from "./pages/Account";
 import Notifications from "./pages/Notifications";
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
             <Route path="/admin/profit-settings" element={<AdminRoute><AdminProfitSettings /></AdminRoute>} />
             <Route path="/admin/payment-methods" element={<AdminRoute><AdminPaymentMethods /></AdminRoute>} />
+            <Route path="/admin/content" element={<AdminRoute><AdminContent /></AdminRoute>} />
             <Route path="/account" element={<Account />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/spin" element={<Spin />} />

@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { usePackageOverrides, applyOverrides } from '@/hooks/useShopContent';
 import { toast } from 'sonner';
 
 interface Package {
@@ -18,6 +19,7 @@ interface Package {
   price_mmk: number;
   reseller_price_mmk: number;
   hidden?: boolean;
+  display_name?: string;
 }
 
 interface GameData {
@@ -45,6 +47,7 @@ export default function ProductDetail() {
   const { id } = useParams<{ id: string }>(); // id = game_code
   const navigate = useNavigate();
   const { user } = useAuth();
+  const overrides = usePackageOverrides(id);
   const [game, setGame] = useState<GameData | null>(null);
   const [walletBalance, setWalletBalance] = useState(0);
   const [isReseller, setIsReseller] = useState(false);
@@ -256,7 +259,8 @@ export default function ProductDetail() {
     );
   }
 
-  const visiblePackages = game.packages.filter((p) => !p.hidden && p.price_mmk > 0);
+  const mergedPackages = id ? applyOverrides(game.packages, overrides, id) : game.packages;
+  const visiblePackages = mergedPackages.filter((p) => !p.hidden && p.price_mmk > 0);
   const buyButtonDisabled = ordering || !nameCheckSuccess || orderFailed;
 
   return (
@@ -330,7 +334,7 @@ export default function ProductDetail() {
                   </div>
                 </div>
                 <p className="text-xs font-medium text-foreground leading-tight mb-1 line-clamp-2">
-                  {pkg.catalogue_name}
+                  {pkg.display_name || pkg.catalogue_name}
                 </p>
                 <p className="text-sm font-bold text-primary">{formatPrice(pkg)}</p>
               </motion.div>

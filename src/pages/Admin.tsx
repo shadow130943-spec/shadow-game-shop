@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Users, Send, ArrowLeft, Percent, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Users, Send, ArrowLeft, Percent, CreditCard, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -210,6 +210,20 @@ export default function Admin() {
                 </div>
               </div>
               <Button onClick={() => navigate('/admin/payment-methods')} className="gaming-btn border-0">
+                Manage
+              </Button>
+            </div>
+
+            {/* Content Management link */}
+            <div className="gaming-card rounded-xl p-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <ImageIcon className="h-5 w-5 text-primary" />
+                <div>
+                  <h3 className="font-gaming font-bold">Content & Branding</h3>
+                  <p className="text-xs text-muted-foreground">Game logos, hero banner, site logo, package overrides</p>
+                </div>
+              </div>
+              <Button onClick={() => navigate('/admin/content')} className="gaming-btn border-0">
                 Manage
               </Button>
             </div>

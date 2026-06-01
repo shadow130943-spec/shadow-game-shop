@@ -35,8 +35,7 @@ const BRANDING_KEYS: Array<{ key: string; label: string; hint: string }> = [
 ];
 
 async function uploadToBranding(folder: string, file: File): Promise<string> {
-  if (!ALLOWED_TYPES.includes(file.type)) throw new Error('Image files only (JPG, PNG, WEBP, SVG, ICO)');
-  if (file.size > MAX_SIZE) throw new Error('File must be under 5MB');
+  if (!ALLOWED_TYPES.includes(file.type)) throw new Error('Image files only (JPG, PNG, WEBP, SVG, ICO, GIF, AVIF)');
   const ext = file.name.split('.').pop() || 'png';
   const path = `${folder}/${Date.now()}.${ext}`;
   const { error } = await supabase.storage.from('branding').upload(path, file, { upsert: false });

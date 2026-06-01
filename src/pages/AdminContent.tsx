@@ -144,7 +144,7 @@ export default function AdminContent() {
 
   const saveOverride = async (game_code: string, catalogue_name: string) => {
     const o = getOverride(game_code, catalogue_name);
-    const isEmpty = !o.display_name && o.price_mmk_override == null && !o.is_hidden;
+    const isEmpty = !o.display_name && o.price_mmk_override == null && !o.is_hidden && !o.image_url;
     try {
       if (isEmpty && o.id) {
         const { error } = await supabase.from('package_overrides').delete().eq('id', o.id);
@@ -158,6 +158,7 @@ export default function AdminContent() {
             display_name: o.display_name || null,
             price_mmk_override: o.price_mmk_override,
             is_hidden: o.is_hidden,
+            image_url: o.image_url || null,
             updated_at: new Date().toISOString(),
           },
           { onConflict: 'game_code,catalogue_name' },
@@ -169,6 +170,34 @@ export default function AdminContent() {
     } catch (e: any) {
       toast.error(e.message);
     }
+  };
+
+  const uploadPackageImage = async (game_code: string, catalogue_name: string, file: File) => {
+    const key = `pkg:${game_code}:${catalogue_name}`;
+    setUploadingKey(key);
+    try {
+      const url = await uploadToBranding(`packages/${game_code}`, file);
+      const o = getOverride(game_code, catalogue_name);
+      const { error } = await supabase.from('package_overrides').upsert(
+        {
+          game_code,
+          catalogue_name,
+          display_name: o.display_name || null,
+          price_mmk_override: o.price_mmk_override,
+          is_hidden: o.is_hidden,
+          image_url: url,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'game_code,catalogue_name' },
+      );
+      if (error) throw error;
+      updateLocalOverride(game_code, catalogue_name, { image_url: url });
+      toast.success('Package image updated');
+      loadAll();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+    setUploadingKey(null);
   };
 
   if (loading) {

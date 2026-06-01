@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Gamepad2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useGameLogos, usePackageOverrides, applyOverrides } from '@/hooks/useShopContent';
 import mlbbImg from '@/assets/games/mlbb.jpg';
 import pubgmImg from '@/assets/games/pubgm.jpg';
 import telegramImg from '@/assets/games/telegram.jpg';
@@ -23,7 +24,7 @@ interface Product {
   min_price: number;
 }
 
-const GAME_IMAGES: Record<string, string> = {
+const DEFAULT_GAME_IMAGES: Record<string, string> = {
   mlbb: mlbbImg,
   magic_chess_gogo: magicChessImg,
   pubgm: pubgmImg,
@@ -32,11 +33,17 @@ const GAME_IMAGES: Record<string, string> = {
 };
 
 const Index = () => {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [rawGames, setRawGames] = useState<Array<{
+    game_code: string;
+    game_name: string;
+    packages: Array<{ catalogue_name: string; price_mmk: number; hidden?: boolean }>;
+  }>>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const gameLogos = useGameLogos();
+  const overrides = usePackageOverrides();
 
   useEffect(() => {
     fetchProducts();
@@ -50,28 +57,28 @@ const Index = () => {
 
     if (error || !data?.success) {
       toast.error('Failed to load games');
-      setProducts([]);
+      setRawGames([]);
     } else {
-      const games = (data.games || []) as Array<{
-        game_code: string;
-        game_name: string;
-        packages: Array<{ price_mmk: number; hidden?: boolean }>;
-      }>;
-      const mapped: Product[] = games.map((g) => {
-        const visible = (g.packages || []).filter((p) => !p.hidden && p.price_mmk > 0);
-        const minPrice = visible.length ? Math.min(...visible.map((p) => p.price_mmk)) : 0;
-        return {
-          id: g.game_code,
-          name: g.game_name,
-          description: null,
-          image_url: GAME_IMAGES[g.game_code] || null,
-          min_price: minPrice,
-        };
-      });
-      setProducts(mapped);
+      setRawGames(data.games || []);
     }
     setLoading(false);
   };
+
+  const products: Product[] = useMemo(() => {
+    return rawGames.map((g) => {
+      const merged = applyOverrides(g.packages || [], overrides, g.game_code);
+      const visible = merged.filter((p) => !p.hidden && p.price_mmk > 0);
+      const minPrice = visible.length ? Math.min(...visible.map((p) => p.price_mmk)) : 0;
+      return {
+        id: g.game_code,
+        name: g.game_name,
+        description: null,
+        image_url: gameLogos[g.game_code] || DEFAULT_GAME_IMAGES[g.game_code] || null,
+        min_price: minPrice,
+      };
+    });
+  }, [rawGames, gameLogos, overrides]);
+
 
   const filteredProducts = useMemo(() => {
     if (!searchQuery.trim()) return products;

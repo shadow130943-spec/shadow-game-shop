@@ -164,10 +164,22 @@ export default function ProductDetail() {
   const handleOrder = async () => {
     if (!selectedPkg || !user || !game) return;
     if (orderFailed) return;
+    if (ordering) return; // prevent double submit
+
+    // Throttle: max 1 order every 5s per browser session
+    const lastOrderKey = `last_order_at_${user.id}`;
+    const lastOrderAt = Number(sessionStorage.getItem(lastOrderKey) || 0);
+    if (Date.now() - lastOrderAt < 5000) {
+      toast.error('ခဏစောင့်ပါ။ မှာယူမှုကို မြန်ဆန်စွာ ထပ်ခါမလုပ်ပါနှင့်။');
+      return;
+    }
+
     if (!gameId.trim()) { toast.error('Game Id ထည့်ပါ'); return; }
     if (needsServerId && !serverId.trim()) { toast.error('Server Id ထည့်ပါ'); return; }
     if (!nameCheckSuccess) { toast.error('အကောင့်အမည် အရင်စစ်ဆေးပါ'); return; }
     if (!confirmed) { toast.error('အချက်အလက်များမှန်ကန်ပါတယ် ကို အတည်ပြုပါ'); return; }
+
+    sessionStorage.setItem(lastOrderKey, String(Date.now()));
 
     const finalPrice = getMmkPrice(selectedPkg);
     if (walletBalance < finalPrice) { toast.error('လက်ကျန်ငွေ မလုံလောက်ပါ'); return; }

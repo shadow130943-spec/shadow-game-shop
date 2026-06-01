@@ -321,12 +321,47 @@ export default function AdminContent() {
                   const o = getOverride(currentGame.game_code, p.catalogue_name);
                   return (
                     <div key={p.catalogue_name} className="gaming-card rounded-xl p-4 space-y-3">
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-start gap-3">
+                        <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0">
+                          {o.image_url ? (
+                            <img src={o.image_url} alt={p.catalogue_name} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground">No image</span>
+                          )}
+                        </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-mono text-muted-foreground truncate">{p.catalogue_name}</p>
                           <p className="text-xs text-muted-foreground">
                             API price: <span className="font-semibold text-foreground">{new Intl.NumberFormat('my-MM').format(p.price_mmk)} ကျပ်</span>
                           </p>
+                          <input
+                            id={`pkg-img-${currentGame.game_code}-${p.catalogue_name}`}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) =>
+                              e.target.files?.[0] &&
+                              uploadPackageImage(currentGame.game_code, p.catalogue_name, e.target.files[0])
+                            }
+                          />
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="mt-2"
+                            disabled={uploadingKey === `pkg:${currentGame.game_code}:${p.catalogue_name}`}
+                            onClick={() =>
+                              document
+                                .getElementById(`pkg-img-${currentGame.game_code}-${p.catalogue_name}`)
+                                ?.click()
+                            }
+                          >
+                            <Upload className="h-3 w-3 mr-1" />
+                            {uploadingKey === `pkg:${currentGame.game_code}:${p.catalogue_name}`
+                              ? 'Uploading...'
+                              : o.image_url
+                              ? 'Replace Image'
+                              : 'Upload Image'}
+                          </Button>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {o.is_hidden ? <EyeOff className="h-4 w-4 text-destructive" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
@@ -367,7 +402,7 @@ export default function AdminContent() {
                           className="gaming-btn border-0"
                           onClick={() => saveOverride(currentGame.game_code, p.catalogue_name)}
                         >
-                          <Save className="h-4 w-4 mr-1" /> Save
+                          <Save className="h-4 w-4 mr-1" /> Save Name/Price
                         </Button>
                       </div>
                     </div>

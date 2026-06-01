@@ -81,6 +81,15 @@ export default function AdminPaymentMethods() {
   };
 
   const uploadLogo = async (m: PaymentMethod, file: File) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
+    if (!allowed.includes(file.type)) {
+      toast.error('Image files only (JPG, PNG, WEBP, SVG)');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Logo must be under 5MB');
+      return;
+    }
     setUploadingId(m.id);
     try {
       const ext = file.name.split('.').pop();

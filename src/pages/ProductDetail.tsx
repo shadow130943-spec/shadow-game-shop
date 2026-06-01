@@ -47,6 +47,7 @@ export default function ProductDetail() {
   const { id } = useParams<{ id: string }>(); // id = game_code
   const navigate = useNavigate();
   const { user } = useAuth();
+  const overrides = usePackageOverrides(id);
   const [game, setGame] = useState<GameData | null>(null);
   const [walletBalance, setWalletBalance] = useState(0);
   const [isReseller, setIsReseller] = useState(false);

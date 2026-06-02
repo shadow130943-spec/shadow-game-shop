@@ -250,10 +250,28 @@ serve(async (req) => {
         .select("*")
         .order("created_at", { ascending: false });
 
-      return new Response(JSON.stringify({ users: data }), {
+      const userIds = (data || []).map((p: any) => p.user_id);
+      const { data: rolesData } = await supabaseAdmin
+        .from("user_roles")
+        .select("user_id, role")
+        .in("user_id", userIds.length > 0 ? userIds : ["none"]);
+
+      const roleMap = new Map<string, string[]>();
+      for (const r of rolesData || []) {
+        const arr = roleMap.get(r.user_id) || [];
+        arr.push(r.role);
+        roleMap.set(r.user_id, arr);
+      }
+      const users = (data || []).map((p: any) => ({
+        ...p,
+        roles: roleMap.get(p.user_id) || [],
+      }));
+
+      return new Response(JSON.stringify({ users }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     if (action === "get_pending_game_orders") {
       const { data: ordersData } = await supabaseAdmin

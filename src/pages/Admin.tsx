@@ -25,10 +25,11 @@ interface UserProfile {
   user_code: string | null;
   wallet_balance: number;
   created_at: string;
+  roles?: string[];
 }
 
 export default function Admin() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState<Stats>({ userCount: 0, successCount: 0, totalAmount: 0 });
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -37,6 +38,7 @@ export default function Admin() {
   const [transferLoading, setTransferLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [serverVerified, setServerVerified] = useState(false);
+  const [roleSavingId, setRoleSavingId] = useState<string | null>(null);
 
   const callAdmin = async (action: string, params: Record<string, any> = {}) => {
     const { data, error } = await supabase.functions.invoke('admin-actions', {

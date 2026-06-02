@@ -205,6 +205,54 @@ export default function AdminContent() {
     setUploadingKey(null);
   };
 
+  /* ---------- Bulk image upload (one image -> many packages) ---------- */
+  const toggleBulkSelected = (catalogue_name: string) => {
+    setBulkSelected((s) => ({ ...s, [catalogue_name]: !s[catalogue_name] }));
+  };
+
+  const selectAllBulk = (game_code: string, select: boolean) => {
+    const game = games.find((g) => g.game_code === game_code);
+    if (!game) return;
+    const next: Record<string, boolean> = {};
+    if (select) game.packages.forEach((p) => { next[p.catalogue_name] = true; });
+    setBulkSelected(next);
+  };
+
+  const bulkUploadImage = async (game_code: string, file: File) => {
+    const targets = Object.entries(bulkSelected).filter(([, v]) => v).map(([k]) => k);
+    if (targets.length === 0) {
+      toast.error('Package တစ်ခု အနည်းဆုံး ရွေးချယ်ပါ');
+      return;
+    }
+    setBulkUploading(true);
+    try {
+      // Upload once, reuse URL across all selected packages
+      const url = await uploadToBranding(`packages/${game_code}`, file);
+      const rows = targets.map((catalogue_name) => {
+        const o = getOverride(game_code, catalogue_name);
+        return {
+          game_code,
+          catalogue_name,
+          display_name: o.display_name || null,
+          price_mmk_override: o.price_mmk_override,
+          is_hidden: o.is_hidden,
+          image_url: url,
+          updated_at: new Date().toISOString(),
+        };
+      });
+      const { error } = await supabase
+        .from('package_overrides')
+        .upsert(rows, { onConflict: 'game_code,catalogue_name' });
+      if (error) throw error;
+      toast.success(`${targets.length} package(s) တွင် ပုံ apply လုပ်ပြီး`);
+      setBulkSelected({});
+      loadAll();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+    setBulkUploading(false);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">

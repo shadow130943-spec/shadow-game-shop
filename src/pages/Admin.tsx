@@ -71,7 +71,7 @@ export default function Admin() {
 
     const verifyAndLoad = async () => {
       try {
-        await callAdmin('verify_admin');
+        await callAdmin('verify_admin_or_reseller');
         setServerVerified(true);
         await loadData();
       } catch {
@@ -81,6 +81,23 @@ export default function Admin() {
 
     verifyAndLoad();
   }, [user]);
+
+  const toggleReseller = async (u: UserProfile) => {
+    const hasReseller = (u.roles || []).includes('reseller');
+    setRoleSavingId(u.user_id);
+    try {
+      await callAdmin('set_user_role', {
+        target_user_id: u.user_id,
+        role: 'reseller',
+        grant: !hasReseller,
+      });
+      toast.success(hasReseller ? `${u.name} ၏ Reseller ဖြုတ်ပြီး` : `${u.name} ကို Reseller သတ်မှတ်ပြီး`);
+      await loadData();
+    } catch (err: any) {
+      toast.error(err.message || 'Role ပြောင်း၍မရပါ');
+    }
+    setRoleSavingId(null);
+  };
 
   const handleTransfer = async (e: React.FormEvent) => {
     e.preventDefault();

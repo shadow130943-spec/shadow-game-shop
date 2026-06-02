@@ -233,19 +233,27 @@ export default function Admin() {
               </Button>
             </div>
 
-            {/* Content Management link */}
-            <div className="gaming-card rounded-xl p-6 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <ImageIcon className="h-5 w-5 text-primary" />
-                <div>
-                  <h3 className="font-gaming font-bold">Content & Branding</h3>
-                  <p className="text-xs text-muted-foreground">Game logos, hero banner, site logo, package overrides</p>
+            {/* Content Management link (admin only) */}
+            {isAdmin && (
+              <div className="gaming-card rounded-xl p-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <ImageIcon className="h-5 w-5 text-primary" />
+                  <div>
+                    <h3 className="font-gaming font-bold">Content & Branding</h3>
+                    <p className="text-xs text-muted-foreground">Game logos, hero banner, site logo, package overrides</p>
+                  </div>
                 </div>
+                <Button onClick={() => navigate('/admin/content')} className="gaming-btn border-0">
+                  Manage
+                </Button>
               </div>
-              <Button onClick={() => navigate('/admin/content')} className="gaming-btn border-0">
-                Manage
-              </Button>
-            </div>
+            )}
+
+            {!isAdmin && (
+              <div className="gaming-card rounded-xl p-4 text-xs text-muted-foreground border border-secondary/30">
+                Reseller account — Content & Branding နှင့် Role Management အပိုင်းများကို မမြင်ရပါ။
+              </div>
+            )}
           </TabsContent>
 
           {/* Users Tab */}
@@ -259,22 +267,51 @@ export default function Admin() {
                     <TableHead>Phone</TableHead>
                     <TableHead>Balance</TableHead>
                     <TableHead>Joined</TableHead>
+                    {isAdmin && <TableHead className="text-right">Role</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((u) => (
-                    <TableRow key={u.id}>
-                      <TableCell className="font-medium">{u.name}</TableCell>
-                      <TableCell className="text-primary font-mono">{u.user_code}</TableCell>
-                      <TableCell>{u.phone}</TableCell>
-                      <TableCell className="font-semibold">{formatBalance(u.wallet_balance)} ကျပ်</TableCell>
-                      <TableCell className="text-sm">{new Date(u.created_at).toLocaleDateString()}</TableCell>
-                    </TableRow>
-                  ))}
+                  {users.map((u) => {
+                    const roles = u.roles || [];
+                    const isAdminUser = roles.includes('admin');
+                    const isResellerUser = roles.includes('reseller');
+                    return (
+                      <TableRow key={u.id}>
+                        <TableCell className="font-medium">
+                          {u.name}
+                          {isAdminUser && <span className="ml-2 text-[10px] font-bold text-primary">ADMIN</span>}
+                          {isResellerUser && <span className="ml-2 text-[10px] font-bold text-secondary">RESELLER</span>}
+                        </TableCell>
+                        <TableCell className="text-primary font-mono">{u.user_code}</TableCell>
+                        <TableCell>{u.phone}</TableCell>
+                        <TableCell className="font-semibold">{formatBalance(u.wallet_balance)} ကျပ်</TableCell>
+                        <TableCell className="text-sm">{new Date(u.created_at).toLocaleDateString()}</TableCell>
+                        {isAdmin && (
+                          <TableCell className="text-right">
+                            {!isAdminUser && (
+                              <Button
+                                size="sm"
+                                variant={isResellerUser ? 'destructive' : 'secondary'}
+                                disabled={roleSavingId === u.user_id}
+                                onClick={() => toggleReseller(u)}
+                              >
+                                {roleSavingId === u.user_id
+                                  ? '...'
+                                  : isResellerUser
+                                  ? 'Remove Reseller'
+                                  : 'Make Reseller'}
+                              </Button>
+                            )}
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
           </TabsContent>
+
         </Tabs>
       </div>
     </div>

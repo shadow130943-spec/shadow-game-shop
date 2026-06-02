@@ -128,10 +128,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setProfile(null);
     setIsAdmin(false);
+    setIsReseller(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, isAdmin, signUp, signIn, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, isAdmin, isReseller, signUp, signIn, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

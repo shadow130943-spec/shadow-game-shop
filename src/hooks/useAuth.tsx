@@ -19,6 +19,7 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   isAdmin: boolean;
+  isReseller: boolean;
   signUp: (phone: string, password: string, name: string) => Promise<{ error: Error | null }>;
   signIn: (phone: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -37,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isReseller, setIsReseller] = useState(false);
 
   const fetchProfile = async (userId: string, retry = 0) => {
     const { data, error } = await supabase
@@ -58,9 +60,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', userId)
-      .eq('role', 'admin');
-    setIsAdmin((data && data.length > 0) || false);
+      .eq('user_id', userId);
+    const roles = (data || []).map((r: any) => r.role);
+    setIsAdmin(roles.includes('admin'));
+    setIsReseller(roles.includes('reseller'));
   };
 
   const refreshProfile = async () => {
@@ -81,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setProfile(null);
           setIsAdmin(false);
+          setIsReseller(false);
         }
         setLoading(false);
       }
@@ -125,10 +129,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setProfile(null);
     setIsAdmin(false);
+    setIsReseller(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, isAdmin, signUp, signIn, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, isAdmin, isReseller, signUp, signIn, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

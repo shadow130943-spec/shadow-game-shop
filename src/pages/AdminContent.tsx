@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Save, Trash2, EyeOff, Eye } from 'lucide-react';
+import { ArrowLeft, Upload, Save, Trash2, EyeOff, Eye, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
@@ -53,6 +54,10 @@ export default function AdminContent() {
   const [selectedGame, setSelectedGame] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
+
+  // Bulk image upload state
+  const [bulkSelected, setBulkSelected] = useState<Record<string, boolean>>({});
+  const [bulkUploading, setBulkUploading] = useState(false);
 
   const loadAll = async () => {
     setLoading(true);
@@ -200,6 +205,54 @@ export default function AdminContent() {
     setUploadingKey(null);
   };
 
+  /* ---------- Bulk image upload (one image -> many packages) ---------- */
+  const toggleBulkSelected = (catalogue_name: string) => {
+    setBulkSelected((s) => ({ ...s, [catalogue_name]: !s[catalogue_name] }));
+  };
+
+  const selectAllBulk = (game_code: string, select: boolean) => {
+    const game = games.find((g) => g.game_code === game_code);
+    if (!game) return;
+    const next: Record<string, boolean> = {};
+    if (select) game.packages.forEach((p) => { next[p.catalogue_name] = true; });
+    setBulkSelected(next);
+  };
+
+  const bulkUploadImage = async (game_code: string, file: File) => {
+    const targets = Object.entries(bulkSelected).filter(([, v]) => v).map(([k]) => k);
+    if (targets.length === 0) {
+      toast.error('Package တစ်ခု အနည်းဆုံး ရွေးချယ်ပါ');
+      return;
+    }
+    setBulkUploading(true);
+    try {
+      // Upload once, reuse URL across all selected packages
+      const url = await uploadToBranding(`packages/${game_code}`, file);
+      const rows = targets.map((catalogue_name) => {
+        const o = getOverride(game_code, catalogue_name);
+        return {
+          game_code,
+          catalogue_name,
+          display_name: o.display_name || null,
+          price_mmk_override: o.price_mmk_override,
+          is_hidden: o.is_hidden,
+          image_url: url,
+          updated_at: new Date().toISOString(),
+        };
+      });
+      const { error } = await supabase
+        .from('package_overrides')
+        .upsert(rows, { onConflict: 'game_code,catalogue_name' });
+      if (error) throw error;
+      toast.success(`${targets.length} package(s) တွင် ပုံ apply လုပ်ပြီး`);
+      setBulkSelected({});
+      loadAll();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+    setBulkUploading(false);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -316,18 +369,66 @@ export default function AdminContent() {
             </div>
 
             {currentGame && (
-              <div className="space-y-2">
+              <>
+                {/* Bulk apply image panel */}
+                <div className="gaming-card rounded-xl p-4 border border-secondary/40 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Layers className="h-4 w-4 text-secondary" />
+                    <h3 className="font-bold text-sm">Bulk Image Apply</h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Package အများကြီးကို ပုံတစ်ပုံတည်းနဲ့ apply လုပ်လို့ရပါတယ်။ အရင်ဆုံး package တွေကို
+                    အောက်တွင် check လုပ်ပြီး "Upload &amp; Apply" ကိုနှိပ်ပါ။
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button size="sm" variant="outline" onClick={() => selectAllBulk(currentGame.game_code, true)}>
+                      Select All
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setBulkSelected({})}>
+                      Clear
+                    </Button>
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {Object.values(bulkSelected).filter(Boolean).length} selected
+                    </span>
+                    <input
+                      id="bulk-pkg-img"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) =>
+                        e.target.files?.[0] && bulkUploadImage(currentGame.game_code, e.target.files[0])
+                      }
+                    />
+                    <Button
+                      size="sm"
+                      className="gaming-btn border-0"
+                      disabled={bulkUploading || Object.values(bulkSelected).filter(Boolean).length === 0}
+                      onClick={() => document.getElementById('bulk-pkg-img')?.click()}
+                    >
+                      <Upload className="h-3 w-3 mr-1" />
+                      {bulkUploading ? 'Uploading...' : 'Upload & Apply'}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
                 {currentGame.packages.map((p) => {
                   const o = getOverride(currentGame.game_code, p.catalogue_name);
                   return (
                     <div key={p.catalogue_name} className="gaming-card rounded-xl p-4 space-y-3">
                       <div className="flex items-start gap-3">
-                        <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0">
-                          {o.image_url ? (
-                            <img src={o.image_url} alt={p.catalogue_name} className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="text-[10px] text-muted-foreground">No image</span>
-                          )}
+                        <div className="flex flex-col items-center gap-1 shrink-0">
+                          <Checkbox
+                            checked={!!bulkSelected[p.catalogue_name]}
+                            onCheckedChange={() => toggleBulkSelected(p.catalogue_name)}
+                          />
+                          <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center overflow-hidden">
+                            {o.image_url ? (
+                              <img src={o.image_url} alt={p.catalogue_name} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground">No image</span>
+                            )}
+                          </div>
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-mono text-muted-foreground truncate">{p.catalogue_name}</p>
@@ -407,8 +508,9 @@ export default function AdminContent() {
                       </div>
                     </div>
                   );
-                })}
-              </div>
+                  })}
+                </div>
+              </>
             )}
           </TabsContent>
         </Tabs>

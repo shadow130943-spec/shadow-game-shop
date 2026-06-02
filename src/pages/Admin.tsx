@@ -25,10 +25,11 @@ interface UserProfile {
   user_code: string | null;
   wallet_balance: number;
   created_at: string;
+  roles?: string[];
 }
 
 export default function Admin() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState<Stats>({ userCount: 0, successCount: 0, totalAmount: 0 });
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -37,6 +38,7 @@ export default function Admin() {
   const [transferLoading, setTransferLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [serverVerified, setServerVerified] = useState(false);
+  const [roleSavingId, setRoleSavingId] = useState<string | null>(null);
 
   const callAdmin = async (action: string, params: Record<string, any> = {}) => {
     const { data, error } = await supabase.functions.invoke('admin-actions', {
@@ -69,7 +71,7 @@ export default function Admin() {
 
     const verifyAndLoad = async () => {
       try {
-        await callAdmin('verify_admin');
+        await callAdmin('verify_admin_or_reseller');
         setServerVerified(true);
         await loadData();
       } catch {
@@ -79,6 +81,23 @@ export default function Admin() {
 
     verifyAndLoad();
   }, [user]);
+
+  const toggleReseller = async (u: UserProfile) => {
+    const hasReseller = (u.roles || []).includes('reseller');
+    setRoleSavingId(u.user_id);
+    try {
+      await callAdmin('set_user_role', {
+        target_user_id: u.user_id,
+        role: 'reseller',
+        grant: !hasReseller,
+      });
+      toast.success(hasReseller ? `${u.name} ၏ Reseller ဖြုတ်ပြီး` : `${u.name} ကို Reseller သတ်မှတ်ပြီး`);
+      await loadData();
+    } catch (err: any) {
+      toast.error(err.message || 'Role ပြောင်း၍မရပါ');
+    }
+    setRoleSavingId(null);
+  };
 
   const handleTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,19 +233,27 @@ export default function Admin() {
               </Button>
             </div>
 
-            {/* Content Management link */}
-            <div className="gaming-card rounded-xl p-6 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <ImageIcon className="h-5 w-5 text-primary" />
-                <div>
-                  <h3 className="font-gaming font-bold">Content & Branding</h3>
-                  <p className="text-xs text-muted-foreground">Game logos, hero banner, site logo, package overrides</p>
+            {/* Content Management link (admin only) */}
+            {isAdmin && (
+              <div className="gaming-card rounded-xl p-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <ImageIcon className="h-5 w-5 text-primary" />
+                  <div>
+                    <h3 className="font-gaming font-bold">Content & Branding</h3>
+                    <p className="text-xs text-muted-foreground">Game logos, hero banner, site logo, package overrides</p>
+                  </div>
                 </div>
+                <Button onClick={() => navigate('/admin/content')} className="gaming-btn border-0">
+                  Manage
+                </Button>
               </div>
-              <Button onClick={() => navigate('/admin/content')} className="gaming-btn border-0">
-                Manage
-              </Button>
-            </div>
+            )}
+
+            {!isAdmin && (
+              <div className="gaming-card rounded-xl p-4 text-xs text-muted-foreground border border-secondary/30">
+                Reseller account — Content & Branding နှင့် Role Management အပိုင်းများကို မမြင်ရပါ။
+              </div>
+            )}
           </TabsContent>
 
           {/* Users Tab */}
@@ -240,22 +267,51 @@ export default function Admin() {
                     <TableHead>Phone</TableHead>
                     <TableHead>Balance</TableHead>
                     <TableHead>Joined</TableHead>
+                    {isAdmin && <TableHead className="text-right">Role</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((u) => (
-                    <TableRow key={u.id}>
-                      <TableCell className="font-medium">{u.name}</TableCell>
-                      <TableCell className="text-primary font-mono">{u.user_code}</TableCell>
-                      <TableCell>{u.phone}</TableCell>
-                      <TableCell className="font-semibold">{formatBalance(u.wallet_balance)} ကျပ်</TableCell>
-                      <TableCell className="text-sm">{new Date(u.created_at).toLocaleDateString()}</TableCell>
-                    </TableRow>
-                  ))}
+                  {users.map((u) => {
+                    const roles = u.roles || [];
+                    const isAdminUser = roles.includes('admin');
+                    const isResellerUser = roles.includes('reseller');
+                    return (
+                      <TableRow key={u.id}>
+                        <TableCell className="font-medium">
+                          {u.name}
+                          {isAdminUser && <span className="ml-2 text-[10px] font-bold text-primary">ADMIN</span>}
+                          {isResellerUser && <span className="ml-2 text-[10px] font-bold text-secondary">RESELLER</span>}
+                        </TableCell>
+                        <TableCell className="text-primary font-mono">{u.user_code}</TableCell>
+                        <TableCell>{u.phone}</TableCell>
+                        <TableCell className="font-semibold">{formatBalance(u.wallet_balance)} ကျပ်</TableCell>
+                        <TableCell className="text-sm">{new Date(u.created_at).toLocaleDateString()}</TableCell>
+                        {isAdmin && (
+                          <TableCell className="text-right">
+                            {!isAdminUser && (
+                              <Button
+                                size="sm"
+                                variant={isResellerUser ? 'destructive' : 'secondary'}
+                                disabled={roleSavingId === u.user_id}
+                                onClick={() => toggleReseller(u)}
+                              >
+                                {roleSavingId === u.user_id
+                                  ? '...'
+                                  : isResellerUser
+                                  ? 'Remove Reseller'
+                                  : 'Make Reseller'}
+                              </Button>
+                            )}
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
           </TabsContent>
+
         </Tabs>
       </div>
     </div>

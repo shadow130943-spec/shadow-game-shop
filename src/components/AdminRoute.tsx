@@ -3,7 +3,13 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
-export default function AdminRoute({ children }: { children: React.ReactNode }) {
+interface Props {
+  children: React.ReactNode;
+  /** If true, users with the "reseller" role can also access this route. */
+  allowReseller?: boolean;
+}
+
+export default function AdminRoute({ children, allowReseller = false }: Props) {
   const { user } = useAuth();
   const [status, setStatus] = useState<'loading' | 'authorized' | 'unauthorized'>('loading');
 
@@ -13,8 +19,9 @@ export default function AdminRoute({ children }: { children: React.ReactNode }) 
       return;
     }
 
+    const action = allowReseller ? 'verify_admin_or_reseller' : 'verify_admin';
     supabase.functions
-      .invoke('admin-actions', { body: { action: 'verify_admin' } })
+      .invoke('admin-actions', { body: { action } })
       .then(({ data, error }) => {
         if (error || data?.error) {
           setStatus('unauthorized');
@@ -23,7 +30,7 @@ export default function AdminRoute({ children }: { children: React.ReactNode }) 
         }
       })
       .catch(() => setStatus('unauthorized'));
-  }, [user]);
+  }, [user, allowReseller]);
 
   if (status === 'loading') {
     return (

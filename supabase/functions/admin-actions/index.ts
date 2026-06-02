@@ -32,7 +32,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Verify caller is admin
+    // Verify caller is admin (or reseller for limited actions)
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
@@ -41,15 +41,27 @@ serve(async (req) => {
     const { data: roleData } = await supabaseAdmin
       .from("user_roles")
       .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "admin")
-      .single();
+      .eq("user_id", user.id);
 
-    if (!roleData) throw new Error("Not an admin");
+    const roles = (roleData || []).map((r: any) => r.role);
+    const isAdmin = roles.includes("admin");
+    const isReseller = roles.includes("reseller");
+
+    if (!isAdmin && !isReseller) throw new Error("Not an admin");
 
     const body = await req.json();
     const { action } = ActionSchema.parse(body);
     const params = body;
+
+    // Actions restricted to full admins only (resellers cannot use these)
+    const ADMIN_ONLY = new Set([
+      "set_user_role",
+      "verify_admin",
+    ]);
+    if (!isAdmin && ADMIN_ONLY.has(action)) {
+      throw new Error("Not an admin");
+    }
+
 
     if (action === "approve_deposit") {
       const { deposit_id } = DepositActionSchema.parse(params);
@@ -238,10 +250,28 @@ serve(async (req) => {
         .select("*")
         .order("created_at", { ascending: false });
 
-      return new Response(JSON.stringify({ users: data }), {
+      const userIds = (data || []).map((p: any) => p.user_id);
+      const { data: rolesData } = await supabaseAdmin
+        .from("user_roles")
+        .select("user_id, role")
+        .in("user_id", userIds.length > 0 ? userIds : ["none"]);
+
+      const roleMap = new Map<string, string[]>();
+      for (const r of rolesData || []) {
+        const arr = roleMap.get(r.user_id) || [];
+        arr.push(r.role);
+        roleMap.set(r.user_id, arr);
+      }
+      const users = (data || []).map((p: any) => ({
+        ...p,
+        roles: roleMap.get(p.user_id) || [],
+      }));
+
+      return new Response(JSON.stringify({ users }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     if (action === "get_pending_game_orders") {
       const { data: ordersData } = await supabaseAdmin
@@ -354,6 +384,41 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    if (action === "verify_admin_or_reseller") {
+      return new Response(JSON.stringify({ isAdmin, isReseller }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "set_user_role") {
+      const RoleSchema = z.object({
+        target_user_id: z.string().uuid(),
+        role: z.enum(["admin", "reseller"]),
+        grant: z.boolean(),
+      });
+      const { target_user_id, role, grant } = RoleSchema.parse(params);
+
+      if (grant) {
+        // Upsert via insert that ignores duplicates
+        const { error } = await supabaseAdmin
+          .from("user_roles")
+          .insert({ user_id: target_user_id, role })
+          .select();
+        if (error && !String(error.message).includes("duplicate")) throw error;
+      } else {
+        const { error } = await supabaseAdmin
+          .from("user_roles")
+          .delete()
+          .eq("user_id", target_user_id)
+          .eq("role", role);
+        if (error) throw error;
+      }
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
 
     if (action === "get_products_with_items") {
       const { data: products } = await supabaseAdmin

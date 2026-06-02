@@ -38,6 +38,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ScrollToTop />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
@@ -46,9 +47,9 @@ const App = () => (
             <Route path="/deposit" element={<Deposit />} />
             <Route path="/deposit-history" element={<DepositHistory />} />
             <Route path="/game-order-history" element={<GameOrderHistory />} />
-            <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
-            <Route path="/admin/profit-settings" element={<AdminRoute><AdminProfitSettings /></AdminRoute>} />
-            <Route path="/admin/payment-methods" element={<AdminRoute><AdminPaymentMethods /></AdminRoute>} />
+            <Route path="/admin" element={<AdminRoute allowReseller><Admin /></AdminRoute>} />
+            <Route path="/admin/profit-settings" element={<AdminRoute allowReseller><AdminProfitSettings /></AdminRoute>} />
+            <Route path="/admin/payment-methods" element={<AdminRoute allowReseller><AdminPaymentMethods /></AdminRoute>} />
             <Route path="/admin/content" element={<AdminRoute><AdminContent /></AdminRoute>} />
             <Route path="/account" element={<Account />} />
             <Route path="/notifications" element={<Notifications />} />

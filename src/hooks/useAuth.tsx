@@ -60,9 +60,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', userId)
-      .eq('role', 'admin');
-    setIsAdmin((data && data.length > 0) || false);
+      .eq('user_id', userId);
+    const roles = (data || []).map((r: any) => r.role);
+    setIsAdmin(roles.includes('admin'));
+    setIsReseller(roles.includes('reseller'));
   };
 
   const refreshProfile = async () => {

@@ -367,6 +367,41 @@ serve(async (req) => {
       });
     }
 
+    if (action === "verify_admin_or_reseller") {
+      return new Response(JSON.stringify({ isAdmin, isReseller }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "set_user_role") {
+      const RoleSchema = z.object({
+        target_user_id: z.string().uuid(),
+        role: z.enum(["admin", "reseller"]),
+        grant: z.boolean(),
+      });
+      const { target_user_id, role, grant } = RoleSchema.parse(params);
+
+      if (grant) {
+        // Upsert via insert that ignores duplicates
+        const { error } = await supabaseAdmin
+          .from("user_roles")
+          .insert({ user_id: target_user_id, role })
+          .select();
+        if (error && !String(error.message).includes("duplicate")) throw error;
+      } else {
+        const { error } = await supabaseAdmin
+          .from("user_roles")
+          .delete()
+          .eq("user_id", target_user_id)
+          .eq("role", role);
+        if (error) throw error;
+      }
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+
     if (action === "get_products_with_items") {
       const { data: products } = await supabaseAdmin
         .from("products")

@@ -369,7 +369,49 @@ export default function AdminContent() {
             </div>
 
             {currentGame && (
-              <div className="space-y-2">
+              <>
+                {/* Bulk apply image panel */}
+                <div className="gaming-card rounded-xl p-4 border border-secondary/40 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Layers className="h-4 w-4 text-secondary" />
+                    <h3 className="font-bold text-sm">Bulk Image Apply</h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Package အများကြီးကို ပုံတစ်ပုံတည်းနဲ့ apply လုပ်လို့ရပါတယ်။ အရင်ဆုံး package တွေကို
+                    အောက်တွင် check လုပ်ပြီး "Upload &amp; Apply" ကိုနှိပ်ပါ။
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button size="sm" variant="outline" onClick={() => selectAllBulk(currentGame.game_code, true)}>
+                      Select All
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setBulkSelected({})}>
+                      Clear
+                    </Button>
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {Object.values(bulkSelected).filter(Boolean).length} selected
+                    </span>
+                    <input
+                      id="bulk-pkg-img"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) =>
+                        e.target.files?.[0] && bulkUploadImage(currentGame.game_code, e.target.files[0])
+                      }
+                    />
+                    <Button
+                      size="sm"
+                      className="gaming-btn border-0"
+                      disabled={bulkUploading || Object.values(bulkSelected).filter(Boolean).length === 0}
+                      onClick={() => document.getElementById('bulk-pkg-img')?.click()}
+                    >
+                      <Upload className="h-3 w-3 mr-1" />
+                      {bulkUploading ? 'Uploading...' : 'Upload & Apply'}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
                 {currentGame.packages.map((p) => {
                   const o = getOverride(currentGame.game_code, p.catalogue_name);
                   return (

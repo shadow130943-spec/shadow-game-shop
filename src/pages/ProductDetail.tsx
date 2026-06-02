@@ -201,12 +201,21 @@ export default function ProductDetail() {
         },
       });
 
-      // Any upstream/edge failure -> treat as out-of-stock for the user.
-      // (insufficient balance / invalid session / out of stock / network error)
+      // Surface real upstream issues so admins know what to fix.
       if (error || !data?.success) {
         console.error('[placeOrder] failed:', error || data);
         setOrderFailed(true);
-        toast.error(STOCK_ERROR_MSG);
+        if (data?.insufficient_reseller_balance) {
+          toast.error('Reseller account တွင် ငွေမလုံလောက်ပါ။ Admin ထံ ဆက်သွယ်ပါ။');
+        } else if (data?.invalid_reseller_session) {
+          toast.error('Shadow Game Shop session သက်တမ်းကုန်နေပါသည်။ Admin ထံ အကြောင်းကြားပါ။');
+        } else if (data?.message) {
+          // Show actual upstream message (e.g. real out-of-stock) so the
+          // problem is visible instead of being masked.
+          toast.error(data.message);
+        } else {
+          toast.error(STOCK_ERROR_MSG);
+        }
         return;
       }
 

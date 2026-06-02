@@ -55,6 +55,10 @@ export default function AdminContent() {
   const [loading, setLoading] = useState(true);
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
 
+  // Bulk image upload state
+  const [bulkSelected, setBulkSelected] = useState<Record<string, boolean>>({});
+  const [bulkUploading, setBulkUploading] = useState(false);
+
   const loadAll = async () => {
     setLoading(true);
     try {

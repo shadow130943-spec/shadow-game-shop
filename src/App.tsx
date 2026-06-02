@@ -17,6 +17,7 @@ import AdminProfitSettings from "./pages/AdminProfitSettings";
 import AdminPaymentMethods from "./pages/AdminPaymentMethods";
 import AdminContent from "./pages/AdminContent";
 import AdminRoute from "./components/AdminRoute";
+import ScrollToTop from "./components/ScrollToTop";
 import Account from "./pages/Account";
 import Notifications from "./pages/Notifications";
 import Spin from "./pages/Spin";

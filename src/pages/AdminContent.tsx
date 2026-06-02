@@ -417,12 +417,18 @@ export default function AdminContent() {
                   return (
                     <div key={p.catalogue_name} className="gaming-card rounded-xl p-4 space-y-3">
                       <div className="flex items-start gap-3">
-                        <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0">
-                          {o.image_url ? (
-                            <img src={o.image_url} alt={p.catalogue_name} className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="text-[10px] text-muted-foreground">No image</span>
-                          )}
+                        <div className="flex flex-col items-center gap-1 shrink-0">
+                          <Checkbox
+                            checked={!!bulkSelected[p.catalogue_name]}
+                            onCheckedChange={() => toggleBulkSelected(p.catalogue_name)}
+                          />
+                          <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center overflow-hidden">
+                            {o.image_url ? (
+                              <img src={o.image_url} alt={p.catalogue_name} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground">No image</span>
+                            )}
+                          </div>
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-mono text-muted-foreground truncate">{p.catalogue_name}</p>

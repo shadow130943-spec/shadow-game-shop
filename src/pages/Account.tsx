@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export default function Account() {
-  const { user, profile, isAdmin, signOut } = useAuth();
+  const { user, profile, isAdmin, isReseller, signOut } = useAuth();
   const navigate = useNavigate();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -113,6 +113,11 @@ export default function Account() {
         {isAdmin && (
           <Button variant="outline" className="w-full justify-start text-primary border-primary/30" onClick={() => navigate('/admin')}>
             <Shield className="h-5 w-5 mr-2" /> Admin Dashboard
+          </Button>
+        )}
+        {!isAdmin && isReseller && (
+          <Button variant="outline" className="w-full justify-start text-secondary border-secondary/30" onClick={() => navigate('/admin')}>
+            <Shield className="h-5 w-5 mr-2" /> Reseller Dashboard
           </Button>
         )}
         <Button variant="outline" className="w-full justify-start border-destructive/50 text-destructive hover:bg-destructive/10" onClick={handleSignOut}>

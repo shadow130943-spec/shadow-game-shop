@@ -129,3 +129,19 @@
     box-shadow: 0 4px 15px hsl(var(--secondary) / 0.3);
   }
 }
+
+/* Prevent iOS auto-zoom on input focus (font-size must be >= 16px) */
+@layer base {
+  html, body {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    overscroll-behavior-y: none;
+  }
+  input, select, textarea {
+    font-size: 16px;
+  }
+  * {
+    touch-action: manipulation;
+  }
+}
+

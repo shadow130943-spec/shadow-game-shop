@@ -38,6 +38,34 @@ export function useBrandingAsset(key: string): string | null {
   return url;
 }
 
+/** Fetch ordered list of hero carousel slides (keys: hero_slide_*). Falls back to legacy 'hero_banner'. */
+export function useHeroSlides(): string[] {
+  const [urls, setUrls] = useState<string[]>([]);
+  useEffect(() => {
+    let alive = true;
+    supabase
+      .from('branding_assets')
+      .select('key, image_url')
+      .like('key', 'hero_slide_%')
+      .then(async ({ data }) => {
+        if (!alive) return;
+        if (data && data.length > 0) {
+          const sorted = [...data].sort((a: any, b: any) => a.key.localeCompare(b.key));
+          setUrls(sorted.map((r: any) => r.image_url));
+        } else {
+          const { data: legacy } = await supabase
+            .from('branding_assets')
+            .select('image_url')
+            .eq('key', 'hero_banner')
+            .maybeSingle();
+          if (alive && legacy?.image_url) setUrls([legacy.image_url]);
+        }
+      });
+    return () => { alive = false; };
+  }, []);
+  return urls;
+}
+
 /** Fetch the full game_code -> logo_url map. */
 export function useGameLogos(): Record<string, string> {
   const [map, setMap] = useState<Record<string, string>>({});

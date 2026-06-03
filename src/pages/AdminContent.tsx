@@ -30,7 +30,6 @@ interface OverrideRow {
 }
 
 const BRANDING_KEYS: Array<{ key: string; label: string; hint: string }> = [
-  { key: 'hero_banner', label: 'Hero Banner', hint: 'Homepage top banner image' },
   { key: 'site_logo', label: 'Site Logo', hint: 'Small logo shown next to site name in the header' },
   { key: 'favicon', label: 'Favicon', hint: 'Browser tab icon (square PNG/ICO recommended)' },
 ];
@@ -51,6 +50,8 @@ export default function AdminContent() {
   const [gameLogos, setGameLogos] = useState<Record<string, string>>({});
   const [brandingMap, setBrandingMap] = useState<Record<string, string>>({});
   const [overrides, setOverrides] = useState<OverrideRow[]>([]);
+  const [heroSlides, setHeroSlides] = useState<Array<{ key: string; image_url: string }>>([]);
+  const [gameBanners, setGameBanners] = useState<Record<string, string>>({});
   const [selectedGame, setSelectedGame] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
@@ -75,7 +76,20 @@ export default function AdminContent() {
       (logosRes.data || []).forEach((r: any) => { lm[r.game_code] = r.logo_url; });
       setGameLogos(lm);
       const bm: Record<string, string> = {};
-      (brandingRes.data || []).forEach((r: any) => { bm[r.key] = r.image_url; });
+      const slides: Array<{ key: string; image_url: string }> = [];
+      const banners: Record<string, string> = {};
+      (brandingRes.data || []).forEach((r: any) => {
+        if (r.key.startsWith('hero_slide_')) {
+          slides.push({ key: r.key, image_url: r.image_url });
+        } else if (r.key.startsWith('game_banner_')) {
+          banners[r.key.replace('game_banner_', '')] = r.image_url;
+        } else {
+          bm[r.key] = r.image_url;
+        }
+      });
+      slides.sort((a, b) => a.key.localeCompare(b.key));
+      setHeroSlides(slides);
+      setGameBanners(banners);
       setBrandingMap(bm);
       setOverrides((overridesRes.data || []) as OverrideRow[]);
     } catch (e: any) {
@@ -101,6 +115,69 @@ export default function AdminContent() {
       toast.error(e.message);
     }
     setUploadingKey(null);
+  };
+
+  /* ---------- Hero slides (carousel) ---------- */
+  const uploadHeroSlide = async (files: FileList) => {
+    setUploadingKey('hero:add');
+    try {
+      const arr = Array.from(files);
+      for (const file of arr) {
+        const url = await uploadToBranding('hero-slides', file);
+        const key = `hero_slide_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+        const { error } = await supabase
+          .from('branding_assets')
+          .insert({ key, image_url: url });
+        if (error) throw error;
+      }
+      toast.success(`${arr.length} slide(s) uploaded`);
+      loadAll();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+    setUploadingKey(null);
+  };
+
+  const deleteHeroSlide = async (key: string) => {
+    try {
+      const { error } = await supabase.from('branding_assets').delete().eq('key', key);
+      if (error) throw error;
+      setHeroSlides((s) => s.filter((x) => x.key !== key));
+      toast.success('Slide removed');
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  /* ---------- Game banners ---------- */
+  const uploadGameBanner = async (game_code: string, file: File) => {
+    const key = `game_banner_${game_code}`;
+    setUploadingKey(key);
+    try {
+      const url = await uploadToBranding(`game-banners/${game_code}`, file);
+      const { error } = await supabase
+        .from('branding_assets')
+        .upsert({ key, image_url: url, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+      if (error) throw error;
+      setGameBanners({ ...gameBanners, [game_code]: url });
+      toast.success(`${game_code} banner updated`);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+    setUploadingKey(null);
+  };
+
+  const deleteGameBanner = async (game_code: string) => {
+    try {
+      const { error } = await supabase.from('branding_assets').delete().eq('key', `game_banner_${game_code}`);
+      if (error) throw error;
+      const next = { ...gameBanners };
+      delete next[game_code];
+      setGameBanners(next);
+      toast.success('Banner removed');
+    } catch (e: any) {
+      toast.error(e.message);
+    }
   };
 
   /* ---------- Game logos ---------- */
@@ -274,12 +351,63 @@ export default function AdminContent() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6">
-        <Tabs defaultValue="branding" className="space-y-6">
-          <TabsList className="w-full grid grid-cols-3 bg-muted">
+        <Tabs defaultValue="hero" className="space-y-6">
+          <TabsList className="w-full grid grid-cols-5 bg-muted text-xs">
+            <TabsTrigger value="hero">Hero</TabsTrigger>
             <TabsTrigger value="branding">Branding</TabsTrigger>
             <TabsTrigger value="logos">Game Logos</TabsTrigger>
+            <TabsTrigger value="banners">Game Banners</TabsTrigger>
             <TabsTrigger value="packages">Packages</TabsTrigger>
           </TabsList>
+
+          {/* HERO SLIDES */}
+          <TabsContent value="hero" className="space-y-4">
+            <div className="gaming-card rounded-xl p-4 space-y-3">
+              <div>
+                <h3 className="font-bold">Home Hero Carousel</h3>
+                <p className="text-xs text-muted-foreground">Upload one or more banners. They auto-rotate every 4 seconds on the homepage.</p>
+              </div>
+              <input
+                id="hero-slides-input"
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => e.target.files?.length && uploadHeroSlide(e.target.files)}
+              />
+              <Button
+                size="sm"
+                className="gaming-btn border-0"
+                disabled={uploadingKey === 'hero:add'}
+                onClick={() => document.getElementById('hero-slides-input')?.click()}
+              >
+                <Upload className="h-3 w-3 mr-1" />
+                {uploadingKey === 'hero:add' ? 'Uploading...' : 'Upload Banner(s)'}
+              </Button>
+            </div>
+            {heroSlides.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground text-sm">No slides yet.</div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {heroSlides.map((s) => (
+                  <div key={s.key} className="gaming-card rounded-xl overflow-hidden">
+                    <img src={s.image_url} alt={s.key} className="w-full h-28 object-cover" />
+                    <div className="p-2 flex justify-end">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => deleteHeroSlide(s.key)}
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" /> Delete
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+
 
           {/* BRANDING */}
           <TabsContent value="branding" className="space-y-4">
@@ -354,7 +482,56 @@ export default function AdminContent() {
             ))}
           </TabsContent>
 
-          {/* PACKAGES */}
+          {/* GAME BANNERS */}
+          <TabsContent value="banners" className="space-y-3">
+            <p className="text-xs text-muted-foreground">Wide banner shown at the top of each game's package page.</p>
+            {games.map((g) => (
+              <div key={g.game_code} className="gaming-card rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-lg bg-muted overflow-hidden shrink-0">
+                    {gameLogos[g.game_code] && (
+                      <img src={gameLogos[g.game_code]} alt="" className="w-full h-full object-cover" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold truncate">{g.game_name}</h3>
+                    <p className="text-xs text-muted-foreground font-mono">{g.game_code}</p>
+                  </div>
+                </div>
+                <div className="w-full h-28 rounded-lg bg-muted overflow-hidden">
+                  {gameBanners[g.game_code] ? (
+                    <img src={gameBanners[g.game_code]} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">No banner</div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    id={`banner-${g.game_code}`}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => e.target.files?.[0] && uploadGameBanner(g.game_code, e.target.files[0])}
+                  />
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={uploadingKey === `game_banner_${g.game_code}`}
+                    onClick={() => document.getElementById(`banner-${g.game_code}`)?.click()}
+                  >
+                    <Upload className="h-3 w-3 mr-1" />
+                    {uploadingKey === `game_banner_${g.game_code}` ? '...' : gameBanners[g.game_code] ? 'Replace' : 'Upload'}
+                  </Button>
+                  {gameBanners[g.game_code] && (
+                    <Button size="sm" variant="destructive" onClick={() => deleteGameBanner(g.game_code)}>
+                      <Trash2 className="h-3 w-3 mr-1" /> Remove
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </TabsContent>
+
           <TabsContent value="packages" className="space-y-4">
             <div>
               <Label>Select Game</Label>

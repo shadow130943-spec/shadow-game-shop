@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { usePackageOverrides, applyOverrides } from '@/hooks/useShopContent';
+import { usePackageOverrides, applyOverrides, useBrandingAsset } from '@/hooks/useShopContent';
 import { toast } from 'sonner';
 
 interface Package {
@@ -43,6 +43,16 @@ const CURRENCIES = [
   { value: 'mmk', label: 'မြန်မာကျပ် 🇲🇲' },
   { value: 'usd', label: 'USD 💵' },
 ];
+
+function GameBanner({ gameCode }: { gameCode: string }) {
+  const url = useBrandingAsset(`game_banner_${gameCode}`);
+  if (!url) return null;
+  return (
+    <div className="mx-4 mt-3 rounded-2xl overflow-hidden">
+      <img src={url} alt="game banner" className="w-full h-32 sm:h-40 md:h-48 object-cover" draggable={false} />
+    </div>
+  );
+}
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>(); // id = game_code
@@ -285,42 +295,8 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {needsServerId && (
-        <div className="px-4 pt-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Globe className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold text-foreground">ဆာဗာရွေးချယ်ရန်</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {SERVERS.map((server) => (
-              <button
-                key={server.value}
-                onClick={() => setSelectedServer(server.value)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  selectedServer === server.value
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-card border border-border text-foreground hover:border-primary/50'
-                }`}
-              >
-                {server.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      <GameBanner gameCode={id || ''} />
 
-      <div className="px-4 pt-4">
-        <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
-          <SelectTrigger className="w-full bg-card border-border">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {CURRENCIES.map((c) => (
-              <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
 
       <div className="px-4 py-4">
         {visiblePackages.length === 0 ? (

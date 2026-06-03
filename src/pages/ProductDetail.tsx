@@ -44,6 +44,16 @@ const CURRENCIES = [
   { value: 'usd', label: 'USD 💵' },
 ];
 
+function GameBanner({ gameCode }: { gameCode: string }) {
+  const url = useBrandingAsset(`game_banner_${gameCode}`);
+  if (!url) return null;
+  return (
+    <div className="mx-4 mt-3 rounded-2xl overflow-hidden">
+      <img src={url} alt="game banner" className="w-full h-32 sm:h-40 md:h-48 object-cover" draggable={false} />
+    </div>
+  );
+}
+
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>(); // id = game_code
   const navigate = useNavigate();

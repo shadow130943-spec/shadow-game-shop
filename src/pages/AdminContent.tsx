@@ -482,7 +482,56 @@ export default function AdminContent() {
             ))}
           </TabsContent>
 
-          {/* PACKAGES */}
+          {/* GAME BANNERS */}
+          <TabsContent value="banners" className="space-y-3">
+            <p className="text-xs text-muted-foreground">Wide banner shown at the top of each game's package page.</p>
+            {games.map((g) => (
+              <div key={g.game_code} className="gaming-card rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-lg bg-muted overflow-hidden shrink-0">
+                    {gameLogos[g.game_code] && (
+                      <img src={gameLogos[g.game_code]} alt="" className="w-full h-full object-cover" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold truncate">{g.game_name}</h3>
+                    <p className="text-xs text-muted-foreground font-mono">{g.game_code}</p>
+                  </div>
+                </div>
+                <div className="w-full h-28 rounded-lg bg-muted overflow-hidden">
+                  {gameBanners[g.game_code] ? (
+                    <img src={gameBanners[g.game_code]} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">No banner</div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    id={`banner-${g.game_code}`}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => e.target.files?.[0] && uploadGameBanner(g.game_code, e.target.files[0])}
+                  />
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={uploadingKey === `game_banner_${g.game_code}`}
+                    onClick={() => document.getElementById(`banner-${g.game_code}`)?.click()}
+                  >
+                    <Upload className="h-3 w-3 mr-1" />
+                    {uploadingKey === `game_banner_${g.game_code}` ? '...' : gameBanners[g.game_code] ? 'Replace' : 'Upload'}
+                  </Button>
+                  {gameBanners[g.game_code] && (
+                    <Button size="sm" variant="destructive" onClick={() => deleteGameBanner(g.game_code)}>
+                      <Trash2 className="h-3 w-3 mr-1" /> Remove
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </TabsContent>
+
           <TabsContent value="packages" className="space-y-4">
             <div>
               <Label>Select Game</Label>

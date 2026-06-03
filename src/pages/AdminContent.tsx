@@ -351,12 +351,63 @@ export default function AdminContent() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6">
-        <Tabs defaultValue="branding" className="space-y-6">
-          <TabsList className="w-full grid grid-cols-3 bg-muted">
+        <Tabs defaultValue="hero" className="space-y-6">
+          <TabsList className="w-full grid grid-cols-5 bg-muted text-xs">
+            <TabsTrigger value="hero">Hero</TabsTrigger>
             <TabsTrigger value="branding">Branding</TabsTrigger>
             <TabsTrigger value="logos">Game Logos</TabsTrigger>
+            <TabsTrigger value="banners">Game Banners</TabsTrigger>
             <TabsTrigger value="packages">Packages</TabsTrigger>
           </TabsList>
+
+          {/* HERO SLIDES */}
+          <TabsContent value="hero" className="space-y-4">
+            <div className="gaming-card rounded-xl p-4 space-y-3">
+              <div>
+                <h3 className="font-bold">Home Hero Carousel</h3>
+                <p className="text-xs text-muted-foreground">Upload one or more banners. They auto-rotate every 4 seconds on the homepage.</p>
+              </div>
+              <input
+                id="hero-slides-input"
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => e.target.files?.length && uploadHeroSlide(e.target.files)}
+              />
+              <Button
+                size="sm"
+                className="gaming-btn border-0"
+                disabled={uploadingKey === 'hero:add'}
+                onClick={() => document.getElementById('hero-slides-input')?.click()}
+              >
+                <Upload className="h-3 w-3 mr-1" />
+                {uploadingKey === 'hero:add' ? 'Uploading...' : 'Upload Banner(s)'}
+              </Button>
+            </div>
+            {heroSlides.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground text-sm">No slides yet.</div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {heroSlides.map((s) => (
+                  <div key={s.key} className="gaming-card rounded-xl overflow-hidden">
+                    <img src={s.image_url} alt={s.key} className="w-full h-28 object-cover" />
+                    <div className="p-2 flex justify-end">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => deleteHeroSlide(s.key)}
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" /> Delete
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+
 
           {/* BRANDING */}
           <TabsContent value="branding" className="space-y-4">

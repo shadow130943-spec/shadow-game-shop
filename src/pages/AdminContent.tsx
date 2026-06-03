@@ -117,6 +117,69 @@ export default function AdminContent() {
     setUploadingKey(null);
   };
 
+  /* ---------- Hero slides (carousel) ---------- */
+  const uploadHeroSlide = async (files: FileList) => {
+    setUploadingKey('hero:add');
+    try {
+      const arr = Array.from(files);
+      for (const file of arr) {
+        const url = await uploadToBranding('hero-slides', file);
+        const key = `hero_slide_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+        const { error } = await supabase
+          .from('branding_assets')
+          .insert({ key, image_url: url });
+        if (error) throw error;
+      }
+      toast.success(`${arr.length} slide(s) uploaded`);
+      loadAll();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+    setUploadingKey(null);
+  };
+
+  const deleteHeroSlide = async (key: string) => {
+    try {
+      const { error } = await supabase.from('branding_assets').delete().eq('key', key);
+      if (error) throw error;
+      setHeroSlides((s) => s.filter((x) => x.key !== key));
+      toast.success('Slide removed');
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  /* ---------- Game banners ---------- */
+  const uploadGameBanner = async (game_code: string, file: File) => {
+    const key = `game_banner_${game_code}`;
+    setUploadingKey(key);
+    try {
+      const url = await uploadToBranding(`game-banners/${game_code}`, file);
+      const { error } = await supabase
+        .from('branding_assets')
+        .upsert({ key, image_url: url, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+      if (error) throw error;
+      setGameBanners({ ...gameBanners, [game_code]: url });
+      toast.success(`${game_code} banner updated`);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+    setUploadingKey(null);
+  };
+
+  const deleteGameBanner = async (game_code: string) => {
+    try {
+      const { error } = await supabase.from('branding_assets').delete().eq('key', `game_banner_${game_code}`);
+      if (error) throw error;
+      const next = { ...gameBanners };
+      delete next[game_code];
+      setGameBanners(next);
+      toast.success('Banner removed');
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
   /* ---------- Game logos ---------- */
   const uploadGameLogo = async (game_code: string, file: File) => {
     setUploadingKey(`logo:${game_code}`);

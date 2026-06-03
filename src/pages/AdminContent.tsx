@@ -30,7 +30,6 @@ interface OverrideRow {
 }
 
 const BRANDING_KEYS: Array<{ key: string; label: string; hint: string }> = [
-  { key: 'hero_banner', label: 'Hero Banner', hint: 'Homepage top banner image' },
   { key: 'site_logo', label: 'Site Logo', hint: 'Small logo shown next to site name in the header' },
   { key: 'favicon', label: 'Favicon', hint: 'Browser tab icon (square PNG/ICO recommended)' },
 ];
@@ -51,6 +50,8 @@ export default function AdminContent() {
   const [gameLogos, setGameLogos] = useState<Record<string, string>>({});
   const [brandingMap, setBrandingMap] = useState<Record<string, string>>({});
   const [overrides, setOverrides] = useState<OverrideRow[]>([]);
+  const [heroSlides, setHeroSlides] = useState<Array<{ key: string; image_url: string }>>([]);
+  const [gameBanners, setGameBanners] = useState<Record<string, string>>({});
   const [selectedGame, setSelectedGame] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
@@ -75,7 +76,20 @@ export default function AdminContent() {
       (logosRes.data || []).forEach((r: any) => { lm[r.game_code] = r.logo_url; });
       setGameLogos(lm);
       const bm: Record<string, string> = {};
-      (brandingRes.data || []).forEach((r: any) => { bm[r.key] = r.image_url; });
+      const slides: Array<{ key: string; image_url: string }> = [];
+      const banners: Record<string, string> = {};
+      (brandingRes.data || []).forEach((r: any) => {
+        if (r.key.startsWith('hero_slide_')) {
+          slides.push({ key: r.key, image_url: r.image_url });
+        } else if (r.key.startsWith('game_banner_')) {
+          banners[r.key.replace('game_banner_', '')] = r.image_url;
+        } else {
+          bm[r.key] = r.image_url;
+        }
+      });
+      slides.sort((a, b) => a.key.localeCompare(b.key));
+      setHeroSlides(slides);
+      setGameBanners(banners);
       setBrandingMap(bm);
       setOverrides((overridesRes.data || []) as OverrideRow[]);
     } catch (e: any) {

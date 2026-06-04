@@ -66,7 +66,7 @@ export default function AdminProfitSettings() {
   useEffect(() => {
     (async () => {
       try {
-        await callAdmin('verify_admin');
+        await callAdmin('verify_admin_or_reseller');
         setVerified(true);
         await load();
       } catch {

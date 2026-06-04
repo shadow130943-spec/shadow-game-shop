@@ -49,12 +49,12 @@ export default function Account() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <div className="flex-1 flex flex-col items-center justify-center px-4 gap-4 pb-20">
+      <div className="flex min-h-dvh flex-col overflow-x-hidden bg-background">
+        <main className="flex flex-1 flex-col items-center justify-center gap-4 px-4 pb-[calc(5rem+env(safe-area-inset-bottom))]">
           <p className="text-muted-foreground mb-2">အကောင့်ဝင်ရောက်ရန် လိုအပ်ပါသည်</p>
           <Button className="w-full max-w-xs gaming-btn border-0" onClick={() => navigate('/login')}>Login</Button>
           <Button variant="outline" className="w-full max-w-xs" onClick={() => navigate('/signup')}>Sign Up</Button>
-        </div>
+        </main>
         <BottomNav />
       </div>
     );

@@ -132,20 +132,40 @@
 
 /* Prevent iOS auto-zoom on input focus (font-size must be >= 16px) */
 @layer base {
-  html, body {
+  html,
+  body,
+  #root {
+    width: 100%;
     min-height: 100%;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }
+
+  html,
+  body {
+    background: hsl(var(--background));
+  }
+
   body {
     overflow-x: hidden;
-    /* Force paint isolation to prevent scroll repaint artifacts on mobile Chrome */
-    isolation: isolate;
   }
+
   #root {
-    isolation: isolate;
-    transform: translateZ(0);
+    min-height: 100dvh;
   }
+
+  .account-page,
+  .account-page * {
+    backface-visibility: visible;
+    transform-style: flat;
+  }
+
+  .account-surface {
+    contain: layout paint;
+    position: relative;
+    z-index: 0;
+  }
+
   input, select, textarea {
     font-size: 16px;
   }

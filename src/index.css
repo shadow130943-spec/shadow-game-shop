@@ -139,9 +139,16 @@
   }
   body {
     overflow-x: hidden;
+    /* Force paint isolation to prevent scroll repaint artifacts on mobile Chrome */
+    isolation: isolate;
+  }
+  #root {
+    isolation: isolate;
+    transform: translateZ(0);
   }
   input, select, textarea {
     font-size: 16px;
   }
 }
+
 

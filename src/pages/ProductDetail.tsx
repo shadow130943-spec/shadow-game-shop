@@ -390,10 +390,10 @@ export default function ProductDetail() {
                 animate={{ opacity: 1, y: 0 }}
                 className="rounded-lg px-4 py-2 text-center"
                 style={{
-                  color: '#ff00ff',
-                  textShadow: '0 0 8px rgba(255, 0, 255, 0.6), 0 0 20px rgba(255, 0, 255, 0.3)',
-                  background: 'rgba(255, 0, 255, 0.08)',
-                  border: '1px solid rgba(255, 0, 255, 0.25)',
+                  color: '#22c55e',
+                  textShadow: '0 0 8px rgba(34, 197, 94, 0.6), 0 0 20px rgba(34, 197, 94, 0.3)',
+                  background: 'rgba(34, 197, 94, 0.08)',
+                  border: '1px solid rgba(34, 197, 94, 0.3)',
                 }}
               >
                 <p className="text-xs text-muted-foreground mb-0.5">အကောင့်အမည်</p>

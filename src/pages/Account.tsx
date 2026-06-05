@@ -49,7 +49,7 @@ export default function Account() {
 
   if (!user) {
     return (
-      <div className="flex min-h-dvh flex-col overflow-x-hidden bg-background">
+      <div className="account-page flex min-h-dvh flex-col bg-background">
         <main className="flex flex-1 flex-col items-center justify-center gap-4 px-4 pb-[calc(5rem+env(safe-area-inset-bottom))]">
           <p className="text-muted-foreground mb-2">အကောင့်ဝင်ရောက်ရန် လိုအပ်ပါသည်</p>
           <Button className="w-full max-w-xs gaming-btn border-0" onClick={() => navigate('/login')}>Login</Button>
@@ -72,10 +72,10 @@ export default function Account() {
   ];
 
   return (
-    <div className="min-h-dvh overflow-x-hidden bg-background">
-      <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-4">
+    <div className="account-page min-h-dvh bg-background">
+      <main className="mx-auto grid w-full max-w-md gap-4 px-4 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-4">
         {/* Profile Card */}
-        <section className="overflow-hidden rounded-xl border border-border bg-card">
+        <section className="account-surface overflow-hidden rounded-xl border border-border bg-card">
           <div className="flex items-center gap-4 p-4">
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-xl font-bold text-primary">
               {(profile?.name || 'U').charAt(0).toUpperCase()}
@@ -105,7 +105,7 @@ export default function Account() {
         </section>
 
         {/* Telegram Links */}
-        <section className="grid grid-cols-2 gap-2">
+        <section className="account-surface grid grid-cols-2 gap-2">
           <a href="https://t.me/ykgaming2392024" target="_blank" rel="noopener noreferrer"
             className="flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border border-secondary/30 bg-secondary/10 p-3 text-center transition-colors hover:bg-secondary/20">
             <Send className="h-5 w-5 text-secondary" />
@@ -119,7 +119,7 @@ export default function Account() {
         </section>
 
         {/* Actions */}
-        <section className="flex flex-col gap-2">
+        <section className="account-surface flex flex-col gap-2">
           {dashboardActions.map((action) => (
             <Button
               key={action.key}
@@ -136,7 +136,7 @@ export default function Account() {
         </section>
 
         {/* Change Password */}
-        <section className="rounded-xl border border-border bg-card p-4">
+        <section className="account-surface rounded-xl border border-border bg-card p-4">
           <div className="mb-4 flex items-center gap-2">
             <Lock className="h-5 w-5 shrink-0 text-primary" />
             <h3 className="font-bold text-foreground">စကားဝှက်ပြောင်းရန်</h3>
@@ -179,7 +179,7 @@ export default function Account() {
         </section>
 
         {/* Top Buyers */}
-        <section>
+        <section className="account-surface">
           <TopBuyers />
         </section>
       </main>

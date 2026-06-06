@@ -193,10 +193,14 @@ export default function ProductDetail() {
     if (!nameCheckSuccess) { toast.error('အကောင့်အမည် အရင်စစ်ဆေးပါ'); return; }
     if (!confirmed) { toast.error('အချက်အလက်များမှန်ကန်ပါတယ် ကို အတည်ပြုပါ'); return; }
 
-    sessionStorage.setItem(lastOrderKey, String(Date.now()));
-
     const finalPrice = getMmkPrice(selectedPkg);
-    if (walletBalance < finalPrice) { toast.error('လက်ကျန်ငွေ မလုံလောက်ပါ'); return; }
+    if (walletBalance < finalPrice) {
+      toast.error('လက်ကျန်ငွေ မလုံလောက်ပါ');
+      setOrdering(false);
+      return;
+    }
+
+    sessionStorage.setItem(lastOrderKey, String(Date.now()));
 
     setOrdering(true);
     try {

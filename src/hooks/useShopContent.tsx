@@ -39,8 +39,9 @@ export function useBrandingAsset(key: string): string | null {
 }
 
 /** Fetch ordered list of hero carousel slides (keys: hero_slide_*). Falls back to legacy 'hero_banner'. */
-export function useHeroSlides(): string[] {
+export function useHeroSlides(): { slides: string[]; loading: boolean } {
   const [urls, setUrls] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
     let alive = true;
     supabase
@@ -52,6 +53,7 @@ export function useHeroSlides(): string[] {
         if (data && data.length > 0) {
           const sorted = [...data].sort((a: any, b: any) => a.key.localeCompare(b.key));
           setUrls(sorted.map((r: any) => r.image_url));
+          setLoading(false);
         } else {
           const { data: legacy } = await supabase
             .from('branding_assets')
@@ -59,11 +61,12 @@ export function useHeroSlides(): string[] {
             .eq('key', 'hero_banner')
             .maybeSingle();
           if (alive && legacy?.image_url) setUrls([legacy.image_url]);
+          if (alive) setLoading(false);
         }
       });
     return () => { alive = false; };
   }, []);
-  return urls;
+  return { slides: urls, loading };
 }
 
 /** Fetch the full game_code -> logo_url map. */

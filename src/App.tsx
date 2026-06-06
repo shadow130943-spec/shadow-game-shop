@@ -20,7 +20,7 @@ import AdminRoute from "./components/AdminRoute";
 import ScrollToTop from "./components/ScrollToTop";
 import Account from "./pages/Account";
 import Notifications from "./pages/Notifications";
-import Spin from "./pages/Spin";
+
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

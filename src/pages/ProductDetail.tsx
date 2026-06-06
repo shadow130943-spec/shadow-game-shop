@@ -347,7 +347,7 @@ export default function ProductDetail() {
           <div className="space-y-4 pt-2">
             <div className="flex items-center gap-2 text-sm font-semibold">
               <Link2 className="h-4 w-4" />
-              {needsServerId ? 'Account Info' : 'Player Id'}
+              {needsServerId ? 'Account Info' : (id === 'telegram' ? 'Telegram Username' : 'Player Id')}
             </div>
 
             {needsServerId ? (
@@ -358,7 +358,12 @@ export default function ProductDetail() {
                 <span className="text-muted-foreground font-bold">)</span>
               </div>
             ) : (
-              <Input placeholder="Player Id" value={gameId} onChange={(e) => setGameId(e.target.value)} className="flex-1" />
+              <Input
+                placeholder={id === 'telegram' ? 'Telegram Username' : 'Player Id'}
+                value={gameId}
+                onChange={(e) => setGameId(e.target.value)}
+                className="flex-1"
+              />
             )}
 
             {nameCheckLoading && (

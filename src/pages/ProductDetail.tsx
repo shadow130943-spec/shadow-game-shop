@@ -260,8 +260,9 @@ export default function ProductDetail() {
       console.error('[placeOrder] exception:', err);
       setOrderFailed(true);
       toast.error(STOCK_ERROR_MSG);
+    } finally {
+      setOrdering(false);
     }
-    setOrdering(false);
   };
 
   if (loading) {

@@ -41,7 +41,6 @@ export function BottomNav() {
   const navItems = [
     { icon: Home, label: 'Shop', path: '/' },
     { icon: Mail, label: 'Message', path: '/notifications', badge: unreadCount },
-    { icon: RotateCw, label: 'Spin', path: '/spin' },
     { icon: User, label: 'Account', path: '/account' },
   ];
 

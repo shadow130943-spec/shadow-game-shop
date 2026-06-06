@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
-import heroBanner from '@/assets/hero-banner.jpg';
 import { useHeroSlides } from '@/hooks/useShopContent';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function HeroBanner() {
-  const slides = useHeroSlides();
-  const images = slides.length > 0 ? slides : [heroBanner];
+  const { slides, loading } = useHeroSlides();
 
   const [emblaRef, emblaApi] = useEmblaCarousel(
     { loop: true, align: 'start' },
@@ -20,13 +19,23 @@ export function HeroBanner() {
     emblaApi.on('select', onSelect);
     emblaApi.on('reInit', onSelect);
     onSelect();
-  }, [emblaApi, images.length]);
+  }, [emblaApi, slides.length]);
+
+  if (loading) {
+    return (
+      <div className="mx-4">
+        <Skeleton className="w-full h-36 sm:h-44 md:h-52 lg:h-60 rounded-2xl" />
+      </div>
+    );
+  }
+
+  if (slides.length === 0) return null;
 
   return (
     <div className="mx-4 relative">
       <div className="rounded-2xl overflow-hidden" ref={emblaRef}>
         <div className="flex">
-          {images.map((src, i) => (
+          {slides.map((src, i) => (
             <div className="flex-[0_0_100%] min-w-0" key={i}>
               <img
                 src={src}
@@ -38,9 +47,9 @@ export function HeroBanner() {
           ))}
         </div>
       </div>
-      {images.length > 1 && (
+      {slides.length > 1 && (
         <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
-          {images.map((_, i) => (
+          {slides.map((_, i) => (
             <button
               key={i}
               onClick={() => emblaApi?.scrollTo(i)}

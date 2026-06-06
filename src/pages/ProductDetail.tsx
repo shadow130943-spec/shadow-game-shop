@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ShoppingCart, Link2, Globe, CheckCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Link2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -351,40 +351,19 @@ export default function ProductDetail() {
                 <span className="text-muted-foreground font-bold">(</span>
                 <Input placeholder="Server Id" value={serverId} onChange={(e) => setServerId(e.target.value)} className="flex-1" />
                 <span className="text-muted-foreground font-bold">)</span>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={handleNameCheck}
-                  disabled={nameCheckLoading || !gameId.trim() || !serverId.trim()}
-                  className="shrink-0 h-9 w-9"
-                >
-                  {nameCheckLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  ) : (
-                    <CheckCircle className={`h-5 w-5 ${nameCheckSuccess ? 'text-green-400' : 'text-muted-foreground'}`} />
-                  )}
-                </Button>
               </div>
             ) : (
-              <div className="flex items-center gap-1">
-                <Input placeholder="Player Id" value={gameId} onChange={(e) => setGameId(e.target.value)} className="flex-1" />
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={handleNameCheck}
-                  disabled={nameCheckLoading || !gameId.trim()}
-                  className="shrink-0 h-9 w-9"
-                >
-                  {nameCheckLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  ) : (
-                    <CheckCircle className={`h-5 w-5 ${nameCheckSuccess ? 'text-green-400' : 'text-muted-foreground'}`} />
-                  )}
-                </Button>
+              <Input placeholder="Player Id" value={gameId} onChange={(e) => setGameId(e.target.value)} className="flex-1" />
+            )}
+
+            {nameCheckLoading && (
+              <div className="rounded-lg px-4 py-2 text-center bg-muted flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                အကောင့်အမည် စစ်ဆေးနေသည်...
               </div>
             )}
 
-            {checkedName && nameCheckSuccess && (
+            {checkedName && nameCheckSuccess && !nameCheckLoading && (
               <motion.div
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -416,11 +395,23 @@ export default function ProductDetail() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Checkbox id="confirm-order" checked={confirmed} onCheckedChange={(checked) => setConfirmed(checked === true)} />
+              <Checkbox
+                id="confirm-order"
+                checked={confirmed}
+                disabled={nameCheckLoading}
+                onCheckedChange={(checked) => {
+                  const isChecked = checked === true;
+                  setConfirmed(isChecked);
+                  if (isChecked && !nameCheckSuccess && !nameCheckLoading) {
+                    handleNameCheck();
+                  }
+                }}
+              />
               <label htmlFor="confirm-order" className="text-sm font-semibold text-destructive cursor-pointer">
                 အချက်အလက်များမှန်ကန်ပါတယ်
               </label>
             </div>
+
 
             <div className="flex gap-3 justify-center pt-2">
               <Button variant="outline" className="rounded-full px-6" onClick={() => setDialogOpen(false)}>

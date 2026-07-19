@@ -73,18 +73,20 @@ const Index = () => {
   };
 
   const products: Product[] = useMemo(() => {
-    return rawGames.map((g) => {
-      const merged = applyOverrides(g.packages || [], overrides, g.game_code);
-      const visible = merged.filter((p) => !p.hidden && p.price_mmk > 0);
-      const minPrice = visible.length ? Math.min(...visible.map((p) => p.price_mmk)) : 0;
-      return {
-        id: g.game_code,
-        name: g.game_name,
-        description: null,
-        image_url: gameLogos[g.game_code] || DEFAULT_GAME_IMAGES[g.game_code] || null,
-        min_price: minPrice,
-      };
-    });
+    return rawGames
+      .filter((g) => ALLOWED_GAME_CODES.has(g.game_code))
+      .map((g) => {
+        const merged = applyOverrides(g.packages || [], overrides, g.game_code);
+        const visible = merged.filter((p) => !p.hidden && p.price_mmk > 0);
+        const minPrice = visible.length ? Math.min(...visible.map((p) => p.price_mmk)) : 0;
+        return {
+          id: g.game_code,
+          name: g.game_name,
+          description: null,
+          image_url: gameLogos[g.game_code] || DEFAULT_GAME_IMAGES[g.game_code] || null,
+          min_price: minPrice,
+        };
+      });
   }, [rawGames, gameLogos, overrides]);
 
 

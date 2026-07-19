@@ -159,6 +159,35 @@ export default function AdminProfitSettings() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+        <div className="gaming-card rounded-xl p-5 space-y-3">
+          <h2 className="font-gaming text-lg font-bold flex items-center gap-2">
+            <DollarSign className="h-5 w-5 text-primary" /> USD → MMK Exchange Rate
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            G2Bulk USD ဈေးများကို ဒီ rate နဲ့ MMK ပြောင်းပါမယ်။ ပြင်လိုက်တာနဲ့ website တစ်ခုလုံး auto update ဖြစ်ပါမယ်။
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 items-end">
+            <div className="flex-1 space-y-1 w-full">
+              <Label>1 USD = ? MMK</Label>
+              <Input
+                type="number"
+                min="1"
+                step="1"
+                value={usdRate}
+                onChange={(e) => setUsdRate(e.target.value)}
+                placeholder="4500"
+                disabled={!isAdmin}
+              />
+            </div>
+            <Button onClick={saveUsdRate} disabled={rateSaving || !isAdmin} className="gaming-btn border-0">
+              <Save className="h-4 w-4 mr-2" /> {rateSaving ? 'Saving...' : 'Save Rate'}
+            </Button>
+          </div>
+          {!isAdmin && (
+            <p className="text-[11px] text-muted-foreground">Reseller account — rate ကို view သာလုပ်နိုင်ပါတယ်။</p>
+          )}
+        </div>
+
         <div className="gaming-card rounded-xl p-5 space-y-4">
           <h2 className="font-gaming text-lg font-bold flex items-center gap-2">
             <Plus className="h-5 w-5 text-primary" /> Set / Update Margin

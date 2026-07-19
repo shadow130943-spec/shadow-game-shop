@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Save, Globe, Gamepad2, Package } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, Globe, Gamepad2, Package, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 interface Margin {
@@ -32,6 +33,7 @@ const callAdmin = async (action: string, params: Record<string, any> = {}) => {
 
 export default function AdminProfitSettings() {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [margins, setMargins] = useState<Margin[]>([]);
   const [games, setGames] = useState<GameOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,11 +46,16 @@ export default function AdminProfitSettings() {
   const [pct, setPct] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // USD -> MMK rate
+  const [usdRate, setUsdRate] = useState('');
+  const [rateSaving, setRateSaving] = useState(false);
+
   const load = async () => {
     try {
-      const [mres, pres] = await Promise.all([
+      const [mres, pres, rres] = await Promise.all([
         callAdmin('list_profit_margins'),
         supabase.functions.invoke('g2bulk-api', { body: { action: 'listProducts' } }),
+        supabase.from('app_settings').select('value').eq('key', 'usd_to_mmk').maybeSingle(),
       ]);
       setMargins(mres.margins || []);
       const gameList = (pres.data?.games || []).map((g: any) => ({
@@ -57,10 +64,28 @@ export default function AdminProfitSettings() {
         packages: (g.packages || []).map((p: any) => ({ catalogue_name: p.catalogue_name })),
       }));
       setGames(gameList);
+      if (rres.data?.value) setUsdRate(String(rres.data.value));
     } catch (e: any) {
       toast.error(e.message);
     }
     setLoading(false);
+  };
+
+  const saveUsdRate = async () => {
+    const n = parseFloat(usdRate);
+    if (!isFinite(n) || n <= 0) { toast.error('Rate မမှန်ပါ'); return; }
+    setRateSaving(true);
+    try {
+      const { error } = await supabase.from('app_settings').upsert(
+        { key: 'usd_to_mmk', value: String(n), updated_at: new Date().toISOString() },
+        { onConflict: 'key' },
+      );
+      if (error) throw error;
+      toast.success('USD → MMK rate သိမ်းပြီးပါပြီ');
+    } catch (e: any) {
+      toast.error(e.message || 'သိမ်း၍မရပါ');
+    }
+    setRateSaving(false);
   };
 
   useEffect(() => {
@@ -134,6 +159,35 @@ export default function AdminProfitSettings() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+        <div className="gaming-card rounded-xl p-5 space-y-3">
+          <h2 className="font-gaming text-lg font-bold flex items-center gap-2">
+            <DollarSign className="h-5 w-5 text-primary" /> USD → MMK Exchange Rate
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            G2Bulk USD ဈေးများကို ဒီ rate နဲ့ MMK ပြောင်းပါမယ်။ ပြင်လိုက်တာနဲ့ website တစ်ခုလုံး auto update ဖြစ်ပါမယ်။
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 items-end">
+            <div className="flex-1 space-y-1 w-full">
+              <Label>1 USD = ? MMK</Label>
+              <Input
+                type="number"
+                min="1"
+                step="1"
+                value={usdRate}
+                onChange={(e) => setUsdRate(e.target.value)}
+                placeholder="4500"
+                disabled={!isAdmin}
+              />
+            </div>
+            <Button onClick={saveUsdRate} disabled={rateSaving || !isAdmin} className="gaming-btn border-0">
+              <Save className="h-4 w-4 mr-2" /> {rateSaving ? 'Saving...' : 'Save Rate'}
+            </Button>
+          </div>
+          {!isAdmin && (
+            <p className="text-[11px] text-muted-foreground">Reseller account — rate ကို view သာလုပ်နိုင်ပါတယ်။</p>
+          )}
+        </div>
+
         <div className="gaming-card rounded-xl p-5 space-y-4">
           <h2 className="font-gaming text-lg font-bold flex items-center gap-2">
             <Plus className="h-5 w-5 text-primary" /> Set / Update Margin

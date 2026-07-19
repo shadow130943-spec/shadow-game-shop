@@ -16,7 +16,25 @@ const corsHeaders = {
 
 const BASE_URL = "https://api.g2bulk.com/v1";
 const API_KEY = Deno.env.get("G2BULK_API_KEY") || "";
-const USD_TO_MMK = Number(Deno.env.get("G2BULK_USD_TO_MMK") || "4500") || 4500;
+const USD_TO_MMK_FALLBACK = Number(Deno.env.get("G2BULK_USD_TO_MMK") || "4500") || 4500;
+
+async function loadUsdToMmk(): Promise<number> {
+  try {
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const { data } = await supabaseAdmin
+      .from("app_settings")
+      .select("value")
+      .eq("key", "usd_to_mmk")
+      .maybeSingle();
+    const n = Number(data?.value);
+    return Number.isFinite(n) && n > 0 ? n : USD_TO_MMK_FALLBACK;
+  } catch {
+    return USD_TO_MMK_FALLBACK;
+  }
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -104,13 +122,13 @@ async function listProducts() {
   );
   const catByCode = new Map(catalogues.map((c) => [c.code, c.catalogues]));
 
-  // 3. Load margins once and build payload.
-  const margins = await loadMargins();
+  // 3. Load margins + live USD→MMK once and build payload.
+  const [margins, usdToMmk] = await Promise.all([loadMargins(), loadUsdToMmk()]);
   const payloadGames = games.map((g) => {
     const items = catByCode.get(g.code) || [];
     const packages = items.map((it: any) => {
       const usd = Number(it.amount) || 0;
-      const baseMmk = Math.round(usd * USD_TO_MMK);
+      const baseMmk = Math.round(usd * usdToMmk);
       const pct = pickMargin(margins, g.code, it.name);
       const finalMmk = Math.round(baseMmk * (1 + pct / 100));
       return {

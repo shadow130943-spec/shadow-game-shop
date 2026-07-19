@@ -28,9 +28,17 @@ const DEFAULT_GAME_IMAGES: Record<string, string> = {
   mlbb: mlbbImg,
   magic_chess_gogo: magicChessImg,
   pubgm: pubgmImg,
-  telegram: telegramImg,
+  Telegram: telegramImg,
   freefire_global: freefireImg,
 };
+
+const ALLOWED_GAME_CODES = new Set([
+  'mlbb',
+  'magic_chess_gogo',
+  'pubgm',
+  'Telegram',
+  'freefire_global',
+]);
 
 const Index = () => {
   const [rawGames, setRawGames] = useState<Array<{

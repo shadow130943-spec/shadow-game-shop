@@ -51,7 +51,7 @@ const Index = () => {
 
   const fetchProducts = async () => {
     setLoading(true);
-    const { data, error } = await supabase.functions.invoke('shadow-gameshop', {
+    const { data, error } = await supabase.functions.invoke('g2bulk-api', {
       body: { action: 'listProducts' },
     });
 

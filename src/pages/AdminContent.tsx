@@ -64,7 +64,7 @@ export default function AdminContent() {
     setLoading(true);
     try {
       const [gamesRes, logosRes, brandingRes, overridesRes] = await Promise.all([
-        supabase.functions.invoke('shadow-gameshop', { body: { action: 'listProducts' } }),
+        supabase.functions.invoke('g2bulk-api', { body: { action: 'listProducts' } }),
         supabase.from('game_assets').select('*'),
         supabase.from('branding_assets').select('*'),
         supabase.from('package_overrides').select('*'),

@@ -52,9 +52,10 @@ export default function AdminProfitSettings() {
 
   const load = async () => {
     try {
-      const [mres, pres] = await Promise.all([
+      const [mres, pres, rres] = await Promise.all([
         callAdmin('list_profit_margins'),
         supabase.functions.invoke('g2bulk-api', { body: { action: 'listProducts' } }),
+        supabase.from('app_settings').select('value').eq('key', 'usd_to_mmk').maybeSingle(),
       ]);
       setMargins(mres.margins || []);
       const gameList = (pres.data?.games || []).map((g: any) => ({
@@ -63,10 +64,28 @@ export default function AdminProfitSettings() {
         packages: (g.packages || []).map((p: any) => ({ catalogue_name: p.catalogue_name })),
       }));
       setGames(gameList);
+      if (rres.data?.value) setUsdRate(String(rres.data.value));
     } catch (e: any) {
       toast.error(e.message);
     }
     setLoading(false);
+  };
+
+  const saveUsdRate = async () => {
+    const n = parseFloat(usdRate);
+    if (!isFinite(n) || n <= 0) { toast.error('Rate မမှန်ပါ'); return; }
+    setRateSaving(true);
+    try {
+      const { error } = await supabase.from('app_settings').upsert(
+        { key: 'usd_to_mmk', value: String(n), updated_at: new Date().toISOString() },
+        { onConflict: 'key' },
+      );
+      if (error) throw error;
+      toast.success('USD → MMK rate သိမ်းပြီးပါပြီ');
+    } catch (e: any) {
+      toast.error(e.message || 'သိမ်း၍မရပါ');
+    }
+    setRateSaving(false);
   };
 
   useEffect(() => {

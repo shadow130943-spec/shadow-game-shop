@@ -33,6 +33,7 @@ const callAdmin = async (action: string, params: Record<string, any> = {}) => {
 
 export default function AdminProfitSettings() {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [margins, setMargins] = useState<Margin[]>([]);
   const [games, setGames] = useState<GameOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,6 +45,10 @@ export default function AdminProfitSettings() {
   const [catalogueName, setCatalogueName] = useState('');
   const [pct, setPct] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // USD -> MMK rate
+  const [usdRate, setUsdRate] = useState('');
+  const [rateSaving, setRateSaving] = useState(false);
 
   const load = async () => {
     try {

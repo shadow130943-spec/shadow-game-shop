@@ -122,13 +122,13 @@ async function listProducts() {
   );
   const catByCode = new Map(catalogues.map((c) => [c.code, c.catalogues]));
 
-  // 3. Load margins once and build payload.
-  const margins = await loadMargins();
+  // 3. Load margins + live USD→MMK once and build payload.
+  const [margins, usdToMmk] = await Promise.all([loadMargins(), loadUsdToMmk()]);
   const payloadGames = games.map((g) => {
     const items = catByCode.get(g.code) || [];
     const packages = items.map((it: any) => {
       const usd = Number(it.amount) || 0;
-      const baseMmk = Math.round(usd * USD_TO_MMK);
+      const baseMmk = Math.round(usd * usdToMmk);
       const pct = pickMargin(margins, g.code, it.name);
       const finalMmk = Math.round(baseMmk * (1 + pct / 100));
       return {

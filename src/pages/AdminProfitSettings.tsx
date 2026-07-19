@@ -48,7 +48,7 @@ export default function AdminProfitSettings() {
     try {
       const [mres, pres] = await Promise.all([
         callAdmin('list_profit_margins'),
-        supabase.functions.invoke('shadow-gameshop', { body: { action: 'listProducts' } }),
+        supabase.functions.invoke('g2bulk-api', { body: { action: 'listProducts' } }),
       ]);
       setMargins(mres.margins || []);
       const gameList = (pres.data?.games || []).map((g: any) => ({

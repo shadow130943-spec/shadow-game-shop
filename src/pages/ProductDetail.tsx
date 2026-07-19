@@ -84,7 +84,7 @@ export default function ProductDetail() {
     if (!id) return;
     const load = async () => {
       setLoading(true);
-      const { data, error } = await supabase.functions.invoke('shadow-gameshop', {
+      const { data, error } = await supabase.functions.invoke('g2bulk-api', {
         body: { action: 'listProducts' },
       });
       if (error || !data?.success) {
@@ -149,7 +149,7 @@ export default function ProductDetail() {
     setNameCheckSuccess(false);
 
     try {
-      const { data, error } = await supabase.functions.invoke('shadow-gameshop', {
+      const { data, error } = await supabase.functions.invoke('g2bulk-api', {
         body: {
           action: 'checkPlayerId',
           game: game.game_code,
@@ -204,7 +204,7 @@ export default function ProductDetail() {
 
     setOrdering(true);
     try {
-      const { data, error } = await supabase.functions.invoke('shadow-gameshop', {
+      const { data, error } = await supabase.functions.invoke('g2bulk-api', {
         body: {
           action: 'placeOrder',
           game: game.game_code,

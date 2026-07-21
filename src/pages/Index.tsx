@@ -32,13 +32,14 @@ const DEFAULT_GAME_IMAGES: Record<string, string> = {
   freefire_global: freefireImg,
 };
 
-const ALLOWED_GAME_CODES = new Set([
+const GAME_DISPLAY_ORDER = [
   'mlbb',
-  'magic_chess_gogo',
   'pubgm',
   'Telegram',
+  'magic_chess_gogo',
   'freefire_global',
-]);
+];
+const ALLOWED_GAME_CODES = new Set(GAME_DISPLAY_ORDER);
 
 const Index = () => {
   const [rawGames, setRawGames] = useState<Array<{
@@ -86,7 +87,8 @@ const Index = () => {
           image_url: gameLogos[g.game_code] || DEFAULT_GAME_IMAGES[g.game_code] || null,
           min_price: minPrice,
         };
-      });
+      })
+      .sort((a, b) => GAME_DISPLAY_ORDER.indexOf(a.id) - GAME_DISPLAY_ORDER.indexOf(b.id));
   }, [rawGames, gameLogos, overrides]);
 
 

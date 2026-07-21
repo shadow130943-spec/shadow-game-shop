@@ -69,7 +69,11 @@ export default function AdminContent() {
         supabase.from('branding_assets').select('*'),
         supabase.from('package_overrides').select('*'),
       ]);
-      const gs = (gamesRes.data?.games || []) as GameRow[];
+      const ALLOWED = ['mlbb', 'pubgm', 'Telegram', 'magic_chess_gogo', 'freefire_global'];
+      const allGs = (gamesRes.data?.games || []) as GameRow[];
+      const gs = allGs
+        .filter((g) => ALLOWED.includes(g.game_code))
+        .sort((a, b) => ALLOWED.indexOf(a.game_code) - ALLOWED.indexOf(b.game_code));
       setGames(gs);
       if (gs.length && !selectedGame) setSelectedGame(gs[0].game_code);
       const lm: Record<string, string> = {};

@@ -58,11 +58,15 @@ export default function AdminProfitSettings() {
         supabase.from('app_settings').select('value').eq('key', 'usd_to_mmk').maybeSingle(),
       ]);
       setMargins(mres.margins || []);
-      const gameList = (pres.data?.games || []).map((g: any) => ({
-        game_code: g.game_code,
-        game_name: g.game_name,
-        packages: (g.packages || []).map((p: any) => ({ catalogue_name: p.catalogue_name })),
-      }));
+      const ALLOWED = ['mlbb', 'pubgm', 'Telegram', 'magic_chess_gogo', 'freefire_global'];
+      const gameList = (pres.data?.games || [])
+        .filter((g: any) => ALLOWED.includes(g.game_code))
+        .sort((a: any, b: any) => ALLOWED.indexOf(a.game_code) - ALLOWED.indexOf(b.game_code))
+        .map((g: any) => ({
+          game_code: g.game_code,
+          game_name: g.game_name,
+          packages: (g.packages || []).map((p: any) => ({ catalogue_name: p.catalogue_name })),
+        }));
       setGames(gameList);
       if (rres.data?.value) setUsdRate(String(rres.data.value));
     } catch (e: any) {

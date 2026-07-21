@@ -87,7 +87,8 @@ const Index = () => {
           image_url: gameLogos[g.game_code] || DEFAULT_GAME_IMAGES[g.game_code] || null,
           min_price: minPrice,
         };
-      });
+      })
+      .sort((a, b) => GAME_DISPLAY_ORDER.indexOf(a.id) - GAME_DISPLAY_ORDER.indexOf(b.id));
   }, [rawGames, gameLogos, overrides]);
 
 

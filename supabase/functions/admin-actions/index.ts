@@ -55,7 +55,7 @@ serve(async (req) => {
 
     // Actions restricted to full admins only (resellers cannot use these)
     const ADMIN_ONLY = new Set([
-      "set_user_role",
+      "delete_user",
       "verify_admin",
     ]);
     if (!isAdmin && ADMIN_ONLY.has(action)) {

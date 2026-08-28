@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Users, Send, ArrowLeft, Percent, CreditCard, Image as ImageIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Send, ArrowLeft, Percent, CreditCard, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -82,22 +82,19 @@ export default function Admin() {
     verifyAndLoad();
   }, [user]);
 
-  const toggleReseller = async (u: UserProfile) => {
-    const hasReseller = (u.roles || []).includes('reseller');
+  const deleteUser = async (u: UserProfile) => {
+    if (!window.confirm(`${u.name} (${u.user_code}) အကောင့်ကို အပြီးအပိုင် ဖျက်မှာ သေချာပါသလား? ဒေတာအားလုံး ပျောက်သွားပါမည်။`)) return;
     setRoleSavingId(u.user_id);
     try {
-      await callAdmin('set_user_role', {
-        target_user_id: u.user_id,
-        role: 'reseller',
-        grant: !hasReseller,
-      });
-      toast.success(hasReseller ? `${u.name} ၏ Reseller ဖြုတ်ပြီး` : `${u.name} ကို Reseller သတ်မှတ်ပြီး`);
+      await callAdmin('delete_user', { target_user_id: u.user_id });
+      toast.success(`${u.name} အကောင့်ကို ဖျက်ပြီးပါပြီ`);
       await loadData();
     } catch (err: any) {
-      toast.error(err.message || 'Role ပြောင်း၍မရပါ');
+      toast.error(err.message || 'အကောင့်ဖျက်၍မရပါ');
     }
     setRoleSavingId(null);
   };
+
 
   const handleTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -251,7 +248,7 @@ export default function Admin() {
 
             {!isAdmin && (
               <div className="gaming-card rounded-xl p-4 text-xs text-muted-foreground border border-secondary/30">
-                Reseller account — Content & Branding နှင့် Role Management အပိုင်းများကို မမြင်ရပါ။
+                Reseller account — Content & Branding နှင့် User Management အပိုင်းများကို မမြင်ရပါ။
               </div>
             )}
           </TabsContent>
@@ -267,20 +264,18 @@ export default function Admin() {
                     <TableHead>Phone</TableHead>
                     <TableHead>Balance</TableHead>
                     <TableHead>Joined</TableHead>
-                    {isAdmin && <TableHead className="text-right">Role</TableHead>}
+                    {isAdmin && <TableHead className="text-right">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {users.map((u) => {
                     const roles = u.roles || [];
                     const isAdminUser = roles.includes('admin');
-                    const isResellerUser = roles.includes('reseller');
                     return (
                       <TableRow key={u.id}>
                         <TableCell className="font-medium">
                           {u.name}
                           {isAdminUser && <span className="ml-2 text-[10px] font-bold text-primary">ADMIN</span>}
-                          {isResellerUser && <span className="ml-2 text-[10px] font-bold text-secondary">RESELLER</span>}
                         </TableCell>
                         <TableCell className="text-primary font-mono">{u.user_code}</TableCell>
                         <TableCell>{u.phone}</TableCell>
@@ -291,19 +286,17 @@ export default function Admin() {
                             {!isAdminUser && (
                               <Button
                                 size="sm"
-                                variant={isResellerUser ? 'destructive' : 'secondary'}
+                                variant="destructive"
                                 disabled={roleSavingId === u.user_id}
-                                onClick={() => toggleReseller(u)}
+                                onClick={() => deleteUser(u)}
                               >
-                                {roleSavingId === u.user_id
-                                  ? '...'
-                                  : isResellerUser
-                                  ? 'Remove Reseller'
-                                  : 'Make Reseller'}
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                {roleSavingId === u.user_id ? '...' : 'Delete'}
                               </Button>
                             )}
                           </TableCell>
                         )}
+
                       </TableRow>
                     );
                   })}

@@ -166,19 +166,25 @@ export default function Deposit() {
           </div>
 
           <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">ငွေပမာဏထည့်ပါ</p>
-            <div className="flex items-center gap-2 border border-border rounded-lg px-4 py-3 bg-card">
-              <input
-                type="number"
-                min="0"
-                placeholder="ငွေပမာဏ ထည့်ပါ"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="w-full bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
-              />
+            <p className="text-sm font-medium text-muted-foreground">ငွေပမာဏ (ပုံမှ အလိုအလျောက် ဖတ်ပါမည်)</p>
+            <div className="flex items-center justify-between gap-2 border border-border rounded-lg px-4 py-3 bg-card">
+              {scanning ? (
+                <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> ငွေပမာဏ ဖတ်နေသည်...
+                </span>
+              ) : amount ? (
+                <span className="text-lg font-bold text-foreground">
+                  {new Intl.NumberFormat('my-MM').format(amount)}
+                </span>
+              ) : (
+                <span className="text-sm text-muted-foreground">
+                  {scanFailed ? 'ငွေပမာဏ မဖတ်နိုင်ပါ — ပုံပြန်တင်ပါ' : 'ငွေလွှဲပုံတင်ပါ'}
+                </span>
+              )}
               <span className="text-muted-foreground shrink-0">ကျပ်</span>
             </div>
           </div>
+
 
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">ငွေလွှဲနံပါတ်</p>

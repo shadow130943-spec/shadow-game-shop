@@ -391,29 +391,30 @@ serve(async (req) => {
       });
     }
 
-    if (action === "set_user_role") {
-      const RoleSchema = z.object({
-        target_user_id: z.string().uuid(),
-        role: z.enum(["admin", "reseller"]),
-        grant: z.boolean(),
-      });
-      const { target_user_id, role, grant } = RoleSchema.parse(params);
+    if (action === "delete_user") {
+      const DeleteSchema = z.object({ target_user_id: z.string().uuid() });
+      const { target_user_id } = DeleteSchema.parse(params);
 
-      if (grant) {
-        // Upsert via insert that ignores duplicates
-        const { error } = await supabaseAdmin
-          .from("user_roles")
-          .insert({ user_id: target_user_id, role })
-          .select();
-        if (error && !String(error.message).includes("duplicate")) throw error;
-      } else {
-        const { error } = await supabaseAdmin
-          .from("user_roles")
-          .delete()
-          .eq("user_id", target_user_id)
-          .eq("role", role);
-        if (error) throw error;
+      if (target_user_id === user.id) throw new Error("You cannot delete your own account");
+
+      const { data: targetRoles } = await supabaseAdmin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", target_user_id);
+      if ((targetRoles || []).some((r: any) => r.role === "admin")) {
+        throw new Error("Admin accounts cannot be deleted");
       }
+
+      // Remove all associated data (tables without cascade on auth.users)
+      await supabaseAdmin.from("notifications").delete().eq("user_id", target_user_id);
+      await supabaseAdmin.from("game_orders").delete().eq("user_id", target_user_id);
+      await supabaseAdmin.from("deposits").delete().eq("user_id", target_user_id);
+      await supabaseAdmin.from("user_roles").delete().eq("user_id", target_user_id);
+      await supabaseAdmin.from("profiles").delete().eq("user_id", target_user_id);
+
+      const { error: delErr } = await supabaseAdmin.auth.admin.deleteUser(target_user_id);
+      if (delErr) throw delErr;
+
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

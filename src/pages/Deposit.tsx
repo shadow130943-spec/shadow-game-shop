@@ -18,7 +18,9 @@ interface PaymentMethod {
 }
 
 export default function Deposit() {
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState<number | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanFailed, setScanFailed] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -43,6 +45,38 @@ export default function Deposit() {
   const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'];
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
+  const toBase64 = (f: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+      reader.onerror = reject;
+      reader.readAsDataURL(f);
+    });
+
+  const scanAmount = async (f: File) => {
+    setScanning(true);
+    setScanFailed(false);
+    setAmount(null);
+    try {
+      const image_base64 = await toBase64(f);
+      const { data, error } = await supabase.functions.invoke('ocr-receipt', {
+        body: { mode: 'amount', image_base64, mime_type: f.type },
+      });
+      if (error || data?.error || !data?.amount) {
+        setScanFailed(true);
+        toast.error('ငွေပမာဏ ဖတ်၍မရပါ။ ငွေလွှဲပုံအပြည့်အစုံကို ပြန်တင်ပေးပါ');
+        return;
+      }
+      setAmount(data.amount as number);
+      toast.success(`ငွေပမာဏ ${new Intl.NumberFormat('my-MM').format(data.amount)} ကျပ် တွေ့ရှိပါသည်`);
+    } catch {
+      setScanFailed(true);
+      toast.error('ငွေပမာဏ ဖတ်၍မရပါ။ ပြန်ကြိုးစားပါ');
+    } finally {
+      setScanning(false);
+    }
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (!selected) return;
@@ -59,17 +93,15 @@ export default function Deposit() {
       return;
     }
 
+    let finalFile = selected;
     try {
-      const compressed = await compressImage(selected);
-      setFile(compressed);
-      setPreview(URL.createObjectURL(compressed));
-      if (compressed.size < selected.size) {
-        toast.success(`Image compressed: ${(selected.size / 1024).toFixed(0)}KB → ${(compressed.size / 1024).toFixed(0)}KB`);
-      }
+      finalFile = await compressImage(selected);
     } catch {
-      setFile(selected);
-      setPreview(URL.createObjectURL(selected));
+      finalFile = selected;
     }
+    setFile(finalFile);
+    setPreview(URL.createObjectURL(finalFile));
+    await scanAmount(finalFile);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -91,7 +123,7 @@ export default function Deposit() {
         .from('deposits')
         .insert({
           user_id: user.id,
-          amount: parseFloat(amount),
+          amount,
           screenshot_url: path,
         })
         .select('id')
@@ -112,6 +144,7 @@ export default function Deposit() {
     }
     setLoading(false);
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30">

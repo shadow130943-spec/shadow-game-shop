@@ -121,23 +121,44 @@ serve(async (req) => {
     }
 
     if (action === "transfer") {
-      const { user_code, amount } = TransferSchema.parse(params);
-      const { data: profile } = await supabaseAdmin
-        .from("profiles")
-        .select("*")
-        .eq("user_code", user_code)
-        .single();
-      if (!profile) throw new Error("User not found");
+      const normalized = {
+        user_code: String(params.user_code ?? "").trim().toUpperCase(),
+        amount: Math.round(Number(params.amount)),
+      };
+      const { user_code, amount } = TransferSchema.parse(normalized);
 
-      await supabaseAdmin.rpc('increment_wallet_balance', {
+      const { data: profile, error: profileErr } = await supabaseAdmin
+        .from("profiles")
+        .select("user_id, name, wallet_balance")
+        .eq("user_code", user_code)
+        .maybeSingle();
+      if (profileErr) throw new Error(profileErr.message);
+      if (!profile) throw new Error(`User ${user_code} not found`);
+
+      const { error: rpcErr } = await supabaseAdmin.rpc('increment_wallet_balance', {
         p_user_id: profile.user_id,
         p_amount: amount,
       });
+      if (rpcErr) throw new Error(rpcErr.message || "Failed to update wallet balance");
 
-      return new Response(JSON.stringify({ success: true, user_name: profile.name }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      const { data: updated } = await supabaseAdmin
+        .from("profiles")
+        .select("wallet_balance")
+        .eq("user_id", profile.user_id)
+        .maybeSingle();
+
+      const formatted = new Intl.NumberFormat('my-MM').format(amount);
+      await supabaseAdmin.from("notifications").insert({
+        user_id: profile.user_id,
+        message: `သင့် wallet ထဲသို့ ${formatted} ကျပ် ထည့်သွင်းပေးလိုက်ပါသည်။`,
       });
+
+      return new Response(
+        JSON.stringify({ success: true, user_name: profile.name, new_balance: updated?.wallet_balance ?? null }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
+
 
     if (action === "get_stats") {
       const { count: userCount } = await supabaseAdmin

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Users, Send, ArrowLeft, Percent, CreditCard, Image as ImageIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Send, ArrowLeft, Percent, CreditCard, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -248,7 +248,7 @@ export default function Admin() {
 
             {!isAdmin && (
               <div className="gaming-card rounded-xl p-4 text-xs text-muted-foreground border border-secondary/30">
-                Reseller account — Content & Branding နှင့် Role Management အပိုင်းများကို မမြင်ရပါ။
+                Reseller account — Content & Branding နှင့် User Management အပိုင်းများကို မမြင်ရပါ။
               </div>
             )}
           </TabsContent>

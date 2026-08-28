@@ -264,20 +264,18 @@ export default function Admin() {
                     <TableHead>Phone</TableHead>
                     <TableHead>Balance</TableHead>
                     <TableHead>Joined</TableHead>
-                    {isAdmin && <TableHead className="text-right">Role</TableHead>}
+                    {isAdmin && <TableHead className="text-right">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {users.map((u) => {
                     const roles = u.roles || [];
                     const isAdminUser = roles.includes('admin');
-                    const isResellerUser = roles.includes('reseller');
                     return (
                       <TableRow key={u.id}>
                         <TableCell className="font-medium">
                           {u.name}
                           {isAdminUser && <span className="ml-2 text-[10px] font-bold text-primary">ADMIN</span>}
-                          {isResellerUser && <span className="ml-2 text-[10px] font-bold text-secondary">RESELLER</span>}
                         </TableCell>
                         <TableCell className="text-primary font-mono">{u.user_code}</TableCell>
                         <TableCell>{u.phone}</TableCell>
@@ -288,19 +286,17 @@ export default function Admin() {
                             {!isAdminUser && (
                               <Button
                                 size="sm"
-                                variant={isResellerUser ? 'destructive' : 'secondary'}
+                                variant="destructive"
                                 disabled={roleSavingId === u.user_id}
-                                onClick={() => toggleReseller(u)}
+                                onClick={() => deleteUser(u)}
                               >
-                                {roleSavingId === u.user_id
-                                  ? '...'
-                                  : isResellerUser
-                                  ? 'Remove Reseller'
-                                  : 'Make Reseller'}
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                {roleSavingId === u.user_id ? '...' : 'Delete'}
                               </Button>
                             )}
                           </TableCell>
                         )}
+
                       </TableRow>
                     );
                   })}

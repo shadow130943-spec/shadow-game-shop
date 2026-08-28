@@ -82,22 +82,19 @@ export default function Admin() {
     verifyAndLoad();
   }, [user]);
 
-  const toggleReseller = async (u: UserProfile) => {
-    const hasReseller = (u.roles || []).includes('reseller');
+  const deleteUser = async (u: UserProfile) => {
+    if (!window.confirm(`${u.name} (${u.user_code}) အကောင့်ကို အပြီးအပိုင် ဖျက်မှာ သေချာပါသလား? ဒေတာအားလုံး ပျောက်သွားပါမည်။`)) return;
     setRoleSavingId(u.user_id);
     try {
-      await callAdmin('set_user_role', {
-        target_user_id: u.user_id,
-        role: 'reseller',
-        grant: !hasReseller,
-      });
-      toast.success(hasReseller ? `${u.name} ၏ Reseller ဖြုတ်ပြီး` : `${u.name} ကို Reseller သတ်မှတ်ပြီး`);
+      await callAdmin('delete_user', { target_user_id: u.user_id });
+      toast.success(`${u.name} အကောင့်ကို ဖျက်ပြီးပါပြီ`);
       await loadData();
     } catch (err: any) {
-      toast.error(err.message || 'Role ပြောင်း၍မရပါ');
+      toast.error(err.message || 'အကောင့်ဖျက်၍မရပါ');
     }
     setRoleSavingId(null);
   };
+
 
   const handleTransfer = async (e: React.FormEvent) => {
     e.preventDefault();

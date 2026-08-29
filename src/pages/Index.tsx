@@ -43,39 +43,19 @@ const GAME_DISPLAY_ORDER = [
 const ALLOWED_GAME_CODES = new Set(GAME_DISPLAY_ORDER);
 
 const Index = () => {
-  const [rawGames, setRawGames] = useState<Array<{
-    game_code: string;
-    game_name: string;
-    packages: Array<{ catalogue_name: string; price_mmk: number; hidden?: boolean }>;
-  }>>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { user } = useAuth();
   const gameLogos = useGameLogos();
   const overrides = usePackageOverrides();
+  const { data: rawGames, isLoading: loading, isError } = useGames();
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
-    setLoading(true);
-    const { data, error } = await supabase.functions.invoke('g2bulk-api', {
-      body: { action: 'listProducts' },
-    });
-
-    if (error || !data?.success) {
-      toast.error('Failed to load games');
-      setRawGames([]);
-    } else {
-      setRawGames(data.games || []);
-    }
-    setLoading(false);
-  };
+    if (isError) toast.error('Failed to load games');
+  }, [isError]);
 
   const products: Product[] = useMemo(() => {
-    return rawGames
+    return (rawGames ?? [])
       .filter((g) => ALLOWED_GAME_CODES.has(g.game_code))
       .map((g) => {
         const merged = applyOverrides(g.packages || [], overrides, g.game_code);
@@ -91,6 +71,7 @@ const Index = () => {
       })
       .sort((a, b) => GAME_DISPLAY_ORDER.indexOf(a.id) - GAME_DISPLAY_ORDER.indexOf(b.id));
   }, [rawGames, gameLogos, overrides]);
+
 
 
   const filteredProducts = useMemo(() => {

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface PackageOverride {
@@ -20,80 +21,85 @@ export interface BrandingAsset {
   image_url: string;
 }
 
-/** Fetch a single branding image by key (e.g. 'hero_banner', 'site_logo', 'favicon'). */
-export function useBrandingAsset(key: string): string | null {
-  const [url, setUrl] = useState<string | null>(null);
-  useEffect(() => {
-    let alive = true;
-    supabase
-      .from('branding_assets')
-      .select('image_url')
-      .eq('key', key)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (alive && data?.image_url) setUrl(data.image_url);
-      });
-    return () => { alive = false; };
-  }, [key]);
-  return url;
+const LONG_STALE = 5 * 60 * 1000;
+
+/** All branding assets in one cached request (avoids one query per key). */
+function useBrandingAssets() {
+  return useQuery({
+    queryKey: ['branding_assets'],
+    staleTime: LONG_STALE,
+    gcTime: 30 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('branding_assets').select('key, image_url');
+      if (error) throw error;
+      return (data ?? []) as BrandingAsset[];
+    },
+  });
 }
 
-/** Fetch ordered list of hero carousel slides (keys: hero_slide_*). Falls back to legacy 'hero_banner'. */
+/** Fetch a single branding image by key (e.g. 'hero_banner', 'site_logo', 'favicon'). */
+export function useBrandingAsset(key: string): string | null {
+  const { data } = useBrandingAssets();
+  return useMemo(() => data?.find((r) => r.key === key)?.image_url ?? null, [data, key]);
+}
+
+/** Ordered list of hero carousel slides (keys: hero_slide_*). Falls back to legacy 'hero_banner'. */
 export function useHeroSlides(): { slides: string[]; loading: boolean } {
-  const [urls, setUrls] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    let alive = true;
-    supabase
-      .from('branding_assets')
-      .select('key, image_url')
-      .like('key', 'hero_slide_%')
-      .then(async ({ data }) => {
-        if (!alive) return;
-        if (data && data.length > 0) {
-          const sorted = [...data].sort((a: any, b: any) => a.key.localeCompare(b.key));
-          setUrls(sorted.map((r: any) => r.image_url));
-          setLoading(false);
-        } else {
-          const { data: legacy } = await supabase
-            .from('branding_assets')
-            .select('image_url')
-            .eq('key', 'hero_banner')
-            .maybeSingle();
-          if (alive && legacy?.image_url) setUrls([legacy.image_url]);
-          if (alive) setLoading(false);
-        }
-      });
-    return () => { alive = false; };
-  }, []);
-  return { slides: urls, loading };
+  const { data, isLoading } = useBrandingAssets();
+
+  const slides = useMemo(() => {
+    if (!data) return [];
+    const carousel = data
+      .filter((r) => r.key.startsWith('hero_slide_'))
+      .sort((a, b) => a.key.localeCompare(b.key))
+      .map((r) => r.image_url);
+    if (carousel.length > 0) return carousel;
+    const legacy = data.find((r) => r.key === 'hero_banner');
+    return legacy ? [legacy.image_url] : [];
+  }, [data]);
+
+  return { slides, loading: isLoading };
 }
 
 /** Fetch the full game_code -> logo_url map. */
 export function useGameLogos(): Record<string, string> {
-  const [map, setMap] = useState<Record<string, string>>({});
-  useEffect(() => {
-    supabase.from('game_assets').select('game_code, logo_url').then(({ data }) => {
-      if (data) {
-        const m: Record<string, string> = {};
-        data.forEach((row) => { m[row.game_code] = row.logo_url; });
-        setMap(m);
-      }
-    });
-  }, []);
-  return map;
+  const { data } = useQuery({
+    queryKey: ['game_assets'],
+    staleTime: LONG_STALE,
+    gcTime: 30 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('game_assets').select('game_code, logo_url');
+      if (error) throw error;
+      return (data ?? []) as GameAsset[];
+    },
+  });
+
+  return useMemo(() => {
+    const m: Record<string, string> = {};
+    (data ?? []).forEach((row) => { m[row.game_code] = row.logo_url; });
+    return m;
+  }, [data]);
 }
+
+const EMPTY_OVERRIDES: PackageOverride[] = [];
 
 /** Fetch package overrides, optionally filtered by game_code. */
 export function usePackageOverrides(gameCode?: string) {
-  const [overrides, setOverrides] = useState<PackageOverride[]>([]);
-  useEffect(() => {
-    const q = supabase.from('package_overrides').select('*');
-    (gameCode ? q.eq('game_code', gameCode) : q).then(({ data }) => {
-      if (data) setOverrides(data as PackageOverride[]);
-    });
-  }, [gameCode]);
-  return overrides;
+  const { data } = useQuery({
+    queryKey: ['package_overrides'],
+    staleTime: LONG_STALE,
+    gcTime: 30 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('package_overrides').select('*');
+      if (error) throw error;
+      return (data ?? []) as PackageOverride[];
+    },
+  });
+
+  return useMemo(() => {
+    if (!data) return EMPTY_OVERRIDES;
+    return gameCode ? data.filter((o) => o.game_code === gameCode) : data;
+  }, [data, gameCode]);
 }
 
 /** Apply overrides to a list of API packages (mutates a copy). */

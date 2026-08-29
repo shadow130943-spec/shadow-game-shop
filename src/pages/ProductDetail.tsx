@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePackageOverrides, applyOverrides, useBrandingAsset } from '@/hooks/useShopContent';
+import { useGames } from '@/hooks/useGames';
 import { toast } from 'sonner';
 
 interface Package {
@@ -62,7 +63,7 @@ export default function ProductDetail() {
   const [game, setGame] = useState<GameData | null>(null);
   const [walletBalance, setWalletBalance] = useState(0);
   const [isReseller, setIsReseller] = useState(false);
-  const [loading, setLoading] = useState(true);
+  
   const [selectedServer, setSelectedServer] = useState('global');
   const [selectedCurrency, setSelectedCurrency] = useState('mmk');
 
@@ -267,7 +268,7 @@ export default function ProductDetail() {
     }
   };
 
-  if (loading) {
+  if (gamesLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse text-lg text-muted-foreground">Loading...</div>

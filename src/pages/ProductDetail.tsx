@@ -80,35 +80,37 @@ export default function ProductDetail() {
 
   const needsServerId = id ? GAMES_WITH_SERVER_ID.includes(id) : false;
 
-  useEffect(() => {
-    if (!id) return;
-    const load = async () => {
-      setLoading(true);
-      const { data, error } = await supabase.functions.invoke('g2bulk-api', {
-        body: { action: 'listProducts' },
-      });
-      if (error || !data?.success) {
-        toast.error('ပစ္စည်းများ ဆွဲထုတ်၍မရပါ');
-      } else {
-        const found = (data.games || []).find((g: GameData) => g.game_code === id);
-        if (found) setGame(found);
-      }
+  const { data: games, isLoading: gamesLoading, isError: gamesError } = useGames();
 
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('wallet_balance, is_reseller')
-          .eq('user_id', user.id)
-          .single();
-        if (profile) {
-          setWalletBalance(profile.wallet_balance);
-          setIsReseller(profile.is_reseller || false);
-        }
-      }
-      setLoading(false);
-    };
-    load();
-  }, [id, user]);
+  useEffect(() => {
+    if (gamesError) toast.error('ပစ္စည်းများ ဆွဲထုတ်၍မရပါ');
+  }, [gamesError]);
+
+  useEffect(() => {
+    if (!id || !games) return;
+    setGame((games.find((g) => g.game_code === id) as GameData | undefined) ?? null);
+  }, [id, games]);
+
+  useEffect(() => {
+    if (!user) {
+      setWalletBalance(0);
+      setIsReseller(false);
+      return;
+    }
+    let alive = true;
+    supabase
+      .from('profiles')
+      .select('wallet_balance, is_reseller')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data: profile }) => {
+        if (!alive || !profile) return;
+        setWalletBalance(profile.wallet_balance);
+        setIsReseller(profile.is_reseller || false);
+      });
+    return () => { alive = false; };
+  }, [user]);
+
 
   const formatBalance = (n: number) => new Intl.NumberFormat('my-MM').format(n);
 

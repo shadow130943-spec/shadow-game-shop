@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Trophy, Crown, Medal, Award } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -8,62 +8,47 @@ interface TopBuyer {
   total_spend: number;
 }
 
+async function fetchTopBuyers(): Promise<TopBuyer[]> {
+  const { data: orders, error } = await supabase
+    .from('game_orders')
+    .select('user_id, price')
+    .eq('status', 'approved');
+
+  if (error) throw error;
+
+  const spendMap: Record<string, number> = {};
+  (orders || []).forEach((o) => {
+    spendMap[o.user_id] = (spendMap[o.user_id] || 0) + o.price;
+  });
+
+  const top = Object.entries(spendMap)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+
+  if (top.length === 0) return [];
+
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('user_id, name')
+    .in('user_id', top.map(([id]) => id));
+
+  const profileMap: Record<string, string> = {};
+  (profiles || []).forEach((p) => { profileMap[p.user_id] = p.name; });
+
+  return top.map(([user_id, total_spend]) => ({
+    user_id,
+    name: profileMap[user_id] || 'Unknown',
+    total_spend,
+  }));
+}
+
 export function TopBuyers() {
-  const [buyers, setBuyers] = useState<TopBuyer[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: buyers = [], isLoading: loading } = useQuery({
+    queryKey: ['top_buyers'],
+    queryFn: fetchTopBuyers,
+    staleTime: 2 * 60 * 1000,
+  });
 
-  useEffect(() => {
-    fetchTopBuyers();
-  }, []);
-
-  const fetchTopBuyers = async () => {
-    // Get top 10 users by total game order spend (approved orders only)
-    const { data: orders, error } = await supabase
-      .from('game_orders')
-      .select('user_id, price')
-      .eq('status', 'approved');
-
-    if (error) {
-      console.error('Failed to fetch top buyers:', error);
-      setLoading(false);
-      return;
-    }
-
-    // Aggregate spend per user
-    const spendMap: Record<string, number> = {};
-    (orders || []).forEach((o) => {
-      spendMap[o.user_id] = (spendMap[o.user_id] || 0) + o.price;
-    });
-
-    const userIds = Object.keys(spendMap);
-    if (userIds.length === 0) {
-      setLoading(false);
-      return;
-    }
-
-    // Fetch profiles for these users
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('user_id, name')
-      .in('user_id', userIds);
-
-    const profileMap: Record<string, string> = {};
-    (profiles || []).forEach((p) => {
-      profileMap[p.user_id] = p.name;
-    });
-
-    const sorted = Object.entries(spendMap)
-      .map(([user_id, total_spend]) => ({
-        user_id,
-        name: profileMap[user_id] || 'Unknown',
-        total_spend,
-      }))
-      .sort((a, b) => b.total_spend - a.total_spend)
-      .slice(0, 10);
-
-    setBuyers(sorted);
-    setLoading(false);
-  };
 
   const formatBalance = (n: number) => new Intl.NumberFormat('my-MM').format(n);
 

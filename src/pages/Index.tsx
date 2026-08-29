@@ -84,9 +84,10 @@ const Index = () => {
     );
   }, [products, searchQuery]);
 
-  const handleBuyNow = (id: string) => {
+  const handleBuyNow = useCallback((id: string) => {
     navigate(`/product/${id}`);
-  };
+  }, [navigate]);
+
 
   return (
     <div className="min-h-screen bg-background pb-20">

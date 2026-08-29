@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { memo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 
 interface GameCardProps {
@@ -10,19 +10,33 @@ interface GameCardProps {
   onBuyNow: (id: string) => void;
 }
 
-export function GameCard({ id, name, imageUrl, minPrice, onBuyNow }: GameCardProps) {
+function GameCardBase({ id, name, imageUrl, onBuyNow }: GameCardProps) {
+  const handleClick = useCallback(() => onBuyNow(id), [id, onBuyNow]);
+  const handleButton = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onBuyNow(id);
+    },
+    [id, onBuyNow],
+  );
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
-      className="flex items-center gap-3 p-3 rounded-xl gaming-card gaming-card-hover cursor-pointer"
-      onClick={() => onBuyNow(id)}
+    <div
+      className="flex items-center gap-3 p-3 rounded-xl gaming-card gaming-card-hover cursor-pointer animate-fade-in"
+      onClick={handleClick}
     >
       {/* Game Image */}
       <div className="w-14 h-14 min-w-[3.5rem] rounded-lg overflow-hidden bg-muted">
         {imageUrl ? (
-          <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
+          <img
+            src={imageUrl}
+            alt={name}
+            width={56}
+            height={56}
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover"
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <span className="text-[10px] font-bold text-muted-foreground text-center leading-tight px-1">
@@ -40,11 +54,13 @@ export function GameCard({ id, name, imageUrl, minPrice, onBuyNow }: GameCardPro
       {/* Buy Button */}
       <Button
         size="sm"
-        onClick={(e) => { e.stopPropagation(); onBuyNow(id); }}
+        onClick={handleButton}
         className="gaming-btn border-0 rounded-lg px-4 text-xs font-semibold shrink-0"
       >
         ဝယ်မည်
       </Button>
-    </motion.div>
+    </div>
   );
 }
+
+export const GameCard = memo(GameCardBase);

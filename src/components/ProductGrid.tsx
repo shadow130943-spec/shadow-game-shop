@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { GameCard } from './GameCard';
 
 interface Product {
@@ -13,7 +14,7 @@ interface ProductGridProps {
   onBuyNow: (id: string) => void;
 }
 
-export function ProductGrid({ products, onBuyNow }: ProductGridProps) {
+function ProductGridBase({ products, onBuyNow }: ProductGridProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
       {products.map((product) => (
@@ -30,3 +31,5 @@ export function ProductGrid({ products, onBuyNow }: ProductGridProps) {
     </div>
   );
 }
+
+export const ProductGrid = memo(ProductGridBase);

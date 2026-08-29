@@ -36,15 +36,19 @@ export function HeroBanner() {
       <div className="rounded-2xl overflow-hidden" ref={emblaRef}>
         <div className="flex">
           {slides.map((src, i) => (
-            <div className="flex-[0_0_100%] min-w-0" key={i}>
+            <div className="flex-[0_0_100%] min-w-0" key={src}>
               <img
                 src={src}
                 alt={`promotion ${i + 1}`}
                 className="w-full h-36 sm:h-44 md:h-52 lg:h-60 object-cover"
                 draggable={false}
+                loading={i === 0 ? 'eager' : 'lazy'}
+                fetchPriority={i === 0 ? 'high' : 'low'}
+                decoding="async"
               />
             </div>
           ))}
+
         </div>
       </div>
       {slides.length > 1 && (

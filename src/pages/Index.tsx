@@ -1,15 +1,16 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Header } from '@/components/Header';
 import { SearchBar } from '@/components/SearchBar';
 import { ProductGrid } from '@/components/ProductGrid';
 import { BottomNav } from '@/components/BottomNav';
 import { HeroBanner } from '@/components/HeroBanner';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Gamepad2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useGames } from '@/hooks/useGames';
 import { useGameLogos, usePackageOverrides, applyOverrides } from '@/hooks/useShopContent';
+
 import mlbbImg from '@/assets/games/mlbb.jpg';
 import pubgmImg from '@/assets/games/pubgm.jpg';
 import telegramImg from '@/assets/games/telegram.jpg';
@@ -42,39 +43,19 @@ const GAME_DISPLAY_ORDER = [
 const ALLOWED_GAME_CODES = new Set(GAME_DISPLAY_ORDER);
 
 const Index = () => {
-  const [rawGames, setRawGames] = useState<Array<{
-    game_code: string;
-    game_name: string;
-    packages: Array<{ catalogue_name: string; price_mmk: number; hidden?: boolean }>;
-  }>>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { user } = useAuth();
   const gameLogos = useGameLogos();
   const overrides = usePackageOverrides();
+  const { data: rawGames, isLoading: loading, isError } = useGames();
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
-    setLoading(true);
-    const { data, error } = await supabase.functions.invoke('g2bulk-api', {
-      body: { action: 'listProducts' },
-    });
-
-    if (error || !data?.success) {
-      toast.error('Failed to load games');
-      setRawGames([]);
-    } else {
-      setRawGames(data.games || []);
-    }
-    setLoading(false);
-  };
+    if (isError) toast.error('Failed to load games');
+  }, [isError]);
 
   const products: Product[] = useMemo(() => {
-    return rawGames
+    return (rawGames ?? [])
       .filter((g) => ALLOWED_GAME_CODES.has(g.game_code))
       .map((g) => {
         const merged = applyOverrides(g.packages || [], overrides, g.game_code);
@@ -92,6 +73,7 @@ const Index = () => {
   }, [rawGames, gameLogos, overrides]);
 
 
+
   const filteredProducts = useMemo(() => {
     if (!searchQuery.trim()) return products;
     const query = searchQuery.toLowerCase();
@@ -102,9 +84,10 @@ const Index = () => {
     );
   }, [products, searchQuery]);
 
-  const handleBuyNow = (id: string) => {
+  const handleBuyNow = useCallback((id: string) => {
     navigate(`/product/${id}`);
-  };
+  }, [navigate]);
+
 
   return (
     <div className="min-h-screen bg-background pb-20">

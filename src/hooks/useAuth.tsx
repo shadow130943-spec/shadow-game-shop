@@ -73,35 +73,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+    let lastLoadedUserId: string | null = null;
 
-        if (session?.user) {
-          fetchProfile(session.user.id);
-          checkAdmin(session.user.id);
-        } else {
-          setProfile(null);
-          setIsAdmin(false);
-          setIsReseller(false);
-        }
-        setLoading(false);
+    const hydrate = (userId: string | null) => {
+      if (!userId) {
+        lastLoadedUserId = null;
+        setProfile(null);
+        setIsAdmin(false);
+        setIsReseller(false);
+        return;
       }
-    );
+      // Both getSession() and onAuthStateChange fire on boot — only load once.
+      if (lastLoadedUserId === userId) return;
+      lastLoadedUserId = userId;
+      void fetchProfile(userId);
+      void checkAdmin(userId);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      hydrate(session?.user?.id ?? null);
+      setLoading(false);
+    });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-        checkAdmin(session.user.id);
-      }
+      hydrate(session?.user?.id ?? null);
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
 
   const signUp = async (phone: string, password: string, name: string) => {
     const email = phoneToEmail(phone);

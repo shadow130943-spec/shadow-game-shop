@@ -60,6 +60,9 @@ export default function Deposit() {
   const scanAmount = async (f: File) => {
     setScanning(true);
     setScanFailed(false);
+    setManual(false);
+    setManualValue('');
+    setConfidence(0);
     setAmount(null);
     try {
       const image_base64 = await toBase64(f);
@@ -68,10 +71,11 @@ export default function Deposit() {
       });
       if (error || data?.error || !data?.amount) {
         setScanFailed(true);
-        toast.error('ငွေပမာဏ ဖတ်၍မရပါ။ ငွေလွှဲပုံအပြည့်အစုံကို ပြန်တင်ပေးပါ');
+        toast.error('ငွေပမာဏ ဖတ်၍မရပါ။ ပုံကို ပိုရှင်းအောင် ပြန်တင်ပါ (သို့) ကိုယ်တိုင် ရိုက်ထည့်ပါ');
         return;
       }
       setAmount(data.amount as number);
+      setConfidence(Number(data.confidence) || 0);
       toast.success(`ငွေပမာဏ ${new Intl.NumberFormat('my-MM').format(data.amount)} ကျပ် တွေ့ရှိပါသည်`);
     } catch {
       setScanFailed(true);
@@ -80,6 +84,7 @@ export default function Deposit() {
       setScanning(false);
     }
   };
+
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];

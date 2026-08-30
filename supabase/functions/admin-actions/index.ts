@@ -121,10 +121,11 @@ serve(async (req) => {
     }
 
     if (action === "transfer") {
-      const normalized = {
-        user_code: String(params.user_code ?? "").trim().toUpperCase(),
-        amount: Math.round(Number(params.amount)),
-      };
+      let rawCode = String(params.user_code ?? "").trim().toUpperCase().replace(/\s+/g, "");
+      if (/^\d{6}$/.test(rawCode)) rawCode = `GT${rawCode}`;
+      const rawAmount = Number(params.amount);
+      if (!Number.isFinite(rawAmount)) throw new Error("Invalid amount");
+      const normalized = { user_code: rawCode, amount: Math.round(rawAmount) };
       const { user_code, amount } = TransferSchema.parse(normalized);
 
       const { data: profile, error: profileErr } = await supabaseAdmin
@@ -135,17 +136,35 @@ serve(async (req) => {
       if (profileErr) throw new Error(profileErr.message);
       if (!profile) throw new Error(`User ${user_code} not found`);
 
+      const before = Number(profile.wallet_balance ?? 0);
+
       const { error: rpcErr } = await supabaseAdmin.rpc('increment_wallet_balance', {
         p_user_id: profile.user_id,
         p_amount: amount,
       });
-      if (rpcErr) throw new Error(rpcErr.message || "Failed to update wallet balance");
 
-      const { data: updated } = await supabaseAdmin
+      let { data: updated, error: readErr } = await supabaseAdmin
         .from("profiles")
         .select("wallet_balance")
         .eq("user_id", profile.user_id)
         .maybeSingle();
+      if (readErr) throw new Error(readErr.message);
+
+      // Fallback: if the RPC failed or the balance did not change, write directly.
+      const after = Number(updated?.wallet_balance ?? before);
+      if (rpcErr || after !== before + amount) {
+        console.error('[transfer] rpc fallback', rpcErr?.message, { before, after });
+        const { data: direct, error: updErr } = await supabaseAdmin
+          .from("profiles")
+          .update({ wallet_balance: before + amount, updated_at: new Date().toISOString() })
+          .eq("user_id", profile.user_id)
+          .eq("wallet_balance", before)
+          .select("wallet_balance")
+          .maybeSingle();
+        if (updErr) throw new Error(updErr.message);
+        if (!direct) throw new Error("Balance changed concurrently, please retry");
+        updated = direct;
+      }
 
       const formatted = new Intl.NumberFormat('my-MM').format(amount);
       await supabaseAdmin.from("notifications").insert({
@@ -158,6 +177,7 @@ serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
 
 
     if (action === "get_stats") {

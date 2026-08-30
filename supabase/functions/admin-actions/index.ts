@@ -570,21 +570,20 @@ serve(async (req) => {
   } catch (error) {
     console.error('[Admin Action Error]', error instanceof Error ? error.message : error);
     
-    let status = 400;
+    let status = 200; // return readable errors in body so clients don't see "non-2xx"
     let clientMessage = "Operation failed";
-    
+
     if (error instanceof z.ZodError) {
-      clientMessage = "Invalid request parameters";
+      clientMessage = error.issues[0]?.message || "Invalid request parameters";
     } else if (error instanceof Error) {
       if (error.message === "Unauthorized" || error.message === "Not an admin") {
         status = 403;
         clientMessage = "Access denied";
-      } else if (error.message === "Unknown action") {
-        clientMessage = "Invalid request";
+      } else {
+        clientMessage = error.message || "Operation failed";
       }
-      // All other errors get generic "Operation failed"
     }
-    
+
     return new Response(JSON.stringify({ error: clientMessage }), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

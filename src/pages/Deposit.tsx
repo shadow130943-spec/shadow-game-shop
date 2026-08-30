@@ -189,18 +189,60 @@ export default function Deposit() {
                 <span className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" /> ငွေပမာဏ ဖတ်နေသည်...
                 </span>
+              ) : manual ? (
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  value={manualValue}
+                  onChange={(e) => setManualValue(e.target.value)}
+                  placeholder="ငွေပမာဏ ရိုက်ထည့်ပါ"
+                  className="flex-1 bg-transparent text-lg font-bold text-foreground outline-none"
+                />
               ) : amount ? (
                 <span className="text-lg font-bold text-foreground">
                   {new Intl.NumberFormat('my-MM').format(amount)}
                 </span>
               ) : (
                 <span className="text-sm text-muted-foreground">
-                  {scanFailed ? 'ငွေပမာဏ မဖတ်နိုင်ပါ — ပုံပြန်တင်ပါ' : 'ငွေလွှဲပုံတင်ပါ'}
+                  {scanFailed ? 'ငွေပမာဏ မဖတ်နိုင်ပါ' : 'ငွေလွှဲပုံတင်ပါ'}
                 </span>
               )}
               <span className="text-muted-foreground shrink-0">ကျပ်</span>
             </div>
+
+            {!scanning && amount !== null && !manual && (
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  {confidence >= 0.6
+                    ? 'ပုံမှ ဖတ်ထားသော ငွေပမာဏ — မှန်/မမှန် စစ်ပေးပါ'
+                    : 'ငွေပမာဏ သေချာမသိပါ — Admin မှ ပြန်စစ်ပါမည်'}
+                </p>
+                <Button type="button" variant="ghost" size="sm" className="text-xs" onClick={() => { setManual(true); setManualValue(String(amount)); }}>
+                  ပြင်မည်
+                </Button>
+              </div>
+            )}
+
+            {!scanning && scanFailed && (
+              <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 space-y-2">
+                <p className="text-xs text-foreground">
+                  ပုံမှ ငွေပမာဏကို မဖတ်နိုင်ပါ။ ပုံရှင်းရှင်း (ငွေပမာဏ မြင်ရသော) ပြန်တင်ပါ၊ သို့မဟုတ် ကိုယ်တိုင် ရိုက်ထည့်ပါ — Admin မှ ပြန်စစ်ပေးပါမည်။
+                </p>
+                <div className="flex gap-2">
+                  <Button type="button" size="sm" variant="secondary" className="text-xs" disabled={!file} onClick={() => file && scanAmount(file)}>
+                    ပြန်စကန်ဖတ်မည်
+                  </Button>
+                  {!manual && (
+                    <Button type="button" size="sm" variant="outline" className="text-xs" onClick={() => setManual(true)}>
+                      ကိုယ်တိုင် ရိုက်ထည့်မည်
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
+
 
 
           <div className="space-y-2">

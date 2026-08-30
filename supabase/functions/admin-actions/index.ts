@@ -13,8 +13,8 @@ const DepositActionSchema = z.object({
 });
 
 const TransferSchema = z.object({
-  user_code: z.string().regex(/^GT\d{6}$/, "Invalid user code format").refine(val => val.length === 8, "Invalid user code length"),
-  amount: z.number().int("Amount must be a whole number").min(100, "Minimum transfer is 100 kyats").max(10000000, "Amount too large"),
+  user_code: z.string().regex(/^GT\d{6}$/, "Invalid user code format"),
+  amount: z.number().int("Amount must be a whole number").positive("Amount must be greater than 0").max(10000000, "Amount too large"),
 });
 
 const ActionSchema = z.object({
@@ -121,10 +121,11 @@ serve(async (req) => {
     }
 
     if (action === "transfer") {
-      const normalized = {
-        user_code: String(params.user_code ?? "").trim().toUpperCase(),
-        amount: Math.round(Number(params.amount)),
-      };
+      let rawCode = String(params.user_code ?? "").trim().toUpperCase().replace(/\s+/g, "");
+      if (/^\d{6}$/.test(rawCode)) rawCode = `GT${rawCode}`;
+      const rawAmount = Number(params.amount);
+      if (!Number.isFinite(rawAmount)) throw new Error("Invalid amount");
+      const normalized = { user_code: rawCode, amount: Math.round(rawAmount) };
       const { user_code, amount } = TransferSchema.parse(normalized);
 
       const { data: profile, error: profileErr } = await supabaseAdmin
@@ -135,17 +136,35 @@ serve(async (req) => {
       if (profileErr) throw new Error(profileErr.message);
       if (!profile) throw new Error(`User ${user_code} not found`);
 
+      const before = Number(profile.wallet_balance ?? 0);
+
       const { error: rpcErr } = await supabaseAdmin.rpc('increment_wallet_balance', {
         p_user_id: profile.user_id,
         p_amount: amount,
       });
-      if (rpcErr) throw new Error(rpcErr.message || "Failed to update wallet balance");
 
-      const { data: updated } = await supabaseAdmin
+      let { data: updated, error: readErr } = await supabaseAdmin
         .from("profiles")
         .select("wallet_balance")
         .eq("user_id", profile.user_id)
         .maybeSingle();
+      if (readErr) throw new Error(readErr.message);
+
+      // Fallback: if the RPC failed or the balance did not change, write directly.
+      const after = Number(updated?.wallet_balance ?? before);
+      if (rpcErr || after !== before + amount) {
+        console.error('[transfer] rpc fallback', rpcErr?.message, { before, after });
+        const { data: direct, error: updErr } = await supabaseAdmin
+          .from("profiles")
+          .update({ wallet_balance: before + amount, updated_at: new Date().toISOString() })
+          .eq("user_id", profile.user_id)
+          .eq("wallet_balance", before)
+          .select("wallet_balance")
+          .maybeSingle();
+        if (updErr) throw new Error(updErr.message);
+        if (!direct) throw new Error("Balance changed concurrently, please retry");
+        updated = direct;
+      }
 
       const formatted = new Intl.NumberFormat('my-MM').format(amount);
       await supabaseAdmin.from("notifications").insert({
@@ -158,6 +177,7 @@ serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
 
 
     if (action === "get_stats") {
@@ -550,21 +570,20 @@ serve(async (req) => {
   } catch (error) {
     console.error('[Admin Action Error]', error instanceof Error ? error.message : error);
     
-    let status = 400;
+    let status = 200; // return readable errors in body so clients don't see "non-2xx"
     let clientMessage = "Operation failed";
-    
+
     if (error instanceof z.ZodError) {
-      clientMessage = "Invalid request parameters";
+      clientMessage = error.issues[0]?.message || "Invalid request parameters";
     } else if (error instanceof Error) {
       if (error.message === "Unauthorized" || error.message === "Not an admin") {
         status = 403;
         clientMessage = "Access denied";
-      } else if (error.message === "Unknown action") {
-        clientMessage = "Invalid request";
+      } else {
+        clientMessage = error.message || "Operation failed";
       }
-      // All other errors get generic "Operation failed"
     }
-    
+
     return new Response(JSON.stringify({ error: clientMessage }), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -19,6 +19,9 @@ interface PaymentMethod {
 
 export default function Deposit() {
   const [amount, setAmount] = useState<number | null>(null);
+  const [confidence, setConfidence] = useState<number>(0);
+  const [manual, setManual] = useState(false);
+  const [manualValue, setManualValue] = useState('');
   const [scanning, setScanning] = useState(false);
   const [scanFailed, setScanFailed] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -27,6 +30,7 @@ export default function Deposit() {
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const { user } = useAuth();
   const navigate = useNavigate();
+
 
   useEffect(() => {
     supabase
@@ -56,6 +60,9 @@ export default function Deposit() {
   const scanAmount = async (f: File) => {
     setScanning(true);
     setScanFailed(false);
+    setManual(false);
+    setManualValue('');
+    setConfidence(0);
     setAmount(null);
     try {
       const image_base64 = await toBase64(f);
@@ -64,10 +71,11 @@ export default function Deposit() {
       });
       if (error || data?.error || !data?.amount) {
         setScanFailed(true);
-        toast.error('ငွေပမာဏ ဖတ်၍မရပါ။ ငွေလွှဲပုံအပြည့်အစုံကို ပြန်တင်ပေးပါ');
+        toast.error('ငွေပမာဏ ဖတ်၍မရပါ။ ပုံကို ပိုရှင်းအောင် ပြန်တင်ပါ (သို့) ကိုယ်တိုင် ရိုက်ထည့်ပါ');
         return;
       }
       setAmount(data.amount as number);
+      setConfidence(Number(data.confidence) || 0);
       toast.success(`ငွေပမာဏ ${new Intl.NumberFormat('my-MM').format(data.amount)} ကျပ် တွေ့ရှိပါသည်`);
     } catch {
       setScanFailed(true);
@@ -76,6 +84,7 @@ export default function Deposit() {
       setScanning(false);
     }
   };
+
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
@@ -104,9 +113,13 @@ export default function Deposit() {
     await scanAmount(finalFile);
   };
 
+  const manualAmount = manual ? Math.round(Number(manualValue.replace(/[^0-9]/g, ''))) : 0;
+  const finalAmount = manual ? (manualAmount > 0 ? manualAmount : null) : amount;
+  const needsReview = manual || (!!amount && confidence > 0 && confidence < 0.6);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !file || !amount) return;
+    if (!user || !file || !finalAmount) return;
 
     setLoading(true);
     try {
@@ -123,13 +136,17 @@ export default function Deposit() {
         .from('deposits')
         .insert({
           user_id: user.id,
-          amount,
+          amount: finalAmount,
           screenshot_url: path,
+          admin_note: needsReview
+            ? (manual ? 'MANUAL AMOUNT — OCR failed, please verify' : 'LOW OCR CONFIDENCE — please verify')
+            : null,
         })
         .select('id')
         .single();
 
       if (insertError) throw insertError;
+
 
       if (inserted?.id) {
         supabase.functions
@@ -172,18 +189,60 @@ export default function Deposit() {
                 <span className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" /> ငွေပမာဏ ဖတ်နေသည်...
                 </span>
+              ) : manual ? (
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  value={manualValue}
+                  onChange={(e) => setManualValue(e.target.value)}
+                  placeholder="ငွေပမာဏ ရိုက်ထည့်ပါ"
+                  className="flex-1 bg-transparent text-lg font-bold text-foreground outline-none"
+                />
               ) : amount ? (
                 <span className="text-lg font-bold text-foreground">
                   {new Intl.NumberFormat('my-MM').format(amount)}
                 </span>
               ) : (
                 <span className="text-sm text-muted-foreground">
-                  {scanFailed ? 'ငွေပမာဏ မဖတ်နိုင်ပါ — ပုံပြန်တင်ပါ' : 'ငွေလွှဲပုံတင်ပါ'}
+                  {scanFailed ? 'ငွေပမာဏ မဖတ်နိုင်ပါ' : 'ငွေလွှဲပုံတင်ပါ'}
                 </span>
               )}
               <span className="text-muted-foreground shrink-0">ကျပ်</span>
             </div>
+
+            {!scanning && amount !== null && !manual && (
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  {confidence >= 0.6
+                    ? 'ပုံမှ ဖတ်ထားသော ငွေပမာဏ — မှန်/မမှန် စစ်ပေးပါ'
+                    : 'ငွေပမာဏ သေချာမသိပါ — Admin မှ ပြန်စစ်ပါမည်'}
+                </p>
+                <Button type="button" variant="ghost" size="sm" className="text-xs" onClick={() => { setManual(true); setManualValue(String(amount)); }}>
+                  ပြင်မည်
+                </Button>
+              </div>
+            )}
+
+            {!scanning && scanFailed && (
+              <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 space-y-2">
+                <p className="text-xs text-foreground">
+                  ပုံမှ ငွေပမာဏကို မဖတ်နိုင်ပါ။ ပုံရှင်းရှင်း (ငွေပမာဏ မြင်ရသော) ပြန်တင်ပါ၊ သို့မဟုတ် ကိုယ်တိုင် ရိုက်ထည့်ပါ — Admin မှ ပြန်စစ်ပေးပါမည်။
+                </p>
+                <div className="flex gap-2">
+                  <Button type="button" size="sm" variant="secondary" className="text-xs" disabled={!file} onClick={() => file && scanAmount(file)}>
+                    ပြန်စကန်ဖတ်မည်
+                  </Button>
+                  {!manual && (
+                    <Button type="button" size="sm" variant="outline" className="text-xs" onClick={() => setManual(true)}>
+                      ကိုယ်တိုင် ရိုက်ထည့်မည်
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
+
 
 
           <div className="space-y-2">

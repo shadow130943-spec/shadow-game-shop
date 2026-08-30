@@ -83,51 +83,101 @@ Deno.serve(async (req) => {
     }
 
     const prompt = mode === "amount"
-      ? "This is a mobile payment receipt screenshot (Wave Pay / KBZ Pay / other Myanmar mobile wallets). Find the transferred payment amount in Myanmar Kyat. Return ONLY the number with no currency symbol, no commas and no decimals (e.g. 10000). If you cannot confidently find the amount, return NOT_FOUND."
+      ? `You are an OCR engine for Myanmar mobile payment receipts (KBZPay, WavePay, AYA Pay, CB Pay, KBZ Bank, AYA Bank, Yoma, UAB, Telegram/other wallets).
+Read ALL text in the screenshot and identify the transferred / paid amount in Myanmar Kyat (MMK / Ks / ကျပ်).
+Rules:
+- Pick the main transfer amount, NOT the remaining balance, NOT fees, NOT dates, NOT phone numbers, NOT transaction IDs.
+- Amounts may be written like "10,000.00 Ks", "- 5000 MMK", "၁၀,၀၀၀" (Myanmar digits). Convert Myanmar digits to Arabic digits.
+- Drop thousands separators and the ".00" decimals; return a whole number.
+Respond with ONLY a compact JSON object, no markdown:
+{"amount": <integer or null>, "confidence": <0-1 number>, "text": "<the exact amount text you saw>"}
+Use null and confidence 0 if you cannot read the amount reliably.`
       : "This is a mobile payment receipt screenshot (Wave Pay or KBZ Pay). Extract the Transaction ID / Reference Number from this image. Return ONLY the transaction ID string, nothing else. If you cannot find a transaction ID, return 'NOT_FOUND'.";
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${lovableApiKey}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: prompt },
-              { type: "image_url", image_url: { url: dataUrl } },
-            ],
-          },
-        ],
-        max_tokens: 100,
-      }),
-    });
+    const callModel = async (model: string) =>
+      await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${lovableApiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            {
+              role: "user",
+              content: [
+                { type: "text", text: prompt },
+                { type: "image_url", image_url: { url: dataUrl } },
+              ],
+            },
+          ],
+          max_tokens: 300,
+        }),
+      });
 
-    if (!aiRes.ok) {
-      const errText = await aiRes.text();
-      console.error("[ocr-receipt] AI error:", aiRes.status, errText);
-      if (aiRes.status === 429) return json({ error: "Too many requests, please try again shortly" }, 429);
-      if (aiRes.status === 402) return json({ error: "AI credits exhausted" }, 402);
-      return json({ error: "OCR processing failed" }, 500);
-    }
-
-    const aiData = await aiRes.json();
-    const raw = aiData.choices?.[0]?.message?.content?.trim() || "NOT_FOUND";
-
-    if (mode === "amount") {
-      const digits = raw.replace(/[^0-9]/g, "");
-      const amount = digits ? parseInt(digits, 10) : 0;
-      if (!amount || amount < 100 || amount > 10_000_000) {
-        return json({ amount: null, raw });
+    const parseAmount = (raw: string): { amount: number | null; confidence: number; text: string } => {
+      let amount: number | null = null;
+      let confidence = 0;
+      let text = raw;
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          const obj = JSON.parse(jsonMatch[0]);
+          if (obj.amount !== null && obj.amount !== undefined) {
+            const n = Math.round(Number(String(obj.amount).replace(/[^0-9.]/g, "")));
+            if (Number.isFinite(n) && n > 0) amount = n;
+          }
+          confidence = Number(obj.confidence) || (amount ? 0.6 : 0);
+          text = String(obj.text ?? raw);
+        } catch { /* fall through */ }
       }
-      return json({ amount, raw });
+      if (amount === null) {
+        // Fallback: first plausible number in the raw text
+        const m = raw.replace(/[^\d,.\s]/g, " ").match(/\d[\d,]*(?:\.\d+)?/);
+        if (m) {
+          const n = Math.round(Number(m[0].replace(/,/g, "")));
+          if (Number.isFinite(n) && n > 0) {
+            amount = n;
+            confidence = Math.max(confidence, 0.4);
+          }
+        }
+      }
+      if (amount !== null && (amount < 1 || amount > 10_000_000)) amount = null;
+      return { amount, confidence, text };
+    };
+
+    // Primary model, then a stronger fallback if the first cannot read the amount.
+    const models = mode === "amount"
+      ? ["google/gemini-3.7-flash", "google/gemini-3.1-pro-preview"]
+      : ["google/gemini-3.7-flash"];
+
+    let lastRaw = "";
+    for (let i = 0; i < models.length; i++) {
+      const aiRes = await callModel(models[i]);
+
+      if (!aiRes.ok) {
+        const errText = await aiRes.text();
+        console.error("[ocr-receipt] AI error:", models[i], aiRes.status, errText);
+        if (aiRes.status === 429) return json({ error: "Too many requests, please try again shortly" }, 429);
+        if (aiRes.status === 402) return json({ error: "AI credits exhausted" }, 402);
+        if (i === models.length - 1) return json({ error: "OCR processing failed" }, 500);
+        continue;
+      }
+
+      const aiData = await aiRes.json();
+      lastRaw = aiData.choices?.[0]?.message?.content?.trim() || "";
+
+      if (mode !== "amount") {
+        return json({ transaction_id: lastRaw || "NOT_FOUND" });
+      }
+
+      const { amount, confidence, text } = parseAmount(lastRaw);
+      if (amount !== null) return json({ amount, confidence, text, raw: lastRaw });
     }
 
-    return json({ transaction_id: raw });
+    return json({ amount: null, confidence: 0, raw: lastRaw });
+
   } catch (err: any) {
     console.error("[ocr-receipt] Error:", err.message);
     return json({ error: err.message || "Internal error" }, 500);

@@ -19,6 +19,9 @@ interface PaymentMethod {
 
 export default function Deposit() {
   const [amount, setAmount] = useState<number | null>(null);
+  const [confidence, setConfidence] = useState<number>(0);
+  const [manual, setManual] = useState(false);
+  const [manualValue, setManualValue] = useState('');
   const [scanning, setScanning] = useState(false);
   const [scanFailed, setScanFailed] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -27,6 +30,7 @@ export default function Deposit() {
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const { user } = useAuth();
   const navigate = useNavigate();
+
 
   useEffect(() => {
     supabase

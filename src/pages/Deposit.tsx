@@ -113,9 +113,13 @@ export default function Deposit() {
     await scanAmount(finalFile);
   };
 
+  const manualAmount = manual ? Math.round(Number(manualValue.replace(/[^0-9]/g, ''))) : 0;
+  const finalAmount = manual ? (manualAmount > 0 ? manualAmount : null) : amount;
+  const needsReview = manual || (!!amount && confidence > 0 && confidence < 0.6);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !file || !amount) return;
+    if (!user || !file || !finalAmount) return;
 
     setLoading(true);
     try {
@@ -132,13 +136,17 @@ export default function Deposit() {
         .from('deposits')
         .insert({
           user_id: user.id,
-          amount,
+          amount: finalAmount,
           screenshot_url: path,
+          admin_note: needsReview
+            ? (manual ? 'MANUAL AMOUNT — OCR failed, please verify' : 'LOW OCR CONFIDENCE — please verify')
+            : null,
         })
         .select('id')
         .single();
 
       if (insertError) throw insertError;
+
 
       if (inserted?.id) {
         supabase.functions

@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePackageOverrides, applyOverrides, useBrandingAsset } from '@/hooks/useShopContent';
 import { useGames } from '@/hooks/useGames';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 interface Package {
@@ -20,6 +21,7 @@ interface Package {
   price_mmk: number;
   reseller_price_mmk: number;
   hidden?: boolean;
+  stock?: number;
   display_name?: string;
   image_url?: string | null;
 }
@@ -82,6 +84,7 @@ export default function ProductDetail() {
   const needsServerId = id ? GAMES_WITH_SERVER_ID.includes(id) : false;
 
   const { data: games, isLoading: gamesLoading, isError: gamesError } = useGames();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (gamesError) toast.error('ပစ္စည်းများ ဆွဲထုတ်၍မရပါ');
@@ -222,9 +225,7 @@ export default function ProductDetail() {
       if (error || !data?.success) {
         console.error('[placeOrder] failed:', error || data);
         setOrderFailed(true);
-        if (data?.insufficient_reseller_balance) {
-          toast.error('Reseller account တွင် ငွေမလုံလောက်ပါ။ Admin ထံ ဆက်သွယ်ပါ။');
-        } else if (data?.invalid_reseller_session) {
+        if (data?.invalid_reseller_session) {
           toast.error('Shadow Game Shop session သက်တမ်းကုန်နေပါသည်။ Admin ထံ အကြောင်းကြားပါ။');
         } else if (data?.message) {
           // Show actual upstream message (e.g. real out-of-stock) so the
@@ -256,6 +257,7 @@ export default function ProductDetail() {
         body: { product_name: game.game_name, item_name: selectedPkg.catalogue_name, price: finalPrice, game_id: gameId.trim() },
       }).catch((e) => console.error('Push notify error:', e));
 
+      queryClient.invalidateQueries({ queryKey: ['g2bulk', 'listProducts'] });
       setWalletBalance(walletBalance - finalPrice);
       toast.success(data.message || `${selectedPkg.catalogue_name} မှာယူပြီးပါပြီ!`);
       setDialogOpen(false);
@@ -289,7 +291,7 @@ export default function ProductDetail() {
 
   const mergedPackages = id ? applyOverrides(game.packages, overrides, id) : game.packages;
   const visiblePackages = mergedPackages.filter((p) => !p.hidden && p.price_mmk > 0);
-  const buyButtonDisabled = ordering || !nameCheckSuccess || orderFailed;
+  const buyButtonDisabled = ordering || !nameCheckSuccess || orderFailed || (selectedPkg ? (selectedPkg.stock ?? 0) <= 0 : false);
 
   return (
     <div className="min-h-screen bg-background pb-8">
@@ -319,7 +321,7 @@ export default function ProductDetail() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.2 }}
-                onClick={() => handlePackageClick(pkg)}
+                onClick={() => { if ((pkg.stock ?? 0) <= 0) { toast.error('ဤ package ပစ္စည်းကုန်နေပါသည်'); return; } handlePackageClick(pkg); }}
                 className="gaming-card rounded-xl p-3 cursor-pointer gaming-card-hover flex flex-col items-center text-center"
               >
                 <div className="w-14 h-14 mb-2 flex items-center justify-center">
@@ -335,6 +337,9 @@ export default function ProductDetail() {
                   {pkg.display_name || pkg.catalogue_name}
                 </p>
                 <p className="text-sm font-bold text-primary">{formatPrice(pkg)}</p>
+                <p className={`text-[10px] mt-0.5 font-semibold ${(pkg.stock ?? 0) > 0 ? 'text-muted-foreground' : 'text-destructive'}`}>
+                  {(pkg.stock ?? 0) > 0 ? `Stock: ${pkg.stock}` : 'Out of stock'}
+                </p>
               </motion.div>
             ))}
           </div>
@@ -402,6 +407,12 @@ export default function ProductDetail() {
                 </div>
               </div>
             </div>
+
+            {selectedPkg && (
+              <div className="text-xs text-center text-muted-foreground">
+                ကျန်ရှိသည့် Stock: <b className="text-foreground">{selectedPkg.stock ?? 0}</b>
+              </div>
+            )}
 
             <div className="bg-primary/10 rounded-lg px-4 py-3 text-sm font-semibold text-center">
               လက်ကျန်ငွေ = {formatBalance(walletBalance)} ကျပ်

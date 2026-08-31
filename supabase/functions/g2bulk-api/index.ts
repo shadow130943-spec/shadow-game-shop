@@ -100,6 +100,75 @@ function pickMargin(
   return margins.global;
 }
 
+
+// ---- G2Bulk main-account balance (USD) ----
+// The /v1 API key does not grant access to /users/balance (it needs a
+// dashboard JWT). When G2BULK_JWT is set we read the live balance; otherwise
+// we fall back to the admin-maintained value in app_settings, which is
+// decremented automatically after every successful order.
+const BALANCE_KEY = "g2bulk_balance_usd";
+
+function admin() {
+  return createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+}
+
+async function readStoredBalance(): Promise<number> {
+  try {
+    const { data } = await admin()
+      .from("app_settings")
+      .select("value")
+      .eq("key", BALANCE_KEY)
+      .maybeSingle();
+    const n = Number(data?.value);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  } catch {
+    return 0;
+  }
+}
+
+async function writeStoredBalance(v: number) {
+  try {
+    await admin()
+      .from("app_settings")
+      .upsert({ key: BALANCE_KEY, value: String(Math.max(0, v)), updated_at: new Date().toISOString() });
+  } catch (e) {
+    console.error("[g2bulk-api] balance write error:", (e as Error).message);
+  }
+}
+
+async function fetchLiveBalance(): Promise<number | null> {
+  const jwt = Deno.env.get("G2BULK_JWT");
+  if (!jwt) return null;
+  try {
+    const { res, data } = await g2Fetch("/users/balance", {
+      method: "GET",
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
+    if (!res.ok) return null;
+    const n = Number(data?.balance ?? data?.data?.balance ?? data?.amount);
+    return Number.isFinite(n) ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+async function getBalanceUsd(): Promise<number> {
+  const live = await fetchLiveBalance();
+  if (live !== null) {
+    await writeStoredBalance(live);
+    return live;
+  }
+  return await readStoredBalance();
+}
+
+function stockFor(balanceUsd: number, priceUsd: number) {
+  if (!priceUsd || priceUsd <= 0) return 0;
+  return Math.max(0, Math.floor(balanceUsd / priceUsd));
+}
+
 async function listProducts() {
   // 1. List all supported games.
   const gamesResp = await g2Fetch("/games", { method: "GET" });
@@ -123,7 +192,7 @@ async function listProducts() {
   const catByCode = new Map(catalogues.map((c) => [c.code, c.catalogues]));
 
   // 3. Load margins + live USD→MMK once and build payload.
-  const [margins, usdToMmk] = await Promise.all([loadMargins(), loadUsdToMmk()]);
+  const [margins, usdToMmk, balanceUsd] = await Promise.all([loadMargins(), loadUsdToMmk(), getBalanceUsd()]);
   const payloadGames = games.map((g) => {
     const items = catByCode.get(g.code) || [];
     const packages = items.map((it: any) => {
@@ -139,6 +208,7 @@ async function listProducts() {
         margin_percent: pct,
         price_mmk: finalMmk,
         reseller_price_mmk: finalMmk,
+        stock: stockFor(balanceUsd, usd),
       };
     });
     return {
@@ -149,7 +219,7 @@ async function listProducts() {
     };
   });
 
-  return json({ success: true, games: payloadGames });
+  return json({ success: true, balance_usd: balanceUsd, games: payloadGames });
 }
 
 async function checkPlayerId(body: any) {
@@ -171,10 +241,19 @@ async function placeOrder(body: any) {
   if (!game || !catalogue_name || !player_id) {
     return json({ success: false, message: "Missing game/catalogue_name/player_id" }, 400);
   }
+  // Unit cost of this catalogue item (used for stock accounting).
+  let costUsd = 0;
+  try {
+    const cat = await g2Fetch(`/games/${encodeURIComponent(game)}/catalogue`, { method: "GET" });
+    const item = (cat.data?.catalogues || []).find((c: any) => c.name === catalogue_name);
+    costUsd = Number(item?.amount) || 0;
+  } catch { /* ignore */ }
+
   const payload: Record<string, unknown> = { catalogue_name, player_id };
   if (server_id) payload.server_id = server_id;
   if (charname) payload.charname = charname;
   if (remark) payload.remark = remark;
+
 
   const { res, data, text } = await g2Fetch(
     `/games/${encodeURIComponent(game)}/order`,
@@ -199,6 +278,11 @@ async function placeOrder(body: any) {
       msg.includes("not enough") ||
       (msg.includes("balance") && (msg.includes("low") || msg.includes("short")));
     if (insufficient) {
+      // Keep stock in sync: upstream says the balance cannot cover this item.
+      if (costUsd > 0) {
+        const stored = await readStoredBalance();
+        if (stored >= costUsd) await writeStoredBalance(Math.max(0, costUsd - 0.01));
+      }
       return json({
         success: false,
         insufficient_reseller_balance: true,
@@ -206,6 +290,13 @@ async function placeOrder(body: any) {
         upstream: data,
       }, 200);
     }
+  }
+
+  // Successful order: decrement the tracked balance so every package's
+  // stock recalculates immediately.
+  if (data?.success && costUsd > 0) {
+    const current = await getBalanceUsd();
+    await writeStoredBalance(Math.max(0, current - costUsd));
   }
 
   // Normalize a top-level message so the frontend toast works cleanly.
@@ -227,6 +318,7 @@ Deno.serve(async (req) => {
     const action = body?.action as string | undefined;
     if (!action) return json({ success: false, message: "Missing action" }, 400);
 
+    if (action === "getBalance") return json({ success: true, balance_usd: await getBalanceUsd() });
     if (action === "listProducts") return await listProducts();
     if (action === "checkPlayerId") return await checkPlayerId(body);
     if (action === "placeOrder") return await placeOrder(body);

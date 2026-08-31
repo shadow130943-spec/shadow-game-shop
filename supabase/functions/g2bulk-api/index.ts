@@ -102,17 +102,10 @@ function pickMargin(
 
 
 async function probeBalance() {
-  const variants: Array<[string, Record<string,string>]> = [
-    ["bearer", { Authorization: `Bearer ${API_KEY}` }],
-    ["raw", { Authorization: API_KEY }],
-    ["apikey-header", { "api-key": API_KEY }],
-  ];
   const out: any[] = [];
-  for (const p of ["/users/balance", "/users/me"]) {
-    for (const [label, h] of variants) {
-      const r = await g2Fetch(p, { method: "GET", headers: h });
-      out.push({ path: p, variant: label, status: r.res.status, body: r.text.slice(0, 200) });
-    }
+  for (const p of ["/auth/login", "/users/login", "/login", "/auth/token", "/users/auth/login", "/auth/signin"]) {
+    const r = await g2Fetch(p, { method: "POST", body: JSON.stringify({}) });
+    out.push({ path: p, status: r.res.status, body: r.text.slice(0, 200) });
   }
   return json({ success: true, probe: out });
 }

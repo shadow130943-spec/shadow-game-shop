@@ -100,6 +100,19 @@ function pickMargin(
   return margins.global;
 }
 
+
+async function probeBalance() {
+  const paths = ["/balance", "/account", "/account/balance", "/profile", "/me", "/user", "/user/balance", "/reseller/balance", "/wallet"];
+  const out: any[] = [];
+  for (const p of paths) {
+    try {
+      const r = await g2Fetch(p, { method: "GET" });
+      out.push({ path: p, status: r.res.status, body: r.text.slice(0, 200) });
+    } catch (e: any) { out.push({ path: p, error: e.message }); }
+  }
+  return json({ success: true, probe: out });
+}
+
 async function listProducts() {
   // 1. List all supported games.
   const gamesResp = await g2Fetch("/games", { method: "GET" });
@@ -227,6 +240,7 @@ Deno.serve(async (req) => {
     const action = body?.action as string | undefined;
     if (!action) return json({ success: false, message: "Missing action" }, 400);
 
+    if (action === "probeBalance") return await probeBalance();
     if (action === "listProducts") return await listProducts();
     if (action === "checkPlayerId") return await checkPlayerId(body);
     if (action === "placeOrder") return await placeOrder(body);

@@ -241,10 +241,19 @@ async function placeOrder(body: any) {
   if (!game || !catalogue_name || !player_id) {
     return json({ success: false, message: "Missing game/catalogue_name/player_id" }, 400);
   }
+  // Unit cost of this catalogue item (used for stock accounting).
+  let costUsd = 0;
+  try {
+    const cat = await g2Fetch(`/games/${encodeURIComponent(game)}/catalogue`, { method: "GET" });
+    const item = (cat.data?.catalogues || []).find((c: any) => c.name === catalogue_name);
+    costUsd = Number(item?.amount) || 0;
+  } catch { /* ignore */ }
+
   const payload: Record<string, unknown> = { catalogue_name, player_id };
   if (server_id) payload.server_id = server_id;
   if (charname) payload.charname = charname;
   if (remark) payload.remark = remark;
+
 
   const { res, data, text } = await g2Fetch(
     `/games/${encodeURIComponent(game)}/order`,

@@ -337,9 +337,15 @@ export default function ProductDetail() {
                   {pkg.display_name || pkg.catalogue_name}
                 </p>
                 <p className="text-sm font-bold text-primary">{formatPrice(pkg)}</p>
-                <p className={`text-[10px] mt-0.5 font-semibold ${(pkg.stock ?? 0) > 0 ? 'text-muted-foreground' : 'text-destructive'}`}>
-                  {(pkg.stock ?? 0) > 0 ? `Stock: ${pkg.stock}` : 'Out of stock'}
-                </p>
+                <span
+                  className={`mt-1.5 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                    (pkg.stock ?? 0) > 0
+                      ? 'bg-green-500/15 text-green-400'
+                      : 'bg-red-500/15 text-red-400'
+                  }`}
+                >
+                  Stock: {pkg.stock ?? 0}
+                </span>
               </motion.div>
             ))}
           </div>

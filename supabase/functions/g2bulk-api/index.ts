@@ -102,7 +102,7 @@ function pickMargin(
 
 
 async function probeBalance() {
-  const paths = ["/balance", "/account", "/account/balance", "/profile", "/me", "/user", "/user/balance", "/reseller/balance", "/wallet"];
+  const paths = ["", "/", "/docs", "/status", "/credits", "/credit", "/users/me", "/users/balance", "/user/profile", "/orders", "/games/balance", "/api-key/balance", "/apikey", "/reseller", "/topup", "/wallet/balance"];
   const out: any[] = [];
   for (const p of paths) {
     try {

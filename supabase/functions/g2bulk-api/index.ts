@@ -278,6 +278,11 @@ async function placeOrder(body: any) {
       msg.includes("not enough") ||
       (msg.includes("balance") && (msg.includes("low") || msg.includes("short")));
     if (insufficient) {
+      // Keep stock in sync: upstream says the balance cannot cover this item.
+      if (costUsd > 0) {
+        const stored = await readStoredBalance();
+        if (stored >= costUsd) await writeStoredBalance(Math.max(0, costUsd - 0.01));
+      }
       return json({
         success: false,
         insufficient_reseller_balance: true,
@@ -285,6 +290,13 @@ async function placeOrder(body: any) {
         upstream: data,
       }, 200);
     }
+  }
+
+  // Successful order: decrement the tracked balance so every package's
+  // stock recalculates immediately.
+  if (data?.success && costUsd > 0) {
+    const current = await getBalanceUsd();
+    await writeStoredBalance(Math.max(0, current - costUsd));
   }
 
   // Normalize a top-level message so the frontend toast works cleanly.

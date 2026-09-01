@@ -424,10 +424,17 @@ export default function ProductDetail() {
                 onCheckedChange={(checked) => {
                   const isChecked = checked === true;
                   setConfirmed(isChecked);
-                  if (isChecked && !nameCheckSuccess && !nameCheckLoading) {
-                    handleNameCheck();
+                  if (isChecked) {
+                    setOrderFailed(false);
+                    if (!nameCheckSuccess && !nameCheckLoading) handleNameCheck();
+                  } else {
+                    // Toggling off resets verification so the user can re-verify cleanly.
+                    setCheckedName(null);
+                    setNameCheckSuccess(false);
+                    setOrderFailed(false);
                   }
                 }}
+
               />
               <label htmlFor="confirm-order" className="text-sm font-semibold text-destructive cursor-pointer">
                 အချက်အလက်များမှန်ကန်ပါတယ်

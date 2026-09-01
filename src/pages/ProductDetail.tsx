@@ -229,12 +229,11 @@ export default function ProductDetail() {
         if (data?.invalid_reseller_session) {
           toast.error('Shadow Game Shop session သက်တမ်းကုန်နေပါသည်။ Admin ထံ အကြောင်းကြားပါ။');
         } else if (data?.message) {
-          // Show actual upstream message (e.g. real out-of-stock) so the
-          // problem is visible instead of being masked.
           toast.error(data.message);
         } else {
-          toast.error(STOCK_ERROR_MSG);
+          toast.error('မှာယူမှု မအောင်မြင်ပါ။ ခဏနေ ပြန်ကြိုးစားပါ။');
         }
+
         return;
       }
 
@@ -265,7 +264,7 @@ export default function ProductDetail() {
     } catch (err: any) {
       console.error('[placeOrder] exception:', err);
       setOrderFailed(true);
-      toast.error(STOCK_ERROR_MSG);
+      toast.error(err?.message || 'မှာယူမှု မအောင်မြင်ပါ။ ခဏနေ ပြန်ကြိုးစားပါ။');
     } finally {
       setOrdering(false);
     }

@@ -21,7 +21,7 @@ interface Package {
   price_mmk: number;
   reseller_price_mmk: number;
   hidden?: boolean;
-  stock?: number;
+  
   display_name?: string;
   image_url?: string | null;
 }
@@ -179,7 +179,8 @@ export default function ProductDetail() {
     setNameCheckLoading(false);
   };
 
-  const STOCK_ERROR_MSG = 'ယခုပစ္စည်းမှာ Stock ကုန်နေပါသည်။ ခေတ္တစောင့်ဆိုင်းပေးပါရန်။';
+
+
 
   const handleOrder = async () => {
     if (!selectedPkg || !user || !game) return;
@@ -228,12 +229,11 @@ export default function ProductDetail() {
         if (data?.invalid_reseller_session) {
           toast.error('Shadow Game Shop session သက်တမ်းကုန်နေပါသည်။ Admin ထံ အကြောင်းကြားပါ။');
         } else if (data?.message) {
-          // Show actual upstream message (e.g. real out-of-stock) so the
-          // problem is visible instead of being masked.
           toast.error(data.message);
         } else {
-          toast.error(STOCK_ERROR_MSG);
+          toast.error('မှာယူမှု မအောင်မြင်ပါ။ ခဏနေ ပြန်ကြိုးစားပါ။');
         }
+
         return;
       }
 
@@ -264,7 +264,7 @@ export default function ProductDetail() {
     } catch (err: any) {
       console.error('[placeOrder] exception:', err);
       setOrderFailed(true);
-      toast.error(STOCK_ERROR_MSG);
+      toast.error(err?.message || 'မှာယူမှု မအောင်မြင်ပါ။ ခဏနေ ပြန်ကြိုးစားပါ။');
     } finally {
       setOrdering(false);
     }
@@ -291,7 +291,7 @@ export default function ProductDetail() {
 
   const mergedPackages = id ? applyOverrides(game.packages, overrides, id) : game.packages;
   const visiblePackages = mergedPackages.filter((p) => !p.hidden && p.price_mmk > 0);
-  const buyButtonDisabled = ordering || !nameCheckSuccess || orderFailed || (selectedPkg ? (selectedPkg.stock ?? 0) <= 0 : false);
+  const buyButtonDisabled = ordering || !nameCheckSuccess || orderFailed;
 
   return (
     <div className="min-h-screen bg-background pb-8">
@@ -321,7 +321,7 @@ export default function ProductDetail() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.2 }}
-                onClick={() => { if ((pkg.stock ?? 0) <= 0) { toast.error('ဤ package ပစ္စည်းကုန်နေပါသည်'); return; } handlePackageClick(pkg); }}
+                onClick={() => handlePackageClick(pkg)}
                 className="gaming-card rounded-xl p-3 cursor-pointer gaming-card-hover flex flex-col items-center text-center"
               >
                 <div className="w-14 h-14 mb-2 flex items-center justify-center">
@@ -337,15 +337,7 @@ export default function ProductDetail() {
                   {pkg.display_name || pkg.catalogue_name}
                 </p>
                 <p className="text-sm font-bold text-primary">{formatPrice(pkg)}</p>
-                <span
-                  className={`mt-1.5 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                    (pkg.stock ?? 0) > 0
-                      ? 'bg-green-500/15 text-green-400'
-                      : 'bg-red-500/15 text-red-400'
-                  }`}
-                >
-                  Stock: {pkg.stock ?? 0}
-                </span>
+
               </motion.div>
             ))}
           </div>
@@ -414,11 +406,6 @@ export default function ProductDetail() {
               </div>
             </div>
 
-            {selectedPkg && (
-              <div className="text-xs text-center text-muted-foreground">
-                ကျန်ရှိသည့် Stock: <b className="text-foreground">{selectedPkg.stock ?? 0}</b>
-              </div>
-            )}
 
             <div className="bg-primary/10 rounded-lg px-4 py-3 text-sm font-semibold text-center">
               လက်ကျန်ငွေ = {formatBalance(walletBalance)} ကျပ်

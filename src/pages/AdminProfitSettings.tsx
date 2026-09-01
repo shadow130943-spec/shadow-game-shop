@@ -50,19 +50,13 @@ export default function AdminProfitSettings() {
   const [usdRate, setUsdRate] = useState('');
   const [rateSaving, setRateSaving] = useState(false);
 
-  // G2Bulk main account balance (USD) — drives dynamic stock
-  const [g2Balance, setG2Balance] = useState('');
-  const [balanceSaving, setBalanceSaving] = useState(false);
-
   const load = async () => {
     try {
-      const [mres, pres, rres, bres] = await Promise.all([
+      const [mres, pres, rres] = await Promise.all([
         callAdmin('list_profit_margins'),
         supabase.functions.invoke('g2bulk-api', { body: { action: 'listProducts' } }),
         supabase.from('app_settings').select('value').eq('key', 'usd_to_mmk').maybeSingle(),
-        supabase.from('app_settings').select('value').eq('key', 'g2bulk_balance_usd').maybeSingle(),
       ]);
-      if (bres.data?.value) setG2Balance(String(bres.data.value));
       setMargins(mres.margins || []);
       const ALLOWED = ['mlbb', 'pubgm', 'Telegram', 'magic_chess_gogo', 'freefire_global'];
       const gameList = (pres.data?.games || [])
@@ -96,24 +90,6 @@ export default function AdminProfitSettings() {
       toast.error(e.message || 'သိမ်း၍မရပါ');
     }
     setRateSaving(false);
-  };
-
-  const saveG2Balance = async () => {
-    const n = parseFloat(g2Balance);
-    if (!isFinite(n) || n < 0) { toast.error('Balance မမှန်ပါ'); return; }
-    setBalanceSaving(true);
-    try {
-      const { error } = await supabase.from('app_settings').upsert(
-        { key: 'g2bulk_balance_usd', value: String(n), updated_at: new Date().toISOString() },
-        { onConflict: 'key' },
-      );
-      if (error) throw error;
-      toast.success('G2Bulk balance သိမ်းပြီးပါပြီ');
-      await load();
-    } catch (e: any) {
-      toast.error(e.message || 'သိမ်း၍မရပါ');
-    }
-    setBalanceSaving(false);
   };
 
   useEffect(() => {
@@ -214,32 +190,6 @@ export default function AdminProfitSettings() {
           {!isAdmin && (
             <p className="text-[11px] text-muted-foreground">Reseller account — rate ကို view သာလုပ်နိုင်ပါတယ်။</p>
           )}
-        </div>
-
-        <div className="gaming-card rounded-xl p-5 space-y-3">
-          <h2 className="font-gaming text-lg font-bold flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-primary" /> G2Bulk Balance (Stock)
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            Package တစ်ခုချင်းစီရဲ့ Stock = Balance ÷ Package cost (USD)။ Order တစ်ခုအောင်မြင်တိုင်း balance အလိုအလျောက် လျော့ပြီး stock ပြန်တွက်ပါမယ်။
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 items-end">
-            <div className="flex-1 space-y-1 w-full">
-              <Label>G2Bulk Balance (USD)</Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={g2Balance}
-                onChange={(e) => setG2Balance(e.target.value)}
-                placeholder="0.00"
-                disabled={!isAdmin}
-              />
-            </div>
-            <Button onClick={saveG2Balance} disabled={balanceSaving || !isAdmin} className="gaming-btn border-0">
-              <Save className="h-4 w-4 mr-2" /> {balanceSaving ? 'Saving...' : 'Save Balance'}
-            </Button>
-          </div>
         </div>
 
         <div className="gaming-card rounded-xl p-5 space-y-4">

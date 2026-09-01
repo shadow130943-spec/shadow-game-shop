@@ -8,7 +8,7 @@ export interface ApiPackage {
   price_mmk: number;
   reseller_price_mmk: number;
   hidden?: boolean;
-  stock?: number;
+  
 }
 
 export interface ApiGame {

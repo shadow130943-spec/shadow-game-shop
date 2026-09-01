@@ -186,6 +186,8 @@ export default function DepositHistory() {
                 <DetailRow label="AMOUNT" value={`+${formatNum(selected.amount)} MMK`} valueClass="text-primary font-bold" />
                 <DetailRow label="DATE" value={format(new Date(selected.created_at), 'dd MMM yyyy, p')} />
                 <DetailRow label="STATUS" value={statusPill(selected.status).label} />
+                <DetailRow label="TYPE" value={isAdminTopup(selected) ? 'Admin Top-up' : 'Payment Slip'} />
+
                 {selected.screenshot_url && (
                   <div className="rounded-lg bg-muted/60 p-3">
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">

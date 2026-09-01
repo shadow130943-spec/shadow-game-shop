@@ -157,6 +157,10 @@ export default function DepositHistory() {
                     {format(dt, 'dd MMM yyyy')} • {format(dt, 'p')}
                   </p>
                   <p className="text-sm font-bold text-foreground">+{formatNum(d.amount)} MMK</p>
+                  {isAdminTopup(d) && (
+                    <p className="text-[10px] text-muted-foreground">Admin ငွေဖြည့်</p>
+                  )}
+
                 </div>
                 <span className={cn('px-3 py-1 rounded-full text-[10px] font-semibold', pill.cls)}>
                   {pill.label}

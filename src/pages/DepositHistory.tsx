@@ -16,8 +16,13 @@ interface Deposit {
   amount: number;
   status: string;
   screenshot_url: string;
+  admin_note: string | null;
   created_at: string;
 }
+
+const isAdminTopup = (d: { admin_note: string | null; screenshot_url: string }) =>
+  (d.admin_note || '').toLowerCase().includes('admin manual top-up') || !d.screenshot_url;
+
 
 type StatusFilter = 'all' | 'approved' | 'pending';
 

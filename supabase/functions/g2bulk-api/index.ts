@@ -172,19 +172,10 @@ async function placeOrder(body: any) {
   if (!game || !catalogue_name || !player_id) {
     return json({ success: false, message: "Missing game/catalogue_name/player_id" }, 400);
   }
-  // Unit cost of this catalogue item (used for stock accounting).
-  let costUsd = 0;
-  try {
-    const cat = await g2Fetch(`/games/${encodeURIComponent(game)}/catalogue`, { method: "GET" });
-    const item = (cat.data?.catalogues || []).find((c: any) => c.name === catalogue_name);
-    costUsd = Number(item?.amount) || 0;
-  } catch { /* ignore */ }
-
   const payload: Record<string, unknown> = { catalogue_name, player_id };
   if (server_id) payload.server_id = server_id;
   if (charname) payload.charname = charname;
   if (remark) payload.remark = remark;
-
 
   const { res, data, text } = await g2Fetch(
     `/games/${encodeURIComponent(game)}/order`,
@@ -204,31 +195,8 @@ async function placeOrder(body: any) {
         upstream: data,
       }, 200);
     }
-    const insufficient =
-      msg.includes("insufficient") ||
-      msg.includes("not enough") ||
-      (msg.includes("balance") && (msg.includes("low") || msg.includes("short")));
-    if (insufficient) {
-      // Keep stock in sync: upstream says the balance cannot cover this item.
-      if (costUsd > 0) {
-        const stored = await readStoredBalance();
-        if (stored >= costUsd) await writeStoredBalance(Math.max(0, costUsd - 0.01));
-      }
-      return json({
-        success: false,
-        insufficient_reseller_balance: true,
-        message: "G2Bulk reseller balance is insufficient for this order. Please top up before retrying.",
-        upstream: data,
-      }, 200);
-    }
   }
 
-  // Successful order: decrement the tracked balance so every package's
-  // stock recalculates immediately.
-  if (data?.success && costUsd > 0) {
-    const current = await getBalanceUsd();
-    await writeStoredBalance(Math.max(0, current - costUsd));
-  }
 
   // Normalize a top-level message so the frontend toast works cleanly.
   if (data && !data.message && data?.order?.player_name) {

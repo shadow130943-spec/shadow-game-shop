@@ -167,10 +167,22 @@ serve(async (req) => {
       }
 
       const formatted = new Intl.NumberFormat('my-MM').format(amount);
+
+      // Log the manual top-up so it appears in the user's deposit history.
+      const { error: depErr } = await supabaseAdmin.from("deposits").insert({
+        user_id: profile.user_id,
+        amount,
+        screenshot_url: "",
+        status: "success",
+        admin_note: "Admin manual top-up",
+      });
+      if (depErr) console.error('[transfer] deposit log failed', depErr.message);
+
       await supabaseAdmin.from("notifications").insert({
         user_id: profile.user_id,
         message: `သင့် wallet ထဲသို့ ${formatted} ကျပ် ထည့်သွင်းပေးလိုက်ပါသည်။`,
       });
+
 
       return new Response(
         JSON.stringify({ success: true, user_name: profile.name, new_balance: updated?.wallet_balance ?? null }),

@@ -16,8 +16,13 @@ interface Deposit {
   amount: number;
   status: string;
   screenshot_url: string;
+  admin_note: string | null;
   created_at: string;
 }
+
+const isAdminTopup = (d: { admin_note: string | null; screenshot_url: string }) =>
+  (d.admin_note || '').toLowerCase().includes('admin manual top-up') || !d.screenshot_url;
+
 
 type StatusFilter = 'all' | 'approved' | 'pending';
 
@@ -152,6 +157,10 @@ export default function DepositHistory() {
                     {format(dt, 'dd MMM yyyy')} • {format(dt, 'p')}
                   </p>
                   <p className="text-sm font-bold text-foreground">+{formatNum(d.amount)} MMK</p>
+                  {isAdminTopup(d) && (
+                    <p className="text-[10px] text-muted-foreground">Admin ငွေဖြည့်</p>
+                  )}
+
                 </div>
                 <span className={cn('px-3 py-1 rounded-full text-[10px] font-semibold', pill.cls)}>
                   {pill.label}
@@ -177,6 +186,8 @@ export default function DepositHistory() {
                 <DetailRow label="AMOUNT" value={`+${formatNum(selected.amount)} MMK`} valueClass="text-primary font-bold" />
                 <DetailRow label="DATE" value={format(new Date(selected.created_at), 'dd MMM yyyy, p')} />
                 <DetailRow label="STATUS" value={statusPill(selected.status).label} />
+                <DetailRow label="TYPE" value={isAdminTopup(selected) ? 'Admin Top-up' : 'Payment Slip'} />
+
                 {selected.screenshot_url && (
                   <div className="rounded-lg bg-muted/60 p-3">
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">

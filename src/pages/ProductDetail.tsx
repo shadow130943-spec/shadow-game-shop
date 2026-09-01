@@ -226,16 +226,21 @@ export default function ProductDetail() {
       if (error || !data?.success) {
         console.error('[placeOrder] failed:', error || data);
         setOrderFailed(true);
-        if (data?.invalid_reseller_session) {
+        const rawMsg = String(data?.message || error?.message || '');
+        const isInsufficient = /insufficient\s+balance|not\s+enough\s+balance|balance\s+is\s+not\s+enough/i.test(rawMsg);
+        if (isInsufficient) {
+          toast.error('Stock ကုန်နေပါသည် ခဏကြာမှပြန်လည်ဝယ်ယူပါ');
+        } else if (data?.invalid_reseller_session) {
           toast.error('Shadow Game Shop session သက်တမ်းကုန်နေပါသည်။ Admin ထံ အကြောင်းကြားပါ။');
-        } else if (data?.message) {
-          toast.error(data.message);
+        } else if (rawMsg) {
+          toast.error(rawMsg);
         } else {
           toast.error('မှာယူမှု မအောင်မြင်ပါ။ ခဏနေ ပြန်ကြိုးစားပါ။');
         }
 
         return;
       }
+
 
       const { error: updateError } = await supabase
         .from('profiles')
@@ -419,10 +424,17 @@ export default function ProductDetail() {
                 onCheckedChange={(checked) => {
                   const isChecked = checked === true;
                   setConfirmed(isChecked);
-                  if (isChecked && !nameCheckSuccess && !nameCheckLoading) {
-                    handleNameCheck();
+                  if (isChecked) {
+                    setOrderFailed(false);
+                    if (!nameCheckSuccess && !nameCheckLoading) handleNameCheck();
+                  } else {
+                    // Toggling off resets verification so the user can re-verify cleanly.
+                    setCheckedName(null);
+                    setNameCheckSuccess(false);
+                    setOrderFailed(false);
                   }
                 }}
+
               />
               <label htmlFor="confirm-order" className="text-sm font-semibold text-destructive cursor-pointer">
                 အချက်အလက်များမှန်ကန်ပါတယ်

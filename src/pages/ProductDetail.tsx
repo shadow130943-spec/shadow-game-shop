@@ -213,12 +213,10 @@ export default function ProductDetail() {
 
       if (data?.valid === 'valid' && data?.name) {
         setCheckedName(data.name);
-        // G2Bulk returns the avatar under varying keys depending on the game.
-        const avatar =
-          data.avatar || data.avatar_url || data.photo_url || data.photo ||
-          data.image || data.image_url || data.profile_photo ||
-          data.profile_picture || data.player?.avatar || null;
-        setCheckedAvatar(typeof avatar === 'string' && avatar.startsWith('http') ? avatar : null);
+        // G2Bulk returns the avatar under varying keys/nesting depending on the game.
+        console.log('[checkPlayerId] response:', data);
+        setCheckedAvatar(findAvatarUrl(data));
+
         setNameCheckSuccess(true);
         toast.success(`အကောင့်အမည်: ${data.name}`);
       } else {

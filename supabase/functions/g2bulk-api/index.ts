@@ -155,17 +155,52 @@ async function listProducts() {
 
 async function checkPlayerId(body: any) {
   const { game, user_id, server_id, charname } = body || {};
-  if (!game || !user_id) return json({ success: false, message: "Missing game/user_id" }, 400);
+  if (!game || !user_id) {
+    return json({ success: false, error_type: "INVALID_USER", message: "Missing game/user_id" }, 200);
+  }
   const payload: Record<string, unknown> = { game, user_id };
   if (server_id) payload.server_id = server_id;
   if (charname) payload.charname = charname;
-  const { res, data } = await g2Fetch("/games/checkPlayerId", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+
+  let res: Response, data: any;
+  try {
+    const r = await g2Fetch("/games/checkPlayerId", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    res = r.res;
+    data = r.data;
+  } catch (err: any) {
+    console.error("[g2bulk-api] checkPlayerId network error:", err?.message);
+    return json({ success: false, error_type: "SYSTEM_ERROR", message: "Upstream unreachable" }, 500);
+  }
+
   console.log("[g2bulk-api] checkPlayerId status:", res.status);
-  return json(data, res.ok ? 200 : res.status);
+
+  const msg = String(data?.message || data?.detail?.message || data?.error || "").toLowerCase();
+  const isValid = data?.valid === "valid" && !!data?.name;
+
+  if (isValid) {
+    return json({ success: true, ...data }, 200);
+  }
+
+  const invalidByMessage =
+    /invalid|not\s*found|wrong|incorrect|no\s*such|does\s*not\s*exist|unknown user|user id/i.test(msg);
+
+  // Upstream 5xx with no invalid-user signal => genuine system failure.
+  if (res.status >= 500 && !invalidByMessage) {
+    return json({ success: false, error_type: "SYSTEM_ERROR", message: data?.message || "Upstream error" }, 500);
+  }
+
+  // Everything else (400/404/422 or success:false) is treated as an invalid user input.
+  return json({
+    success: false,
+    error_type: "INVALID_USER",
+    message: data?.message || "Invalid player id / username",
+    upstream: data,
+  }, 200);
 }
+
 
 async function placeOrder(body: any) {
   const { game, catalogue_name, player_id, server_id, charname, remark } = body || {};

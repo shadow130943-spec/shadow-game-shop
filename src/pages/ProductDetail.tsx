@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ShoppingCart, Link2, Loader2 } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Link2, Loader2, User as UserIcon } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -80,6 +81,7 @@ export default function ProductDetail() {
   const [checkedName, setCheckedName] = useState<string | null>(null);
   const [nameCheckLoading, setNameCheckLoading] = useState(false);
   const [nameCheckSuccess, setNameCheckSuccess] = useState(false);
+  const [checkedAvatar, setCheckedAvatar] = useState<string | null>(null);
 
   const needsServerId = id ? GAMES_WITH_SERVER_ID.includes(id) : false;
 

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ShoppingCart, Link2, Loader2 } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Link2, Loader2, User as UserIcon } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -80,6 +81,7 @@ export default function ProductDetail() {
   const [checkedName, setCheckedName] = useState<string | null>(null);
   const [nameCheckLoading, setNameCheckLoading] = useState(false);
   const [nameCheckSuccess, setNameCheckSuccess] = useState(false);
+  const [checkedAvatar, setCheckedAvatar] = useState<string | null>(null);
 
   const needsServerId = id ? GAMES_WITH_SERVER_ID.includes(id) : false;
 
@@ -152,6 +154,7 @@ export default function ProductDetail() {
 
     setNameCheckLoading(true);
     setCheckedName(null);
+    setCheckedAvatar(null);
     setNameCheckSuccess(false);
 
     try {
@@ -167,6 +170,12 @@ export default function ProductDetail() {
 
       if (data?.valid === 'valid' && data?.name) {
         setCheckedName(data.name);
+        // G2Bulk returns the avatar under varying keys depending on the game.
+        const avatar =
+          data.avatar || data.avatar_url || data.photo_url || data.photo ||
+          data.image || data.image_url || data.profile_photo ||
+          data.profile_picture || data.player?.avatar || null;
+        setCheckedAvatar(typeof avatar === 'string' && avatar.startsWith('http') ? avatar : null);
         setNameCheckSuccess(true);
         toast.success(`အကောင့်အမည်: ${data.name}`);
       } else {
@@ -397,7 +406,15 @@ export default function ProductDetail() {
                 }}
               >
                 <p className="text-xs text-muted-foreground mb-0.5">အကောင့်အမည်</p>
-                <p className="text-base font-bold">{checkedName}</p>
+                <div className="flex items-center justify-center gap-2">
+                  <Avatar className="h-8 w-8 border border-[rgba(34,197,94,0.4)]">
+                    {checkedAvatar && <AvatarImage src={checkedAvatar} alt={checkedName} />}
+                    <AvatarFallback className="bg-muted text-muted-foreground">
+                      <UserIcon className="h-4 w-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <p className="text-base font-bold">{checkedName}</p>
+                </div>
               </motion.div>
             )}
 
@@ -430,6 +447,7 @@ export default function ProductDetail() {
                   } else {
                     // Toggling off resets verification so the user can re-verify cleanly.
                     setCheckedName(null);
+                    setCheckedAvatar(null);
                     setNameCheckSuccess(false);
                     setOrderFailed(false);
                   }

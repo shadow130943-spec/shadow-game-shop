@@ -154,6 +154,7 @@ export default function ProductDetail() {
 
     setNameCheckLoading(true);
     setCheckedName(null);
+    setCheckedAvatar(null);
     setNameCheckSuccess(false);
 
     try {

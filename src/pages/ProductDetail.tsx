@@ -447,6 +447,7 @@ export default function ProductDetail() {
                   } else {
                     // Toggling off resets verification so the user can re-verify cleanly.
                     setCheckedName(null);
+                    setCheckedAvatar(null);
                     setNameCheckSuccess(false);
                     setOrderFailed(false);
                   }

@@ -48,6 +48,48 @@ const CURRENCIES = [
   { value: 'usd', label: 'USD 💵' },
 ];
 
+const AVATAR_KEY_RE = /(avatar|photo|picture|pic|image|thumb|icon)/i;
+
+/** Recursively find the first plausible image URL anywhere in the API response. */
+function findAvatarUrl(value: unknown, keyHint = '', depth = 0): string | null {
+  if (depth > 5 || value == null) return null;
+  if (typeof value === 'string') {
+    const v = value.trim();
+    if (!/^https?:\/\//i.test(v)) return null;
+    if (AVATAR_KEY_RE.test(keyHint) || /\.(png|jpe?g|webp|gif)(\?|$)/i.test(v)) return v;
+    return null;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findAvatarUrl(item, keyHint, depth + 1);
+      if (found) return found;
+    }
+    return null;
+  }
+  if (typeof value === 'object') {
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      const found = findAvatarUrl(v, k, depth + 1);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/** Telegram-style initials: up to 2 letters from the name. */
+function getInitials(name: string) {
+  const parts = name.replace(/^@/, '').trim().split(/[\s._-]+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+const AVATAR_COLORS = ['#e17076', '#7bc862', '#65aadd', '#a695e7', '#ee7aae', '#faa774', '#6ec9cb'];
+function initialsColor(name: string) {
+  let sum = 0;
+  for (let i = 0; i < name.length; i++) sum += name.charCodeAt(i);
+  return AVATAR_COLORS[sum % AVATAR_COLORS.length];
+}
+
 function GameBanner({ gameCode }: { gameCode: string }) {
   const url = useBrandingAsset(`game_banner_${gameCode}`);
   if (!url) return null;
@@ -57,6 +99,7 @@ function GameBanner({ gameCode }: { gameCode: string }) {
     </div>
   );
 }
+
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>(); // id = game_code

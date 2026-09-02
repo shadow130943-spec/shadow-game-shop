@@ -406,7 +406,15 @@ export default function ProductDetail() {
                 }}
               >
                 <p className="text-xs text-muted-foreground mb-0.5">အကောင့်အမည်</p>
-                <p className="text-base font-bold">{checkedName}</p>
+                <div className="flex items-center justify-center gap-2">
+                  <Avatar className="h-8 w-8 border border-[rgba(34,197,94,0.4)]">
+                    {checkedAvatar && <AvatarImage src={checkedAvatar} alt={checkedName} />}
+                    <AvatarFallback className="bg-muted text-muted-foreground">
+                      <UserIcon className="h-4 w-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <p className="text-base font-bold">{checkedName}</p>
+                </div>
               </motion.div>
             )}
 

@@ -190,6 +190,28 @@ export default function ProductDetail() {
     setDialogOpen(true);
   };
 
+  const invalidIdMessage = () => {
+    switch (game?.game_code) {
+      case 'Telegram':
+      case 'telegram':
+        return 'Telegram Username မှားယွင်းနေပါသည်။';
+      case 'mlbb':
+        return 'MLBB Player ID (သို့) Server ID မှားယွင်းနေပါသည်။';
+      case 'pubg':
+      case 'pubgm':
+        return 'PUBG Character ID မှားယွင်းနေပါသည်။';
+      case 'freefire':
+      case 'freefire_global':
+        return 'FreeFire Player ID မှားယွင်းနေပါသည်။';
+      case 'magic_chess_gogo':
+        return 'MCGG Player ID မှားယွင်းနေပါသည်။';
+      default:
+        return `${game?.game_name || 'Game'} ID မှားယွင်းနေပါသည်။`;
+    }
+  };
+
+  const SYSTEM_ERROR_MSG = 'စနစ်ချို့ယွင်းချက်ကြောင့် အကောင့်စစ်ဆေး၍မရပါ ခဏကြာမှပြန်လည်ကြိုးစားပါ';
+
   const handleNameCheck = async () => {
     if (!game) return;
     if (!gameId.trim()) { toast.error('Game Id ထည့်ပါ'); return; }
@@ -209,25 +231,35 @@ export default function ProductDetail() {
           server_id: needsServerId ? serverId.trim() : '',
         },
       });
-      if (error) throw new Error(error.message || 'API error');
+
+      const rawMsg = String((data as any)?.message || error?.message || '');
+      const looksInvalid = /invalid|not\s*found|wrong|incorrect|no\s*such|does\s*not\s*exist/i.test(rawMsg)
+        || (data && (data as any).valid && (data as any).valid !== 'valid');
+
+      if (error && !looksInvalid) {
+        console.error('[checkPlayerId] system error:', error);
+        toast.error(SYSTEM_ERROR_MSG);
+        setNameCheckLoading(false);
+        return;
+      }
 
       if (data?.valid === 'valid' && data?.name) {
         setCheckedName(data.name);
-        // G2Bulk returns the avatar under varying keys/nesting depending on the game.
-        console.log('[checkPlayerId] response:', data);
         setCheckedAvatar(findAvatarUrl(data));
-
         setNameCheckSuccess(true);
         toast.success(`အကောင့်အမည်: ${data.name}`);
+      } else if (looksInvalid || data) {
+        toast.error(invalidIdMessage());
       } else {
-        toast.error(data?.message || 'အကောင့် ရှာမတွေ့ပါ');
+        toast.error(SYSTEM_ERROR_MSG);
       }
     } catch (err: any) {
       console.error('[checkPlayerId] error:', err);
-      toast.error(err.message || 'API ချိတ်ဆက်မှု မအောင်မြင်ပါ');
+      toast.error(SYSTEM_ERROR_MSG);
     }
     setNameCheckLoading(false);
   };
+
 
 
 

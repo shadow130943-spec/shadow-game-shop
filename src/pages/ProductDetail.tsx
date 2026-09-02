@@ -190,9 +190,10 @@ export default function ProductDetail() {
     setDialogOpen(true);
   };
 
+  const isTelegram = (game?.game_code || '').toLowerCase().includes('telegram');
+
   const invalidIdMessage = () => {
-    switch (game?.game_code) {
-      case 'Telegram':
+    switch ((game?.game_code || '').toLowerCase()) {
       case 'telegram':
         return 'Telegram Username မှားယွင်းနေပါသည်။';
       case 'mlbb':
@@ -204,9 +205,10 @@ export default function ProductDetail() {
       case 'freefire_global':
         return 'FreeFire Player ID မှားယွင်းနေပါသည်။';
       case 'magic_chess_gogo':
+      case 'mcgg':
         return 'MCGG Player ID မှားယွင်းနေပါသည်။';
       default:
-        return `${game?.game_name || 'Game'} ID မှားယွင်းနေပါသည်။`;
+        return `${game?.game_name || 'Product'} ID/Username မှားယွင်းနေပါသည်။`;
     }
   };
 
@@ -232,33 +234,40 @@ export default function ProductDetail() {
         },
       });
 
-      const rawMsg = String((data as any)?.message || error?.message || '');
-      const looksInvalid = /invalid|not\s*found|wrong|incorrect|no\s*such|does\s*not\s*exist/i.test(rawMsg)
-        || (data && (data as any).valid && (data as any).valid !== 'valid');
+      const payload = data as any;
 
-      if (error && !looksInvalid) {
-        console.error('[checkPlayerId] system error:', error);
+      // Valid account
+      if (payload?.valid === 'valid' && payload?.name) {
+        setCheckedName(payload.name);
+        setCheckedAvatar(isTelegram ? findAvatarUrl(payload) : null);
+        setNameCheckSuccess(true);
+        toast.success(`အကောင့်အမည်: ${payload.name}`);
+        setNameCheckLoading(false);
+        return;
+      }
+
+      // Explicit invalid-user signal from the edge function (HTTP 200 body)
+      if (payload?.error_type === 'INVALID_USER') {
+        toast.error(invalidIdMessage());
+        setNameCheckLoading(false);
+        return;
+      }
+
+      if (payload?.error_type === 'SYSTEM_ERROR' || error) {
+        console.error('[checkPlayerId] system error:', error || payload);
         toast.error(SYSTEM_ERROR_MSG);
         setNameCheckLoading(false);
         return;
       }
 
-      if (data?.valid === 'valid' && data?.name) {
-        setCheckedName(data.name);
-        setCheckedAvatar(findAvatarUrl(data));
-        setNameCheckSuccess(true);
-        toast.success(`အကောင့်အမည်: ${data.name}`);
-      } else if (looksInvalid || data) {
-        toast.error(invalidIdMessage());
-      } else {
-        toast.error(SYSTEM_ERROR_MSG);
-      }
+      toast.error(invalidIdMessage());
     } catch (err: any) {
       console.error('[checkPlayerId] error:', err);
       toast.error(SYSTEM_ERROR_MSG);
     }
     setNameCheckLoading(false);
   };
+
 
 
 

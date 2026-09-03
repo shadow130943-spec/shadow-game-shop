@@ -109,7 +109,11 @@ export default function Deposit() {
       finalFile = selected;
     }
     setFile(finalFile);
-    setPreview(URL.createObjectURL(finalFile));
+    // Data URL preview: survives CSP blob restrictions and object-URL revocation.
+    const reader = new FileReader();
+    reader.onload = () => setPreview(typeof reader.result === 'string' ? reader.result : null);
+    reader.onerror = () => setPreview(URL.createObjectURL(finalFile));
+    reader.readAsDataURL(finalFile);
     await scanAmount(finalFile);
   };
 

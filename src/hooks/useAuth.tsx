@@ -107,6 +107,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Live wallet balance: react instantly to admin approvals / manual top-ups.
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`profile-balance-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          if (payload.new) setProfile(payload.new as Profile);
+        }
+      )
+      .subscribe();
+
+    // Safety net if realtime drops: light polling + refresh on tab focus.
+    const interval = window.setInterval(() => { void fetchProfile(user.id); }, 30000);
+    const onFocus = () => { void fetchProfile(user.id); };
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [user?.id]);
+
 
   const signUp = async (phone: string, password: string, name: string) => {
     const email = phoneToEmail(phone);

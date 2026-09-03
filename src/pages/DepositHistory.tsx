@@ -246,6 +246,16 @@ export default function DepositHistory() {
         </DialogContent>
       </Dialog>
 
+      {/* Full-size slip viewer */}
+      <Dialog open={lightbox && !!slipUrl} onOpenChange={setLightbox}>
+        <DialogContent className="max-w-lg p-2 bg-background border-border">
+          <DialogTitle className="sr-only">Payment slip</DialogTitle>
+          {slipUrl && (
+            <img src={slipUrl} alt="Payment slip full view" className="w-full h-auto rounded-lg" />
+          )}
+        </DialogContent>
+      </Dialog>
+
       <BottomNav />
     </div>
   );

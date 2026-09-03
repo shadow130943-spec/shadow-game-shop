@@ -221,11 +221,22 @@ export default function DepositHistory() {
                       Payment Slip
                     </p>
                     <div className="rounded-lg overflow-hidden bg-background">
-                      <img
-                        src={selected.screenshot_url}
-                        alt="Payment slip"
-                        className="w-full h-auto max-h-80 object-contain"
-                      />
+                      {slipError ? (
+                        <p className="text-xs text-muted-foreground text-center py-6">
+                          ပုံကို ဖွင့်၍မရပါ
+                        </p>
+                      ) : slipUrl ? (
+                        <button type="button" onClick={() => setLightbox(true)} className="w-full">
+                          <img
+                            src={slipUrl}
+                            alt="Payment slip"
+                            onError={() => setSlipError(true)}
+                            className="w-full h-auto max-h-80 object-contain"
+                          />
+                        </button>
+                      ) : (
+                        <div className="h-40 w-full bg-muted animate-pulse" />
+                      )}
                     </div>
                   </div>
                 )}

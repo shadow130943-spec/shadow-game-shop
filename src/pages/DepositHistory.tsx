@@ -42,8 +42,35 @@ export default function DepositHistory() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [dateFilter, setDateFilter] = useState<Date | undefined>();
   const [selected, setSelected] = useState<Deposit | null>(null);
+  const [slipUrl, setSlipUrl] = useState<string | null>(null);
+  const [slipError, setSlipError] = useState(false);
+  const [lightbox, setLightbox] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Screenshots live in a private bucket — resolve a signed URL for the selected slip.
+  useEffect(() => {
+    let cancelled = false;
+    setSlipUrl(null);
+    setSlipError(false);
+    const raw = selected?.screenshot_url;
+    if (!raw) return;
+
+    if (/^https?:\/\//.test(raw) && !raw.includes('/screenshots/')) {
+      setSlipUrl(raw);
+      return;
+    }
+    const path = raw.includes('/screenshots/') ? raw.split('/screenshots/')[1] : raw;
+    supabase.storage
+      .from('screenshots')
+      .createSignedUrl(path, 60 * 60)
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error || !data?.signedUrl) setSlipError(true);
+        else setSlipUrl(data.signedUrl);
+      });
+    return () => { cancelled = true; };
+  }, [selected?.screenshot_url]);
 
   useEffect(() => {
     if (!user) return;

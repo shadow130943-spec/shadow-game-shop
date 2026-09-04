@@ -614,7 +614,7 @@ export default function AdminContent() {
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-mono text-muted-foreground truncate">{p.catalogue_name}</p>
                           <p className="text-xs text-muted-foreground">
-                            API price: <span className="font-semibold text-foreground">{new Intl.NumberFormat('my-MM').format(p.price_mmk)} ကျပ်</span>
+                            API price: <span className="font-semibold text-foreground">{new Intl.NumberFormat('my-MM').format(p.api_price_mmk ?? p.price_mmk)} ကျပ်</span>
                           </p>
                           <input
                             id={`pkg-img-${currentGame.game_code}-${p.catalogue_name}`}

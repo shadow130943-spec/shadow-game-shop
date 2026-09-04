@@ -142,19 +142,25 @@ async function listProducts() {
     const items = catByCode.get(g.code) || [];
     const packages = items.map((it: any) => {
       const usd = Number(it.amount) || 0;
+      // Pure API cost: USD * exchange rate. No profit folded in here.
       const baseMmk = Math.round(usd * usdToMmk);
-      const pct = pickMargin(margins, g.code, it.name);
-      const finalMmk = Math.round(baseMmk * (1 + pct / 100));
+      const m = pickMargin(margins, g.code, it.name);
+      // Selling price = API cost + admin profit (percentage and/or flat MMK).
+      const profitMmk = Math.round(baseMmk * (m.percent / 100)) + Math.round(m.flat);
+      const finalMmk = baseMmk + profitMmk;
       return {
         catalogue_id: it.id,
         catalogue_name: it.name,
         price_usd: usd,
         api_price_mmk: baseMmk,
-        margin_percent: pct,
+        margin_percent: m.percent,
+        margin_flat_mmk: Math.round(m.flat),
+        profit_mmk: profitMmk,
         price_mmk: finalMmk,
         reseller_price_mmk: finalMmk,
       };
     });
+
     return {
       game_code: g.code,
       game_name: g.name,

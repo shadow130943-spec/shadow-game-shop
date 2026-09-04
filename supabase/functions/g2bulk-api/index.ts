@@ -63,7 +63,15 @@ interface MarginRow {
   game_code: string | null;
   catalogue_name: string | null;
   margin_percent: number;
+  margin_flat_mmk?: number | null;
 }
+
+interface MarginValue {
+  percent: number;
+  flat: number;
+}
+
+const ZERO_MARGIN: MarginValue = { percent: 0, flat: 0 };
 
 async function loadMargins() {
   const supabaseAdmin = createClient(
@@ -72,33 +80,38 @@ async function loadMargins() {
   );
   const { data, error } = await supabaseAdmin
     .from("profit_margins")
-    .select("scope, game_code, catalogue_name, margin_percent");
+    .select("scope, game_code, catalogue_name, margin_percent, margin_flat_mmk");
   if (error) {
     console.error("[g2bulk-api] load margins error:", error.message);
-    return { global: 0, game: new Map<string, number>(), pkg: new Map<string, number>() };
+    return { global: ZERO_MARGIN, game: new Map<string, MarginValue>(), pkg: new Map<string, MarginValue>() };
   }
-  let globalPct = 0;
-  const game = new Map<string, number>();
-  const pkg = new Map<string, number>();
+  let globalMargin: MarginValue = ZERO_MARGIN;
+  const game = new Map<string, MarginValue>();
+  const pkg = new Map<string, MarginValue>();
+  const toValue = (r: MarginRow): MarginValue => ({
+    percent: Number(r.margin_percent) || 0,
+    flat: Number(r.margin_flat_mmk) || 0,
+  });
   for (const r of (data || []) as MarginRow[]) {
-    if (r.scope === "global") globalPct = Number(r.margin_percent) || 0;
-    else if (r.scope === "game" && r.game_code) game.set(r.game_code, Number(r.margin_percent) || 0);
+    if (r.scope === "global") globalMargin = toValue(r);
+    else if (r.scope === "game" && r.game_code) game.set(r.game_code, toValue(r));
     else if (r.scope === "package" && r.game_code && r.catalogue_name)
-      pkg.set(`${r.game_code}::${r.catalogue_name}`, Number(r.margin_percent) || 0);
+      pkg.set(`${r.game_code}::${r.catalogue_name}`, toValue(r));
   }
-  return { global: globalPct, game, pkg };
+  return { global: globalMargin, game, pkg };
 }
 
 function pickMargin(
-  margins: { global: number; game: Map<string, number>; pkg: Map<string, number> },
+  margins: { global: MarginValue; game: Map<string, MarginValue>; pkg: Map<string, MarginValue> },
   gameCode: string,
   catalogueName: string,
-) {
+): MarginValue {
   const pkgKey = `${gameCode}::${catalogueName}`;
   if (margins.pkg.has(pkgKey)) return margins.pkg.get(pkgKey)!;
   if (margins.game.has(gameCode)) return margins.game.get(gameCode)!;
   return margins.global;
 }
+
 
 
 async function listProducts() {

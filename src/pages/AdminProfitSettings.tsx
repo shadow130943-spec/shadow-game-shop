@@ -16,6 +16,7 @@ interface Margin {
   game_code: string | null;
   catalogue_name: string | null;
   margin_percent: number;
+  margin_flat_mmk?: number | null;
 }
 
 interface GameOption {
@@ -44,6 +45,7 @@ export default function AdminProfitSettings() {
   const [gameCode, setGameCode] = useState('');
   const [catalogueName, setCatalogueName] = useState('');
   const [pct, setPct] = useState('');
+  const [flat, setFlat] = useState('');
   const [saving, setSaving] = useState(false);
 
   // USD -> MMK rate
@@ -105,8 +107,11 @@ export default function AdminProfitSettings() {
   }, []);
 
   const handleSave = async () => {
-    const value = parseFloat(pct);
+    const value = pct.trim() === '' ? 0 : parseFloat(pct);
+    const flatValue = flat.trim() === '' ? 0 : parseFloat(flat);
     if (isNaN(value) || value < 0) { toast.error('Margin % မမှန်ပါ'); return; }
+    if (isNaN(flatValue) || flatValue < 0) { toast.error('Flat profit (MMK) မမှန်ပါ'); return; }
+    if (value === 0 && flatValue === 0) { toast.error('Margin % သို့မဟုတ် Flat profit ထည့်ပါ'); return; }
     if (scope !== 'global' && !gameCode) { toast.error('Game ရွေးပါ'); return; }
     if (scope === 'package' && !catalogueName) { toast.error('Package ရွေးပါ'); return; }
 
@@ -117,9 +122,11 @@ export default function AdminProfitSettings() {
         game_code: scope === 'global' ? null : gameCode,
         catalogue_name: scope === 'package' ? catalogueName : null,
         margin_percent: value,
+        margin_flat_mmk: flatValue,
       });
       toast.success('သိမ်းပြီးပါပြီ');
       setPct('');
+      setFlat('');
       setCatalogueName('');
       await load();
     } catch (e: any) {
@@ -245,6 +252,11 @@ export default function AdminProfitSettings() {
               <Label>Margin %</Label>
               <Input type="number" step="0.1" min="0" placeholder="e.g. 5" value={pct} onChange={(e) => setPct(e.target.value)} />
             </div>
+
+            <div className="space-y-1">
+              <Label>Flat profit (MMK)</Label>
+              <Input type="number" step="100" min="0" placeholder="e.g. 500" value={flat} onChange={(e) => setFlat(e.target.value)} />
+            </div>
           </div>
 
           <Button onClick={handleSave} disabled={saving} className="gaming-btn border-0">
@@ -276,7 +288,12 @@ export default function AdminProfitSettings() {
                   <TableCell><span className="inline-flex items-center gap-1 capitalize">{scopeIcon(m.scope)} {m.scope}</span></TableCell>
                   <TableCell>{m.game_code || '—'}</TableCell>
                   <TableCell>{m.catalogue_name || '—'}</TableCell>
-                  <TableCell className="font-semibold text-primary">+{Number(m.margin_percent)}%</TableCell>
+                  <TableCell className="font-semibold text-primary">
+                    {Number(m.margin_percent) > 0 && <span>+{Number(m.margin_percent)}%</span>}
+                    {Number(m.margin_percent) > 0 && Number(m.margin_flat_mmk) > 0 && <span className="text-muted-foreground"> + </span>}
+                    {Number(m.margin_flat_mmk) > 0 && <span>+{Number(m.margin_flat_mmk).toLocaleString('en-US')} Ks</span>}
+                    {!Number(m.margin_percent) && !Number(m.margin_flat_mmk) && <span className="text-muted-foreground">—</span>}
+                  </TableCell>
                   <TableCell>
                     <Button size="icon" variant="ghost" onClick={() => handleDelete(m.id)}>
                       <Trash2 className="h-4 w-4 text-destructive" />

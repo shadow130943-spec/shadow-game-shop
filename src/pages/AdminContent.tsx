@@ -16,7 +16,7 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml',
 interface GameRow {
   game_code: string;
   game_name: string;
-  packages: Array<{ catalogue_name: string; price_mmk: number }>;
+  packages: Array<{ catalogue_name: string; price_mmk: number; api_price_mmk?: number }>;
 }
 
 interface OverrideRow {

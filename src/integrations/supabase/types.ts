@@ -424,6 +424,7 @@ export type Database = {
           created_at: string
           game_code: string | null
           id: string
+          margin_flat_mmk: number
           margin_percent: number
           scope: string
           updated_at: string
@@ -433,6 +434,7 @@ export type Database = {
           created_at?: string
           game_code?: string | null
           id?: string
+          margin_flat_mmk?: number
           margin_percent?: number
           scope: string
           updated_at?: string
@@ -442,6 +444,7 @@ export type Database = {
           created_at?: string
           game_code?: string | null
           id?: string
+          margin_flat_mmk?: number
           margin_percent?: number
           scope?: string
           updated_at?: string

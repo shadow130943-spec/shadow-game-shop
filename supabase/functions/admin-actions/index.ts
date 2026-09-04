@@ -529,6 +529,7 @@ serve(async (req) => {
         game_code: z.string().trim().min(1).max(64).nullable().optional(),
         catalogue_name: z.string().trim().min(1).max(128).nullable().optional(),
         margin_percent: z.number().min(0).max(1000),
+        margin_flat_mmk: z.number().min(0).max(10000000).optional(),
       });
       const parsed = MarginSchema.parse(params);
       const row: any = {
@@ -536,6 +537,7 @@ serve(async (req) => {
         game_code: parsed.scope === "global" ? null : (parsed.game_code || null),
         catalogue_name: parsed.scope === "package" ? (parsed.catalogue_name || null) : null,
         margin_percent: parsed.margin_percent,
+        margin_flat_mmk: parsed.margin_flat_mmk ?? 0,
       };
       if (parsed.scope === "game" && !row.game_code) throw new Error("game_code required for game scope");
       if (parsed.scope === "package" && (!row.game_code || !row.catalogue_name))
@@ -557,12 +559,15 @@ serve(async (req) => {
       }
 
       if (existingId) {
-        const { error } = await supabaseAdmin.from("profit_margins").update({ margin_percent: row.margin_percent }).eq("id", existingId);
+        const { error } = await supabaseAdmin.from("profit_margins")
+          .update({ margin_percent: row.margin_percent, margin_flat_mmk: row.margin_flat_mmk })
+          .eq("id", existingId);
         if (error) throw error;
       } else {
         const { error } = await supabaseAdmin.from("profit_margins").insert(row);
         if (error) throw error;
       }
+
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

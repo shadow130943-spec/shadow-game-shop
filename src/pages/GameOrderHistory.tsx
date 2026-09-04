@@ -145,11 +145,13 @@ export default function GameOrderHistory() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1 space-y-1">
                     <p className="text-[10px] font-mono text-muted-foreground">#{o.id.slice(0, 8)}</p>
-                    <p className="text-sm font-semibold text-foreground truncate">
-                      {o.game_id}{o.server_id ? ` (${o.server_id})` : ''}
+                    <p className="text-sm font-semibold text-foreground truncate">{o.product_name}</p>
+                    <p className="text-xs font-medium text-foreground/90 truncate">{o.item_name}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      ID: {o.game_id}{o.server_id ? ` (${o.server_id})` : ''}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">{o.item_name}</p>
                   </div>
+
                   <div className="text-right shrink-0">
                     <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold ${badge.cls}`}>
                       {badge.label}

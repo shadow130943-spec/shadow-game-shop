@@ -143,12 +143,16 @@ async function listProducts() {
   const payloadGames = games.map((g) => {
     const items = catByCode.get(g.code) || [];
     const packages = items.map((it: any) => {
-      const usd = Number(it.amount) || 0;
+      // Exact 2-decimal USD from G2Bulk, converted with integer-cent math to
+      // avoid floating point drift (e.g. 1.47 * 4400 must be exactly 6468).
+      const usdRaw = Number(it.amount) || 0;
+      const usdCents = Math.round(usdRaw * 100);
+      const usd = usdCents / 100;
       // Pure API cost: USD * exchange rate. No profit folded in here.
-      const baseMmk = Math.round(usd * usdToMmk);
+      const baseMmk = Math.round((usdCents * usdToMmk) / 100);
       const m = pickMargin(margins, g.code, it.name);
       // Selling price = API cost + admin profit (percentage and/or flat MMK).
-      const profitMmk = Math.round(baseMmk * (m.percent / 100)) + Math.round(m.flat);
+      const profitMmk = Math.round((baseMmk * m.percent) / 100) + Math.round(m.flat);
       const finalMmk = baseMmk + profitMmk;
       return {
         catalogue_id: it.id,

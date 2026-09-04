@@ -1,0 +1,1 @@
+ALTER TABLE public.profit_margins ADD COLUMN IF NOT EXISTS margin_flat_mmk numeric NOT NULL DEFAULT 0;

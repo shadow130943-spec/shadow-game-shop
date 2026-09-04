@@ -71,7 +71,13 @@ export default function GameOrderHistory() {
 
   const filtered = useMemo(() => {
     return orders.filter((o) => {
-      if (searchQuery.trim() && !o.id.toLowerCase().includes(searchQuery.trim().toLowerCase())) return false;
+      const q = searchQuery.trim().toLowerCase();
+      if (q && !(
+        o.id.toLowerCase().includes(q) ||
+        o.item_name.toLowerCase().includes(q) ||
+        o.product_name.toLowerCase().includes(q) ||
+        o.game_id.toLowerCase().includes(q)
+      )) return false;
       if (gameFilter !== 'all' && o.product_name !== gameFilter) return false;
       if (dateFilter) {
         const d = new Date(o.created_at);
@@ -95,7 +101,7 @@ export default function GameOrderHistory() {
         <div className="relative">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search by order ID"
+            placeholder="Search by order ID / package / game ID"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 bg-card border-border"
@@ -145,11 +151,13 @@ export default function GameOrderHistory() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1 space-y-1">
                     <p className="text-[10px] font-mono text-muted-foreground">#{o.id.slice(0, 8)}</p>
-                    <p className="text-sm font-semibold text-foreground truncate">
-                      {o.game_id}{o.server_id ? ` (${o.server_id})` : ''}
+                    <p className="text-sm font-semibold text-foreground truncate">{o.product_name}</p>
+                    <p className="text-xs font-medium text-foreground/90 truncate">{o.item_name}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      ID: {o.game_id}{o.server_id ? ` (${o.server_id})` : ''}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">{o.item_name}</p>
                   </div>
+
                   <div className="text-right shrink-0">
                     <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold ${badge.cls}`}>
                       {badge.label}
@@ -170,9 +178,9 @@ export default function GameOrderHistory() {
           <DialogTitle className="text-center text-lg font-bold">Order Details</DialogTitle>
           {selected && (
             <div className="space-y-2 pt-2">
-              <DetailRow label="NAME" value={selected.product_name} />
+              <DetailRow label="PRODUCT" value={selected.product_name} />
               <DetailRow label="GAME ID & SERVER" value={`${selected.game_id}${selected.server_id ? ` (${selected.server_id})` : ''}`} />
-              <DetailRow label="ITEM" value={selected.item_name} />
+              <DetailRow label="PACKAGE" value={selected.item_name} />
               <DetailRow label="PRICE" value={`${formatNum(selected.price)} Ks`} valueClass="text-primary" />
               <DetailRow label="DATE" value={format(new Date(selected.created_at), 'd MMM yyyy p')} />
               <DetailRow label="STATUS" value={statusBadge(selected.status).label} />

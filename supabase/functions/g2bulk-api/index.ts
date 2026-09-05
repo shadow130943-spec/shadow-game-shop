@@ -32,10 +32,12 @@ async function loadUsdToMmk(): Promise<number> {
   }
 }
 
+let activeCors: Record<string, string> = {};
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...activeCors, "Content-Type": "application/json" },
   });
 }
 
@@ -261,6 +263,7 @@ async function placeOrder(body: any) {
 
 Deno.serve(async (req) => {
   const corsHeaders = buildCorsHeaders(req);
+  activeCors = corsHeaders;
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

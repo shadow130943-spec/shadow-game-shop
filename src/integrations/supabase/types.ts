@@ -384,6 +384,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           created_at: string
           id: string
           is_reseller: boolean | null
@@ -395,6 +396,7 @@ export type Database = {
           wallet_balance: number
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           id?: string
           is_reseller?: boolean | null
@@ -406,6 +408,7 @@ export type Database = {
           wallet_balance?: number
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           id?: string
           is_reseller?: boolean | null

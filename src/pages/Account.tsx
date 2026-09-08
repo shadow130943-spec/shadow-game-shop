@@ -1,50 +1,89 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useAvatarUrl } from '@/hooks/useAvatarUrl';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { LogOut, Shield, Lock, Eye, EyeOff, Clock, Send } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  LogOut,
+  Shield,
+  Clock,
+  UserRound,
+  IdCard,
+  Store,
+  Globe,
+  FileText,
+  Share2,
+  Headphones,
+  Info,
+  Copy,
+  Check,
+  ChevronRight,
+  Send,
+  MessageCircle,
+  Phone,
+} from 'lucide-react';
 import { BottomNav } from '@/components/BottomNav';
 import { TopBuyers } from '@/components/TopBuyers';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+const LANGUAGES = [
+  { code: 'EN', label: 'English' },
+  { code: 'MM', label: 'မြန်မာ (Myanmar)' },
+];
+
+const TELEGRAM_SUPPORT = 'https://t.me/Mgkaung2222010';
 
 export default function Account() {
   const { user, profile, isAdmin, isReseller, signOut } = useAuth();
   const navigate = useNavigate();
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [changingPassword, setChangingPassword] = useState(false);
-  const [showPasswords, setShowPasswords] = useState(false);
+  const avatarUrl = useAvatarUrl(profile?.avatar_url);
+
+  const [copied, setCopied] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
+  const [languageOpen, setLanguageOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [language, setLanguage] = useState(() => localStorage.getItem('app_language') || 'EN');
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newPassword.length < 6) {
-      toast.error('စကားဝှက်အနည်းဆုံး ၆ လုံးရှိရပါမည်');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      toast.error('စကားဝှက်အသစ်နှစ်ခု မတူညီပါ');
-      return;
-    }
-    setChangingPassword(true);
+  const comingSoon = () => toast('မရှိသေးပါ။');
+
+  const copyUserId = async () => {
+    if (!profile?.user_code) return;
     try {
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
-      if (error) throw error;
-      toast.success('စကားဝှက်ပြောင်းပြီးပါပြီ');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (err: any) {
-      toast.error(err.message || 'စကားဝှက်ပြောင်း၍မရပါ');
+      await navigator.clipboard.writeText(profile.user_code);
+      setCopied(true);
+      toast.success('User ID ကူးယူပြီးပါပြီ');
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error('ကူးယူ၍မရပါ');
     }
-    setChangingPassword(false);
+  };
+
+  const pickLanguage = (code: string) => {
+    setLanguage(code);
+    localStorage.setItem('app_language', code);
+    setLanguageOpen(false);
   };
 
   if (!user) {
@@ -61,14 +100,16 @@ export default function Account() {
   }
 
   const formatBalance = (n: number) => new Intl.NumberFormat('my-MM').format(n);
+  const shortUserId = profile?.user_code ? `@${profile.user_code}` : '—';
 
-  const dashboardActions = [
-    ...(isAdmin
-      ? [{ key: 'admin-dashboard', label: 'Admin Dashboard', path: '/admin', className: 'text-primary border-primary/30' }]
-      : []),
-    ...(!isAdmin && isReseller
-      ? [{ key: 'reseller-dashboard', label: 'Reseller Dashboard', path: '/admin', className: 'text-secondary border-secondary/30' }]
-      : []),
+  const menuItems = [
+    { key: 'update', icon: UserRound, label: 'Update Profile', onClick: () => navigate('/update-profile') },
+    { key: 'reseller', icon: Store, label: 'Register Reseller Account', onClick: comingSoon },
+    { key: 'language', icon: Globe, label: 'Language', value: language, onClick: () => setLanguageOpen(true) },
+    { key: 'privacy', icon: FileText, label: 'Privacy Policy', onClick: comingSoon },
+    { key: 'share', icon: Share2, label: 'Share App', onClick: comingSoon },
+    { key: 'contact', icon: Headphones, label: 'Contact Us', onClick: () => setContactOpen(true) },
+    { key: 'about', icon: Info, label: 'About', onClick: comingSoon },
   ];
 
   return (
@@ -77,16 +118,23 @@ export default function Account() {
         {/* Profile Card */}
         <section className="account-surface overflow-hidden rounded-xl border border-border bg-card">
           <div className="flex items-center gap-4 p-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-xl font-bold text-primary">
-              {(profile?.name || 'U').charAt(0).toUpperCase()}
-            </div>
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Profile picture"
+                className="h-14 w-14 shrink-0 rounded-xl object-cover"
+              />
+            ) : (
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-xl font-bold text-primary">
+                {(profile?.name || 'U').charAt(0).toUpperCase()}
+              </div>
+            )}
             <div className="min-w-0 flex-1">
               <h2 className="truncate text-lg font-bold text-foreground">{profile?.name || 'User'}</h2>
               <p className="text-sm font-semibold text-primary">{formatBalance(profile?.wallet_balance || 0)} ကျပ်</p>
             </div>
           </div>
 
-          {/* Service Hours */}
           <div className="mx-4 mb-3 flex items-start gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2">
             <Clock className="mt-0.5 h-4 w-4 shrink-0 text-gaming-gold" />
             <span className="text-xs leading-5 text-muted-foreground">ဝန်ဆောင်မှုအချိန် - နံနက် ၉ နာရီ မှ ည ၁၀ နာရီ</span>
@@ -94,88 +142,67 @@ export default function Account() {
 
           <div className="space-y-2 px-4 pb-4 text-sm">
             <div className="flex items-center justify-between gap-3">
-              <span className="shrink-0 text-muted-foreground">User ID</span>
-              <span className="break-all text-right font-medium text-foreground">{profile?.user_code || '—'}</span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
               <span className="shrink-0 text-muted-foreground">ဖုန်းနံပါတ်</span>
               <span className="break-all text-right font-medium text-foreground">{profile?.phone || '—'}</span>
             </div>
           </div>
         </section>
 
-        {/* Telegram Links */}
-        <section className="account-surface grid grid-cols-2 gap-2">
-          <a href="https://t.me/ykgaming2392024" target="_blank" rel="noopener noreferrer"
-            className="flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border border-secondary/30 bg-secondary/10 p-3 text-center transition-colors hover:bg-secondary/20">
-            <Send className="h-5 w-5 text-secondary" />
-            <span className="text-[10px] font-medium leading-4 text-secondary">Telegram Channel</span>
-          </a>
-          <a href="https://t.me/Mgkaung2222010" target="_blank" rel="noopener noreferrer"
-            className="flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border border-secondary/30 bg-secondary/10 p-3 text-center transition-colors hover:bg-secondary/20">
-            <Send className="h-5 w-5 text-secondary" />
-            <span className="text-[10px] font-medium leading-4 text-secondary">Telegram Support</span>
-          </a>
-        </section>
-
-        {/* Actions */}
-        <section className="account-surface flex flex-col gap-2">
-          {dashboardActions.map((action) => (
+        {/* Dashboard shortcuts */}
+        {(isAdmin || isReseller) && (
+          <section className="account-surface flex flex-col gap-2">
             <Button
-              key={action.key}
               variant="outline"
-              className={`h-auto min-h-11 w-full justify-start whitespace-normal py-2 text-left ${action.className}`}
-              onClick={() => navigate(action.path)}
+              className={`h-auto min-h-11 w-full justify-start whitespace-normal py-2 text-left ${isAdmin ? 'border-primary/30 text-primary' : 'border-secondary/30 text-secondary'}`}
+              onClick={() => navigate('/admin')}
             >
-              <Shield className="mr-2 h-5 w-5 shrink-0" /> {action.label}
+              <Shield className="mr-2 h-5 w-5 shrink-0" /> {isAdmin ? 'Admin Dashboard' : 'Reseller Dashboard'}
             </Button>
-          ))}
-          <Button variant="outline" className="h-auto min-h-11 w-full justify-start whitespace-normal border-destructive/50 py-2 text-left text-destructive hover:bg-destructive/10" onClick={handleSignOut}>
-            <LogOut className="mr-2 h-5 w-5 shrink-0" /> Logout
-          </Button>
-        </section>
+          </section>
+        )}
 
-        {/* Change Password */}
-        <section className="account-surface rounded-xl border border-border bg-card p-4">
-          <div className="mb-4 flex items-center gap-2">
-            <Lock className="h-5 w-5 shrink-0 text-primary" />
-            <h3 className="font-bold text-foreground">စကားဝှက်ပြောင်းရန်</h3>
-          </div>
-          <form onSubmit={handleChangePassword} className="flex flex-col gap-3">
-            <div className="relative min-w-0">
-              <Input
-                type={showPasswords ? 'text' : 'password'}
-                placeholder="လက်ရှိစကားဝှက်"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                className="bg-muted border-border pr-10"
-              />
-              <button type="button" aria-label="Toggle password visibility" onClick={() => setShowPasswords(!showPasswords)} className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">
-                {showPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            <Input
-              type={showPasswords ? 'text' : 'password'}
-              placeholder="စကားဝှက်အသစ်"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="bg-muted border-border"
-            />
-            <Input
-              type={showPasswords ? 'text' : 'password'}
-              placeholder="စကားဝှက်အသစ် (ထပ်ရိုက်ပါ)"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="bg-muted border-border"
-            />
-            <Button
-              type="submit"
-              disabled={changingPassword || !newPassword || !confirmPassword}
-              className="w-full gaming-btn border-0"
+        {/* Menu list */}
+        <section className="account-surface flex flex-col gap-2">
+          {/* User ID with copy */}
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
+            <IdCard className="h-5 w-5 shrink-0 text-primary" />
+            <span className="text-sm font-medium text-foreground">User ID</span>
+            <span className="ml-auto max-w-[45%] truncate text-sm text-muted-foreground">{shortUserId}</span>
+            <button
+              type="button"
+              aria-label="Copy user ID"
+              onClick={copyUserId}
+              className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
-              {changingPassword ? 'ပြောင်းနေပါသည်...' : 'ပြောင်းမည်'}
-            </Button>
-          </form>
+              {copied ? <Check className="h-4 w-4 text-secondary" /> : <Copy className="h-4 w-4" />}
+            </button>
+          </div>
+
+          {menuItems.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              onClick={item.onClick}
+              className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/60"
+            >
+              <item.icon className="h-5 w-5 shrink-0 text-primary" />
+              <span className="text-sm font-medium text-foreground">{item.label}</span>
+              <span className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
+                {'value' in item && item.value ? <span>{item.value}</span> : null}
+                <ChevronRight className="h-4 w-4" />
+              </span>
+            </button>
+          ))}
+
+          <button
+            type="button"
+            onClick={() => setLogoutOpen(true)}
+            className="flex items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-left transition-colors hover:bg-destructive/20"
+          >
+            <LogOut className="h-5 w-5 shrink-0 text-destructive" />
+            <span className="text-sm font-semibold text-destructive">Logout</span>
+            <ChevronRight className="ml-auto h-4 w-4 text-destructive" />
+          </button>
         </section>
 
         {/* Top Buyers */}
@@ -183,6 +210,87 @@ export default function Account() {
           <TopBuyers />
         </section>
       </main>
+
+      {/* Contact Us modal */}
+      <Dialog open={contactOpen} onOpenChange={setContactOpen}>
+        <DialogContent className="max-w-xs rounded-xl">
+          <DialogHeader>
+            <DialogTitle>Contact Us</DialogTitle>
+            <DialogDescription>ဆက်သွယ်ရန် လမ်းကြောင်းရွေးပါ</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={comingSoon}
+              className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-left hover:bg-muted/60"
+            >
+              <Phone className="h-5 w-5 text-primary" />
+              <span className="text-sm font-medium text-foreground">Viber</span>
+            </button>
+            <button
+              type="button"
+              onClick={comingSoon}
+              className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-left hover:bg-muted/60"
+            >
+              <MessageCircle className="h-5 w-5 text-secondary" />
+              <span className="text-sm font-medium text-foreground">Whatsapp</span>
+            </button>
+            <a
+              href={TELEGRAM_SUPPORT}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 hover:bg-muted/60"
+            >
+              <Send className="h-5 w-5 text-primary" />
+              <span className="text-sm font-medium text-foreground">Telegram</span>
+            </a>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Language modal */}
+      <Dialog open={languageOpen} onOpenChange={setLanguageOpen}>
+        <DialogContent className="max-w-xs rounded-xl">
+          <DialogHeader>
+            <DialogTitle>Language</DialogTitle>
+            <DialogDescription>ဘာသာစကား ရွေးချယ်ပါ</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            {LANGUAGES.map((lang) => (
+              <button
+                key={lang.code}
+                type="button"
+                onClick={() => pickLanguage(lang.code)}
+                className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
+                  language === lang.code ? 'border-primary bg-primary/10' : 'border-border bg-card hover:bg-muted/60'
+                }`}
+              >
+                <span className="text-sm font-medium text-foreground">{lang.label}</span>
+                {language === lang.code && <Check className="ml-auto h-4 w-4 text-primary" />}
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Logout confirmation */}
+      <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
+        <AlertDialogContent className="max-w-xs rounded-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>ထွက်မှာ သေချာပါသလား?</AlertDialogTitle>
+            <AlertDialogDescription>အကောင့်မှ ထွက်ပါက ပြန်လည်ဝင်ရောက်ရန် လိုအပ်ပါမည်။</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row justify-end gap-2">
+            <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSignOut}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <BottomNav />
     </div>

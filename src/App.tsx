@@ -22,6 +22,7 @@ const AdminProfitSettings = lazy(() => import("./pages/AdminProfitSettings"));
 const AdminPaymentMethods = lazy(() => import("./pages/AdminPaymentMethods"));
 const AdminContent = lazy(() => import("./pages/AdminContent"));
 const Account = lazy(() => import("./pages/Account"));
+const UpdateProfile = lazy(() => import("./pages/UpdateProfile"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -74,6 +75,7 @@ const App = () => (
               <Route path="/admin/payment-methods" element={<AdminRoute allowReseller><AdminPaymentMethods /></AdminRoute>} />
               <Route path="/admin/content" element={<AdminRoute><AdminContent /></AdminRoute>} />
               <Route path="/account" element={<Account />} />
+              <Route path="/update-profile" element={<UpdateProfile />} />
               <Route path="/notifications" element={<Notifications />} />
 
               <Route path="*" element={<NotFound />} />

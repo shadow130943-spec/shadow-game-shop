@@ -8,6 +8,7 @@ interface Profile {
   name: string;
   phone: string | null;
   user_code: string | null;
+  avatar_url?: string | null;
   wallet_balance: number;
   created_at: string;
   updated_at: string;

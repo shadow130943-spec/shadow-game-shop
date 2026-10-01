@@ -42,6 +42,7 @@ import {
 import { BottomNav } from '@/components/BottomNav';
 import { TopBuyers } from '@/components/TopBuyers';
 import { toast } from 'sonner';
+import { Lang, useLanguage } from '@/i18n/LanguageProvider';
 
 const LANGUAGES = [
   { code: 'EN', label: 'English' },
@@ -54,35 +55,34 @@ export default function Account() {
   const { user, profile, isAdmin, isReseller, signOut } = useAuth();
   const navigate = useNavigate();
   const avatarUrl = useAvatarUrl(profile?.avatar_url);
+  const { lang: language, setLang, t } = useLanguage();
 
   const [copied, setCopied] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [languageOpen, setLanguageOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
-  const [language, setLanguage] = useState(() => localStorage.getItem('app_language') || 'EN');
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
 
-  const comingSoon = () => toast('မရှိသေးပါ။');
+  const comingSoon = () => toast(t('coming_soon'));
 
   const copyUserId = async () => {
     if (!profile?.user_code) return;
     try {
       await navigator.clipboard.writeText(profile.user_code);
       setCopied(true);
-      toast.success('User ID ကူးယူပြီးပါပြီ');
+      toast.success(t('copied_user_id'));
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      toast.error('ကူးယူ၍မရပါ');
+      toast.error(t('copy_failed'));
     }
   };
 
-  const pickLanguage = (code: string) => {
-    setLanguage(code);
-    localStorage.setItem('app_language', code);
+  const pickLanguage = (code: Lang) => {
+    setLang(code);
     setLanguageOpen(false);
   };
 
@@ -90,9 +90,9 @@ export default function Account() {
     return (
       <div className="account-page flex min-h-dvh flex-col bg-background">
         <main className="flex flex-1 flex-col items-center justify-center gap-4 px-4 pb-[calc(5rem+env(safe-area-inset-bottom))]">
-          <p className="text-muted-foreground mb-2">အကောင့်ဝင်ရောက်ရန် လိုအပ်ပါသည်</p>
-          <Button className="w-full max-w-xs gaming-btn border-0" onClick={() => navigate('/login')}>Login</Button>
-          <Button variant="outline" className="w-full max-w-xs" onClick={() => navigate('/signup')}>Sign Up</Button>
+          <p className="text-muted-foreground mb-2">{t('account_login_required')}</p>
+          <Button className="w-full max-w-xs gaming-btn border-0" onClick={() => navigate('/login')}>{t('login')}</Button>
+          <Button variant="outline" className="w-full max-w-xs" onClick={() => navigate('/signup')}>{t('signup')}</Button>
         </main>
         <BottomNav />
       </div>
@@ -103,13 +103,14 @@ export default function Account() {
   const shortUserId = profile?.user_code ? `@${profile.user_code}` : '—';
 
   const menuItems = [
-    { key: 'update', icon: UserRound, label: 'Update Profile', onClick: () => navigate('/update-profile') },
-    { key: 'reseller', icon: Store, label: 'Register Reseller Account', onClick: comingSoon },
-    { key: 'language', icon: Globe, label: 'Language', value: language, onClick: () => setLanguageOpen(true) },
-    { key: 'privacy', icon: FileText, label: 'Privacy Policy', onClick: comingSoon },
-    { key: 'share', icon: Share2, label: 'Share App', onClick: comingSoon },
-    { key: 'contact', icon: Headphones, label: 'Contact Us', onClick: () => setContactOpen(true) },
-    { key: 'about', icon: Info, label: 'About', onClick: comingSoon },
+    { key: 'update', icon: UserRound, label: t('menu_update_profile'), onClick: () => navigate('/update-profile') },
+    { key: 'top-buyers', icon: Store, label: t('menu_top_buyers'), onClick: () => navigate('/top-buyers') },
+    { key: 'reseller', icon: Store, label: t('menu_reseller'), onClick: comingSoon },
+    { key: 'language', icon: Globe, label: t('menu_language'), value: language, onClick: () => setLanguageOpen(true) },
+    { key: 'privacy', icon: FileText, label: t('menu_privacy'), onClick: comingSoon },
+    { key: 'share', icon: Share2, label: t('menu_share'), onClick: comingSoon },
+    { key: 'contact', icon: Headphones, label: t('menu_contact'), onClick: () => setContactOpen(true) },
+    { key: 'about', icon: Info, label: t('menu_about'), onClick: comingSoon },
   ];
 
   return (
@@ -131,18 +132,18 @@ export default function Account() {
             )}
             <div className="min-w-0 flex-1">
               <h2 className="truncate text-lg font-bold text-foreground">{profile?.name || 'User'}</h2>
-              <p className="text-sm font-semibold text-primary">{formatBalance(profile?.wallet_balance || 0)} ကျပ်</p>
+              <p className="text-sm font-semibold text-primary">{formatBalance(profile?.wallet_balance || 0)} {t('currency_suffix')}</p>
             </div>
           </div>
 
           <div className="mx-4 mb-3 flex items-start gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2">
             <Clock className="mt-0.5 h-4 w-4 shrink-0 text-gaming-gold" />
-            <span className="text-xs leading-5 text-muted-foreground">ဝန်ဆောင်မှုအချိန် - နံနက် ၉ နာရီ မှ ည ၁၀ နာရီ</span>
+            <span className="text-xs leading-5 text-muted-foreground">{t('account_service_hours')}</span>
           </div>
 
           <div className="space-y-2 px-4 pb-4 text-sm">
             <div className="flex items-center justify-between gap-3">
-              <span className="shrink-0 text-muted-foreground">ဖုန်းနံပါတ်</span>
+              <span className="shrink-0 text-muted-foreground">{t('account_phone')}</span>
               <span className="break-all text-right font-medium text-foreground">{profile?.phone || '—'}</span>
             </div>
           </div>
@@ -156,7 +157,7 @@ export default function Account() {
               className={`h-auto min-h-11 w-full justify-start whitespace-normal py-2 text-left ${isAdmin ? 'border-primary/30 text-primary' : 'border-secondary/30 text-secondary'}`}
               onClick={() => navigate('/admin')}
             >
-              <Shield className="mr-2 h-5 w-5 shrink-0" /> {isAdmin ? 'Admin Dashboard' : 'Reseller Dashboard'}
+              <Shield className="mr-2 h-5 w-5 shrink-0" /> {isAdmin ? t('account_admin_dashboard') : t('account_reseller_dashboard')}
             </Button>
           </section>
         )}
@@ -166,11 +167,11 @@ export default function Account() {
           {/* User ID with copy */}
           <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
             <IdCard className="h-5 w-5 shrink-0 text-primary" />
-            <span className="text-sm font-medium text-foreground">User ID</span>
+            <span className="text-sm font-medium text-foreground">{t('menu_user_id')}</span>
             <span className="ml-auto max-w-[45%] truncate text-sm text-muted-foreground">{shortUserId}</span>
             <button
               type="button"
-              aria-label="Copy user ID"
+              aria-label={t('copy_user_id')}
               onClick={copyUserId}
               className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
@@ -200,7 +201,7 @@ export default function Account() {
             className="flex items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-left transition-colors hover:bg-destructive/20"
           >
             <LogOut className="h-5 w-5 shrink-0 text-destructive" />
-            <span className="text-sm font-semibold text-destructive">Logout</span>
+            <span className="text-sm font-semibold text-destructive">{t('menu_logout')}</span>
             <ChevronRight className="ml-auto h-4 w-4 text-destructive" />
           </button>
         </section>
@@ -215,8 +216,8 @@ export default function Account() {
       <Dialog open={contactOpen} onOpenChange={setContactOpen}>
         <DialogContent className="max-w-xs rounded-xl">
           <DialogHeader>
-            <DialogTitle>Contact Us</DialogTitle>
-            <DialogDescription>ဆက်သွယ်ရန် လမ်းကြောင်းရွေးပါ</DialogDescription>
+            <DialogTitle>{t('menu_contact')}</DialogTitle>
+            <DialogDescription>{t('contact_pick')}</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
             <button
@@ -252,15 +253,15 @@ export default function Account() {
       <Dialog open={languageOpen} onOpenChange={setLanguageOpen}>
         <DialogContent className="max-w-xs rounded-xl">
           <DialogHeader>
-            <DialogTitle>Language</DialogTitle>
-            <DialogDescription>ဘာသာစကား ရွေးချယ်ပါ</DialogDescription>
+            <DialogTitle>{t('menu_language')}</DialogTitle>
+            <DialogDescription>{t('language_pick')}</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
             {LANGUAGES.map((lang) => (
               <button
                 key={lang.code}
                 type="button"
-                onClick={() => pickLanguage(lang.code)}
+                onClick={() => pickLanguage(lang.code as Lang)}
                 className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
                   language === lang.code ? 'border-primary bg-primary/10' : 'border-border bg-card hover:bg-muted/60'
                 }`}
@@ -277,16 +278,16 @@ export default function Account() {
       <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
         <AlertDialogContent className="max-w-xs rounded-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>ထွက်မှာ သေချာပါသလား?</AlertDialogTitle>
-            <AlertDialogDescription>အကောင့်မှ ထွက်ပါက ပြန်လည်ဝင်ရောက်ရန် လိုအပ်ပါမည်။</AlertDialogDescription>
+            <AlertDialogTitle>{t('logout_title')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('logout_desc')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row justify-end gap-2">
-            <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="mt-0">{t('cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleSignOut}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Logout
+              {t('confirm_logout')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

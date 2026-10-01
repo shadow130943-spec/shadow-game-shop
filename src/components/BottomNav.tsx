@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, Mail, User } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { useLanguage } from '@/i18n/LanguageProvider';
 
 interface Notification {
   id: string;
@@ -13,6 +14,7 @@ export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
@@ -39,9 +41,9 @@ export function BottomNav() {
   if (!user) return null;
 
   const navItems = [
-    { icon: Home, label: 'Shop', path: '/' },
-    { icon: Mail, label: 'Message', path: '/notifications', badge: unreadCount },
-    { icon: User, label: 'Account', path: '/account' },
+    { icon: Home, label: t('nav_shop'), path: '/' },
+    { icon: Mail, label: t('nav_message'), path: '/notifications', badge: unreadCount },
+    { icon: User, label: t('nav_account'), path: '/account' },
   ];
 
   return (

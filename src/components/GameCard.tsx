@@ -1,5 +1,6 @@
 import { memo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
+import { useLanguage } from '@/i18n/LanguageProvider';
 
 interface GameCardProps {
   id: string;
@@ -11,6 +12,7 @@ interface GameCardProps {
 }
 
 function GameCardBase({ id, name, imageUrl, onBuyNow }: GameCardProps) {
+  const { t } = useLanguage();
   const handleClick = useCallback(() => onBuyNow(id), [id, onBuyNow]);
   const handleButton = useCallback(
     (e: React.MouseEvent) => {
@@ -57,7 +59,7 @@ function GameCardBase({ id, name, imageUrl, onBuyNow }: GameCardProps) {
         onClick={handleButton}
         className="gaming-btn border-0 rounded-lg px-4 text-xs font-semibold shrink-0"
       >
-        ဝယ်မည်
+        {t('buy_now')}
       </Button>
     </div>
   );

@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { BottomNav } from '@/components/BottomNav';
 import { ArrowLeft, Camera, Eye, EyeOff, Lock, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLanguage } from '@/i18n/LanguageProvider';
 
 const MAX_AVATAR_BYTES = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -21,6 +22,7 @@ export default function UpdateProfile() {
   const { user, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const storedAvatar = useAvatarUrl(profile?.avatar_url);
+  const { t } = useLanguage();
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -50,11 +52,11 @@ export default function UpdateProfile() {
     e.target.value = '';
     if (!file || !user) return;
     if (!ALLOWED_TYPES.includes(file.type)) {
-      toast.error('ဓာတ်ပုံ (JPG, PNG, WEBP) သာ တင်နိုင်ပါသည်');
+      toast.error(t('err_image_type'));
       return;
     }
     if (file.size > MAX_AVATAR_BYTES) {
-      toast.error('ဓာတ်ပုံအရွယ်အစား ၁၀MB ထက် မကျော်ရပါ');
+      toast.error(t('err_image_size'));
       return;
     }
 
@@ -75,9 +77,9 @@ export default function UpdateProfile() {
 
       setLocalPreview(URL.createObjectURL(file));
       await refreshProfile();
-      toast.success('ပရိုဖိုင်ဓာတ်ပုံ ပြောင်းပြီးပါပြီ');
+      toast.success(t('ok_avatar_changed'));
     } catch (err: any) {
-      toast.error(err.message || 'ဓာတ်ပုံတင်၍မရပါ');
+      toast.error(err.message || t('err_upload_failed'));
     }
     setUploading(false);
   };
@@ -88,11 +90,11 @@ export default function UpdateProfile() {
     const trimmedName = name.trim();
     const trimmedPhone = phone.trim();
     if (trimmedName.length < 2 || trimmedName.length > 60) {
-      toast.error('နာမည် အနည်းဆုံး ၂ လုံး ရှိရပါမည်');
+      toast.error(t('err_name_short'));
       return;
     }
     if (trimmedPhone && !/^[0-9+\s-]{6,20}$/.test(trimmedPhone)) {
-      toast.error('ဖုန်းနံပါတ် မှန်ကန်စွာ ထည့်ပါ');
+      toast.error(t('err_phone_invalid'));
       return;
     }
 
@@ -104,9 +106,9 @@ export default function UpdateProfile() {
         .eq('user_id', user.id);
       if (error) throw error;
       await refreshProfile();
-      toast.success('ပရိုဖိုင် အချက်အလက် သိမ်းပြီးပါပြီ');
+      toast.success(t('ok_profile_saved'));
     } catch (err: any) {
-      toast.error(err.message || 'သိမ်း၍မရပါ');
+      toast.error(err.message || t('err_save_failed'));
     }
     setSavingProfile(false);
   };
@@ -114,22 +116,22 @@ export default function UpdateProfile() {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentPassword) {
-      toast.error('စကားဝှက်အဟောင်း ထည့်ရန် လိုအပ်ပါသည်');
+      toast.error(t('err_current_password_required'));
       return;
     }
     if (newPassword.length < 6) {
-      toast.error('စကားဝှက်အနည်းဆုံး ၆ လုံးရှိရပါမည်');
+      toast.error(t('err_password_short'));
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error('စကားဝှက်အသစ်နှစ်ခု မတူညီပါ');
+      toast.error(t('err_password_mismatch'));
       return;
     }
 
     setChangingPassword(true);
     try {
       const email = user?.email || (profile?.phone ? phoneToEmail(profile.phone) : '');
-      if (!email) throw new Error('အကောင့်အချက်အလက် မတွေ့ပါ');
+      if (!email) throw new Error(t('err_account_missing'));
 
       // Verify the current password before allowing any change.
       const { error: verifyError } = await supabase.auth.signInWithPassword({
@@ -137,19 +139,19 @@ export default function UpdateProfile() {
         password: currentPassword,
       });
       if (verifyError) {
-        toast.error('စကားဝှက်အဟောင်း မှားယွင်းနေပါသည်');
+        toast.error(t('err_current_password_wrong'));
         setChangingPassword(false);
         return;
       }
 
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
-      toast.success('စကားဝှက်ပြောင်းပြီးပါပြီ');
+      toast.success(t('ok_password_changed'));
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err: any) {
-      toast.error(err.message || 'စကားဝှက်ပြောင်း၍မရပါ');
+      toast.error(err.message || t('err_password_change_failed'));
     }
     setChangingPassword(false);
   };
@@ -157,10 +159,10 @@ export default function UpdateProfile() {
   return (
     <div className="min-h-dvh bg-background">
       <header className="flex items-center gap-3 px-4 py-3">
-        <button type="button" aria-label="Back" onClick={() => navigate('/account')} className="rounded-md p-1.5 text-foreground hover:bg-muted">
+        <button type="button" aria-label={t('back')} onClick={() => navigate('/account')} className="rounded-md p-1.5 text-foreground hover:bg-muted">
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <h1 className="text-lg font-bold text-foreground">Update Profile</h1>
+        <h1 className="text-lg font-bold text-foreground">{t('update_profile_title')}</h1>
       </header>
 
       <main className="mx-auto grid w-full max-w-md gap-4 px-4 pb-[calc(5rem+env(safe-area-inset-bottom))]">
@@ -180,7 +182,7 @@ export default function UpdateProfile() {
                 <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleAvatarChange} />
               </label>
             </div>
-            <p className="text-xs text-muted-foreground">{uploading ? 'တင်နေပါသည်...' : 'ပရိုဖိုင်ဓာတ်ပုံ ပြောင်းရန် နှိပ်ပါ'}</p>
+            <p className="text-xs text-muted-foreground">{uploading ? t('avatar_uploading') : t('avatar_hint')}</p>
           </div>
         </section>
 
@@ -188,19 +190,19 @@ export default function UpdateProfile() {
         <section className="rounded-xl border border-border bg-card p-4">
           <div className="mb-4 flex items-center gap-2">
             <UserRound className="h-5 w-5 text-primary" />
-            <h2 className="font-bold text-foreground">အချက်အလက် ပြင်ဆင်ရန်</h2>
+            <h2 className="font-bold text-foreground">{t('details_title')}</h2>
           </div>
           <form onSubmit={handleSaveProfile} className="flex flex-col gap-3">
             <div className="grid gap-1.5">
-              <Label htmlFor="name">နာမည်</Label>
+              <Label htmlFor="name">{t('field_name')}</Label>
               <Input id="name" value={name} maxLength={60} onChange={(e) => setName(e.target.value)} className="border-border bg-muted" />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="phone">ဖုန်းနံပါတ်</Label>
+              <Label htmlFor="phone">{t('field_phone')}</Label>
               <Input id="phone" value={phone} maxLength={20} inputMode="tel" onChange={(e) => setPhone(e.target.value)} className="border-border bg-muted" />
             </div>
             <Button type="submit" disabled={savingProfile} className="gaming-btn w-full border-0">
-              {savingProfile ? 'သိမ်းနေပါသည်...' : 'သိမ်းမည်'}
+              {savingProfile ? t('saving') : t('save')}
             </Button>
           </form>
         </section>
@@ -209,13 +211,13 @@ export default function UpdateProfile() {
         <section className="rounded-xl border border-border bg-card p-4">
           <div className="mb-4 flex items-center gap-2">
             <Lock className="h-5 w-5 text-primary" />
-            <h2 className="font-bold text-foreground">စကားဝှက်ပြောင်းရန်</h2>
+            <h2 className="font-bold text-foreground">{t('password_title')}</h2>
           </div>
           <form onSubmit={handleChangePassword} className="flex flex-col gap-3">
             <div className="relative min-w-0">
               <Input
                 type={showPasswords ? 'text' : 'password'}
-                placeholder="လက်ရှိစကားဝှက် (မဖြစ်မနေ)"
+                placeholder={t('field_current_password')}
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 className="border-border bg-muted pr-10"
@@ -226,14 +228,14 @@ export default function UpdateProfile() {
             </div>
             <Input
               type={showPasswords ? 'text' : 'password'}
-              placeholder="စကားဝှက်အသစ်"
+              placeholder={t('field_new_password')}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               className="border-border bg-muted"
             />
             <Input
               type={showPasswords ? 'text' : 'password'}
-              placeholder="စကားဝှက်အသစ် (ထပ်ရိုက်ပါ)"
+              placeholder={t('field_confirm_password')}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="border-border bg-muted"
@@ -243,7 +245,7 @@ export default function UpdateProfile() {
               disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
               className="gaming-btn w-full border-0"
             >
-              {changingPassword ? 'ပြောင်းနေပါသည်...' : 'ပြောင်းမည်'}
+              {changingPassword ? t('changing') : t('change')}
             </Button>
           </form>
         </section>

@@ -25,6 +25,7 @@ const AdminContent = lazy(() => import("./pages/AdminContent"));
 const Account = lazy(() => import("./pages/Account"));
 const UpdateProfile = lazy(() => import("./pages/UpdateProfile"));
 const Notifications = lazy(() => import("./pages/Notifications"));
+const TopBuyers = lazy(() => import("./pages/TopBuyers"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -79,6 +80,7 @@ const App = () => (
               <Route path="/account" element={<Account />} />
               <Route path="/update-profile" element={<UpdateProfile />} />
               <Route path="/notifications" element={<Notifications />} />
+              <Route path="/top-buyers" element={<TopBuyers />} />
 
               <Route path="*" element={<NotFound />} />
               </Routes>

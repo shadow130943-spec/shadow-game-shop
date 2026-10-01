@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Trophy, Crown, Medal, Award } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useLanguage } from '@/i18n/LanguageProvider';
 
 interface TopBuyer {
   user_id: string;
@@ -43,6 +44,7 @@ async function fetchTopBuyers(): Promise<TopBuyer[]> {
 }
 
 export function TopBuyers() {
+  const { t } = useLanguage();
   const { data: buyers = [], isLoading: loading } = useQuery({
     queryKey: ['top_buyers'],
     queryFn: fetchTopBuyers,
@@ -80,7 +82,7 @@ export function TopBuyers() {
     return (
       <div className="text-center py-8 text-muted-foreground">
         <Trophy className="h-10 w-10 mx-auto mb-2 opacity-50" />
-        <p className="text-sm">အထိပ်တန်းဝယ်သူများ မရှိသေးပါ</p>
+        <p className="text-sm">{t('top_buyers_empty')}</p>
       </div>
     );
   }
@@ -90,7 +92,7 @@ export function TopBuyers() {
       <div className="flex items-center gap-2 mb-3">
         <Trophy className="h-5 w-5 text-primary" />
         <h3 className="font-gaming text-base font-bold text-primary neon-text-cyan">
-          Top Buyers
+          {t('top_buyers_title')}
         </h3>
       </div>
 
@@ -111,7 +113,7 @@ export function TopBuyers() {
             </div>
             <div className="text-right">
               <p className={`font-bold text-sm ${rank === 1 ? 'text-yellow-400' : rank <= 3 ? 'text-primary' : 'text-muted-foreground'}`}>
-                {formatBalance(buyer.total_spend)} ကျပ်
+                {formatBalance(buyer.total_spend)} {t('currency_suffix')}
               </p>
             </div>
           </div>

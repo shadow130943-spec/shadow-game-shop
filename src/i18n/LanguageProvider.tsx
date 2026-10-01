@@ -18,6 +18,7 @@ export const translations: Dict = {
   home_orders: { EN: 'My Orders', MM: 'အော်ဒါများ' },
   home_login: { EN: 'Login', MM: 'အကောင့်ဝင်ရန်' },
   home_signup: { EN: 'Sign Up', MM: 'အကောင့်သစ်ဖွင့်ရန်' },
+  buy_now: { EN: 'Buy Now', MM: 'ဝယ်မည်' },
   home_no_games: { EN: 'No games found', MM: 'ဂိမ်းရှာမတွေ့ပါ' },
   home_no_games_hint: { EN: 'Try another search term', MM: 'တခြား search term နဲ့ ထပ်ကြိုးစားကြည့်ပါ' },
   search_placeholder: { EN: 'Search games...', MM: 'ဂိမ်းရှာရန်...' },

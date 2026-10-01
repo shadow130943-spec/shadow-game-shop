@@ -1,4 +1,4 @@
 ## Current tasks
-- [ ] Connect language provider globally
-- [ ] Translate Home, Header, Account, Navigation, Update Profile, Top Buyers
-- [ ] Verify instant language switching and build health
+- [x] Connect language provider globally
+- [x] Translate Home, Header, Account, Navigation, Update Profile, Top Buyers
+- [x] Verify instant language switching and build health

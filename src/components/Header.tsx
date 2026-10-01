@@ -2,10 +2,12 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useBrandingAsset } from '@/hooks/useShopContent';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLanguage } from '@/i18n/LanguageProvider';
 
 export function Header() {
   const { user, profile, loading } = useAuth();
   const logoUrl = useBrandingAsset('site_logo');
+  const { t } = useLanguage();
 
   const formatBalance = (balance: number) => {
     return new Intl.NumberFormat('my-MM').format(balance);
@@ -19,13 +21,13 @@ export function Header() {
         ) : (
           <Skeleton className="h-8 w-8 rounded" />
         )}
-        <span>YK Game Shop</span>
+        <span>{t('app_name')}</span>
       </Link>
       {loading ? (
         <Skeleton className="h-7 w-24 rounded-full" />
       ) : user && profile ? (
         <div className="px-4 py-1.5 rounded-full bg-card border border-border text-sm font-medium text-foreground">
-          {formatBalance(profile.wallet_balance)} ကျပ်
+          {formatBalance(profile.wallet_balance)} {t('currency_suffix')}
         </div>
       ) : null}
     </header>

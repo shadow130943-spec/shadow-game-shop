@@ -21,6 +21,11 @@ export const translations: Dict = {
   home_no_games: { EN: 'No games found', MM: 'ဂိမ်းရှာမတွေ့ပါ' },
   home_no_games_hint: { EN: 'Try another search term', MM: 'တခြား search term နဲ့ ထပ်ကြိုးစားကြည့်ပါ' },
   search_placeholder: { EN: 'Search games...', MM: 'ဂိမ်းရှာရန်...' },
+  game_mlbb: { EN: 'Mobile Legends', MM: 'Mobile Legends' },
+  game_pubgm: { EN: 'PUBG Mobile', MM: 'PUBG Mobile' },
+  game_telegram: { EN: 'Telegram', MM: 'Telegram' },
+  game_magic_chess: { EN: 'Magic Chess Go Go', MM: 'Magic Chess Go Go' },
+  game_freefire: { EN: 'Free Fire Global', MM: 'Free Fire Global' },
 
   // Account
   account_login_required: { EN: 'Please log in to continue', MM: 'အကောင့်ဝင်ရောက်ရန် လိုအပ်ပါသည်' },
@@ -53,6 +58,9 @@ export const translations: Dict = {
     MM: 'အကောင့်မှ ထွက်ပါက ပြန်လည်ဝင်ရောက်ရန် လိုအပ်ပါမည်။',
   },
   cancel: { EN: 'Cancel', MM: 'မလုပ်တော့ပါ' },
+  confirm_logout: { EN: 'Logout', MM: 'ထွက်မည်' },
+  login: { EN: 'Login', MM: 'အကောင့်ဝင်ရန်' },
+  signup: { EN: 'Sign Up', MM: 'အကောင့်သစ်ဖွင့်ရန်' },
 
   // Top buyers
   top_buyers_title: { EN: 'Top Buyers', MM: 'ထိပ်တန်းဝယ်ယူသူများ' },

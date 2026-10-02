@@ -115,6 +115,8 @@ interface LanguageContextValue {
   lang: Lang;
   setLang: (lang: Lang) => void;
   t: (key: keyof typeof translations | string) => string;
+  formatNumber: (value: number) => string;
+  formatMmk: (value: number) => string;
 }
 
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
@@ -137,7 +139,23 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     [lang]
   );
 
-  const value = useMemo(() => ({ lang, setLang, t }), [lang, setLang, t]);
+  const formatNumber = useCallback(
+    (amount: number) => new Intl.NumberFormat(
+      lang === 'MM' ? 'my-MM-u-nu-mymr' : 'en-US',
+      { maximumFractionDigits: 0 }
+    ).format(amount),
+    [lang]
+  );
+
+  const formatMmk = useCallback(
+    (amount: number) => `${formatNumber(amount)} ${translations.currency_suffix[lang]}`,
+    [formatNumber, lang]
+  );
+
+  const value = useMemo(
+    () => ({ lang, setLang, t, formatNumber, formatMmk }),
+    [lang, setLang, t, formatNumber, formatMmk]
+  );
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }

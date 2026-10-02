@@ -66,7 +66,7 @@ function BuyerAvatar({ path, name, owner = false }: { path: string | null; name:
 
 export default function TopBuyersPage() {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, formatMmk } = useLanguage();
 
   const { data = [], isLoading } = useQuery({
     queryKey: ['top_buyers_board'],
@@ -79,8 +79,6 @@ export default function TopBuyersPage() {
 
   const owner = data.find((r) => r.is_owner);
   const buyers = data.filter((r) => !r.is_owner);
-  const format = (n: number) => new Intl.NumberFormat('my-MM').format(n);
-
   return (
     <div className="min-h-dvh bg-background">
       <header className="flex items-center gap-3 px-4 py-3">
@@ -134,7 +132,7 @@ export default function TopBuyersPage() {
                     {buyer.name}
                   </p>
                   <p className={`text-sm font-bold ${rank === 1 ? 'text-yellow-400' : rank <= 3 ? 'text-primary' : 'text-muted-foreground'}`}>
-                    {format(buyer.total_spend)} {t('currency_suffix')}
+                    {formatMmk(buyer.total_spend)}
                   </p>
                 </div>
               );

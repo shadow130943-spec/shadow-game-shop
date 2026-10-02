@@ -44,15 +44,12 @@ async function fetchTopBuyers(): Promise<TopBuyer[]> {
 }
 
 export function TopBuyers() {
-  const { t } = useLanguage();
+  const { t, formatMmk } = useLanguage();
   const { data: buyers = [], isLoading: loading } = useQuery({
     queryKey: ['top_buyers'],
     queryFn: fetchTopBuyers,
     staleTime: 2 * 60 * 1000,
   });
-
-
-  const formatBalance = (n: number) => new Intl.NumberFormat('my-MM').format(n);
 
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Crown className="h-5 w-5 text-yellow-400" />;
@@ -113,7 +110,7 @@ export function TopBuyers() {
             </div>
             <div className="text-right">
               <p className={`font-bold text-sm ${rank === 1 ? 'text-yellow-400' : rank <= 3 ? 'text-primary' : 'text-muted-foreground'}`}>
-                {formatBalance(buyer.total_spend)} {t('currency_suffix')}
+                {formatMmk(buyer.total_spend)}
               </p>
             </div>
           </div>

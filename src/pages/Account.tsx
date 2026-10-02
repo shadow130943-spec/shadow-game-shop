@@ -56,7 +56,7 @@ export default function Account() {
   const { user, profile, isAdmin, isReseller, signOut } = useAuth();
   const navigate = useNavigate();
   const avatarUrl = useAvatarUrl(profile?.avatar_url);
-  const { lang: language, setLang, t } = useLanguage();
+  const { lang: language, setLang, t, formatMmk } = useLanguage();
 
   const [copied, setCopied] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
@@ -100,7 +100,6 @@ export default function Account() {
     );
   }
 
-  const formatBalance = (n: number) => new Intl.NumberFormat('my-MM').format(n);
   const shortUserId = profile?.user_code ? `@${profile.user_code}` : '—';
 
   const menuItems = [
@@ -136,7 +135,7 @@ export default function Account() {
                 <h2 className="truncate text-lg font-bold text-foreground">{profile?.name || 'User'}</h2>
                 {isAdmin && <VerifiedBadge className="h-[18px] w-[18px]" />}
               </div>
-              <p className="text-sm font-semibold text-primary">{formatBalance(profile?.wallet_balance || 0)} {t('currency_suffix')}</p>
+              <p className="text-sm font-semibold text-primary">{formatMmk(profile?.wallet_balance || 0)}</p>
             </div>
           </div>
 

@@ -14,6 +14,7 @@ import { usePackageOverrides, applyOverrides, useBrandingAsset } from '@/hooks/u
 import { useGames } from '@/hooks/useGames';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useLanguage } from '@/i18n/LanguageProvider';
 
 interface Package {
   product_id: string;
@@ -105,6 +106,7 @@ export default function ProductDetail() {
   const { id } = useParams<{ id: string }>(); // id = game_code
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { formatMmk } = useLanguage();
   const overrides = usePackageOverrides(id);
   const [game, setGame] = useState<GameData | null>(null);
   const [walletBalance, setWalletBalance] = useState(0);
@@ -161,12 +163,10 @@ export default function ProductDetail() {
   }, [user]);
 
 
-  const formatBalance = (n: number) => new Intl.NumberFormat('my-MM').format(n);
-
   const getMmkPrice = (pkg: Package) => pkg.price_mmk;
   const formatPrice = (pkg: Package) => {
     if (selectedCurrency === 'usd') return `$${pkg.price_usd.toFixed(2)}`;
-    return `${formatBalance(getMmkPrice(pkg))} ကျပ်`;
+    return formatMmk(getMmkPrice(pkg));
   };
 
   useEffect(() => {
@@ -397,7 +397,7 @@ export default function ProductDetail() {
         </Button>
         <h1 className="text-lg font-bold truncate flex-1 text-center text-foreground">{game.game_name}</h1>
         <div className="text-sm font-semibold text-primary whitespace-nowrap">
-          {formatBalance(walletBalance)} ကျပ်
+          {formatMmk(walletBalance)}
         </div>
       </div>
 
@@ -513,14 +513,14 @@ export default function ProductDetail() {
               <div className="flex gap-2">
                 <div className="flex-1 bg-muted rounded-lg px-3 py-2 text-sm font-semibold">{selectedPkg?.catalogue_name}</div>
                 <div className="flex-1 bg-muted rounded-lg px-3 py-2 text-sm font-semibold">
-                  {selectedPkg ? formatPrice(selectedPkg) : '0 ကျပ်'}
+                  {selectedPkg ? formatPrice(selectedPkg) : formatMmk(0)}
                 </div>
               </div>
             </div>
 
 
             <div className="bg-primary/10 rounded-lg px-4 py-3 text-sm font-semibold text-center">
-              လက်ကျန်ငွေ = {formatBalance(walletBalance)} ကျပ်
+              လက်ကျန်ငွေ = {formatMmk(walletBalance)}
             </div>
 
             <div className="flex items-center gap-2">

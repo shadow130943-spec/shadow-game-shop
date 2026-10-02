@@ -41,6 +41,7 @@ import {
 } from 'lucide-react';
 import { BottomNav } from '@/components/BottomNav';
 import { TopBuyers } from '@/components/TopBuyers';
+import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { toast } from 'sonner';
 import { Lang, useLanguage } from '@/i18n/LanguageProvider';
 
@@ -131,7 +132,10 @@ export default function Account() {
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <h2 className="truncate text-lg font-bold text-foreground">{profile?.name || 'User'}</h2>
+              <div className="flex min-w-0 items-center gap-1.5">
+                <h2 className="truncate text-lg font-bold text-foreground">{profile?.name || 'User'}</h2>
+                {isAdmin && <VerifiedBadge className="h-[18px] w-[18px]" />}
+              </div>
               <p className="text-sm font-semibold text-primary">{formatBalance(profile?.wallet_balance || 0)} {t('currency_suffix')}</p>
             </div>
           </div>

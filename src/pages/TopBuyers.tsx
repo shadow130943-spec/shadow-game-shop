@@ -1,8 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Award, BadgeCheck, Crown, Medal, Trophy } from 'lucide-react';
+import { ArrowLeft, Award, Crown, Medal, Trophy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { BottomNav } from '@/components/BottomNav';
+import { VerifiedBadge } from '@/components/VerifiedBadge';
+import { useAvatarUrl } from '@/hooks/useAvatarUrl';
 import { useLanguage } from '@/i18n/LanguageProvider';
 
 interface TopBuyerRow {
@@ -41,6 +43,27 @@ function rankGlow(rank: number) {
   return 'border-border';
 }
 
+function BuyerAvatar({ path, name, owner = false }: { path: string | null; name: string; owner?: boolean }) {
+  const avatarUrl = useAvatarUrl(path);
+  const size = owner ? 'h-10 w-10' : 'h-9 w-9';
+
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt=""
+        className={`${size} shrink-0 rounded-full border border-border object-cover`}
+      />
+    );
+  }
+
+  return (
+    <div className={`flex ${size} shrink-0 items-center justify-center rounded-full bg-primary/20 text-sm font-bold text-primary`}>
+      {(name.trim().charAt(0) || 'U').toUpperCase()}
+    </div>
+  );
+}
+
 export default function TopBuyersPage() {
   const navigate = useNavigate();
   const { t } = useLanguage();
@@ -72,14 +95,12 @@ export default function TopBuyersPage() {
 
         {owner && (
           <div className="flex items-center gap-3 rounded-xl border border-primary/50 bg-primary/10 p-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 text-base font-bold text-primary">
-              {owner.name.charAt(0).toUpperCase()}
-            </div>
+            <BuyerAvatar path={owner.avatar_url} name={owner.name} owner />
             <div className="min-w-0 flex-1">
-              <p className="flex items-center gap-1 truncate font-semibold text-foreground">
-                {owner.name}
-                <BadgeCheck className="h-4 w-4 shrink-0 text-[hsl(210_100%_56%)]" />
-              </p>
+              <div className="flex min-w-0 items-center gap-1.5">
+                <p className="truncate font-semibold text-foreground">{owner.name}</p>
+                <VerifiedBadge />
+              </div>
               <span className="text-[11px] font-semibold uppercase tracking-wide text-primary">
                 {t('owner_badge')}
               </span>
@@ -108,6 +129,7 @@ export default function TopBuyersPage() {
                   className={`flex items-center gap-3 rounded-xl border bg-card p-3 ${rankGlow(rank)}`}
                 >
                   <div className="flex w-8 items-center justify-center">{rankIcon(rank)}</div>
+                  <BuyerAvatar path={buyer.avatar_url} name={buyer.name} />
                   <p className={`min-w-0 flex-1 truncate text-sm font-semibold ${rank <= 3 ? 'text-primary' : 'text-foreground'}`}>
                     {buyer.name}
                   </p>

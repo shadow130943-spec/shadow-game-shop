@@ -119,7 +119,23 @@ interface LanguageContextValue {
   formatMmk: (value: number) => string;
 }
 
-const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
+// Keep a single context instance across hot reloads so providers and consumers always match.
+const g = globalThis as unknown as { __langCtx?: React.Context<LanguageContextValue | undefined> };
+const LanguageContext = g.__langCtx ?? (g.__langCtx = createContext<LanguageContextValue | undefined>(undefined));
+
+function fallbackValue(): LanguageContextValue {
+  const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('app_language') : null;
+  const lang: Lang = stored === 'EN' ? 'EN' : 'MM';
+  const formatNumber = (n: number) =>
+    new Intl.NumberFormat(lang === 'MM' ? 'my-MM-u-nu-mymr' : 'en-US', { maximumFractionDigits: 0 }).format(n);
+  return {
+    lang,
+    setLang: () => {},
+    t: (key: string) => translations[key]?.[lang] ?? key,
+    formatNumber,
+    formatMmk: (n: number) => `${formatNumber(n)} ${translations.currency_suffix[lang]}`,
+  };
+}
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => {
@@ -162,6 +178,5 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
 export function useLanguage() {
   const ctx = useContext(LanguageContext);
-  if (!ctx) throw new Error('useLanguage must be used within a LanguageProvider');
-  return ctx;
+  return ctx ?? fallbackValue();
 }

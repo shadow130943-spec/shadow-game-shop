@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Phone, Lock, Eye, EyeOff, Gamepad2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Gamepad2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { OtpField } from '@/components/OtpField';
 
 export default function Login() {
-  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
@@ -18,9 +20,13 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (otp.length !== 6) {
+      toast.error('Enter the 6-digit OTP sent to your email');
+      return;
+    }
     setLoading(true);
 
-    const { error } = await signIn(phone, password);
+    const { error } = await signIn(email, password, otp);
 
     if (error) {
       toast.error(error.message);
@@ -63,15 +69,16 @@ export default function Login() {
           className="gaming-card rounded-2xl p-6 space-y-5"
         >
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
+            <Label htmlFor="email">Email</Label>
             <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
-                id="phone"
-                type="tel"
-                placeholder="09xxxxxxxxx"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                id="email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@gmail.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 className="pl-10 bg-muted border-border"
               />
@@ -100,6 +107,8 @@ export default function Login() {
               </button>
             </div>
           </div>
+
+          <OtpField email={email} value={otp} onChange={setOtp} />
 
           <Button
             type="submit"

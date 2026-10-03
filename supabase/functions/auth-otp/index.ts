@@ -91,7 +91,12 @@ Deno.serve(async (req) => {
       let uid = roles?.[0]?.user_id as string | undefined;
       if (uid) {
         const { error } = await admin.auth.admin.updateUserById(uid, { email: adminEmail, password: adminPw, email_confirm: true });
-        if (error) return json({ error: error.message }, 500);
+        if (error) {
+          const { error: e3 } = await admin.auth.admin.updateUserById(uid, { email: adminEmail, email_confirm: true });
+          if (e3) return json({ error: e3.message }, 500);
+          await admin.from("profiles").update({ phone: adminEmail }).eq("user_id", uid);
+          return json({ success: true, password_updated: false, reason: error.message });
+        }
       } else {
         const { data, error } = await admin.auth.admin.createUser({ email: adminEmail, password: adminPw, email_confirm: true, user_metadata: { name: "Admin" } });
         if (error || !data.user) return json({ error: error?.message }, 500);

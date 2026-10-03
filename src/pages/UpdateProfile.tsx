@@ -10,13 +10,12 @@ import { BottomNav } from '@/components/BottomNav';
 import { ArrowLeft, Camera, Eye, EyeOff, Lock, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/i18n/LanguageProvider';
+import { OtpField } from '@/components/OtpField';
+import { otpCall } from '@/lib/otpAuth';
 
 const MAX_AVATAR_BYTES = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-function phoneToEmail(phone: string) {
-  return `${phone.replace(/[^0-9]/g, '')}@gametop.app`;
-}
 
 export default function UpdateProfile() {
   const { user, profile, refreshProfile } = useAuth();
@@ -34,6 +33,7 @@ export default function UpdateProfile() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPasswords, setShowPasswords] = useState(false);
+  const [otp, setOtp] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
@@ -128,28 +128,18 @@ export default function UpdateProfile() {
       return;
     }
 
+    if (otp.length !== 6) {
+      toast.error('Enter the 6-digit OTP sent to your email');
+      return;
+    }
     setChangingPassword(true);
     try {
-      const email = user?.email || (profile?.phone ? phoneToEmail(profile.phone) : '');
-      if (!email) throw new Error(t('err_account_missing'));
-
-      // Verify the current password before allowing any change.
-      const { error: verifyError } = await supabase.auth.signInWithPassword({
-        email,
-        password: currentPassword,
-      });
-      if (verifyError) {
-        toast.error(t('err_current_password_wrong'));
-        setChangingPassword(false);
-        return;
-      }
-
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
-      if (error) throw error;
+      await otpCall({ action: 'change_password', old_password: currentPassword, new_password: newPassword, otp_code: otp });
       toast.success(t('ok_password_changed'));
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      setOtp('');
     } catch (err: any) {
       toast.error(err.message || t('err_password_change_failed'));
     }
@@ -240,6 +230,7 @@ export default function UpdateProfile() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="border-border bg-muted"
             />
+            <OtpField email={user?.email || ''} value={otp} onChange={setOtp} />
             <Button
               type="submit"
               disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}

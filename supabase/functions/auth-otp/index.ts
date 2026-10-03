@@ -12,7 +12,6 @@ const Schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("signup"), email, password: pw, name: z.string().trim().min(1).max(60), otp_code: otp }),
   z.object({ action: z.literal("login"), email, password: z.string().min(1).max(72), otp_code: otp }),
   z.object({ action: z.literal("change_password"), old_password: z.string().min(1).max(72), new_password: pw, otp_code: otp }),
-  z.object({ action: z.literal("bootstrap_admin") }),
 ]);
 
 async function callOtp(body: Record<string, string>) {
@@ -84,28 +83,6 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
-    if (p.action === "bootstrap_admin") {
-      const adminEmail = Deno.env.get("ADMIN_EMAIL")!.toLowerCase();
-      const adminPw = Deno.env.get("ADMIN_PASSWORD")!;
-      const { data: roles } = await admin.from("user_roles").select("user_id").eq("role", "admin").limit(1);
-      let uid = roles?.[0]?.user_id as string | undefined;
-      if (uid) {
-        const { error } = await admin.auth.admin.updateUserById(uid, { email: adminEmail, password: adminPw, email_confirm: true });
-        if (error) {
-          const { error: e3 } = await admin.auth.admin.updateUserById(uid, { email: adminEmail, email_confirm: true });
-          if (e3) return json({ error: e3.message }, 500);
-          await admin.from("profiles").update({ phone: adminEmail }).eq("user_id", uid);
-          return json({ success: true, password_updated: false, reason: error.message });
-        }
-      } else {
-        const { data, error } = await admin.auth.admin.createUser({ email: adminEmail, password: adminPw, email_confirm: true, user_metadata: { name: "Admin" } });
-        if (error || !data.user) return json({ error: error?.message }, 500);
-        uid = data.user.id;
-        await admin.from("user_roles").insert({ user_id: uid, role: "admin" });
-      }
-      await admin.from("profiles").update({ phone: adminEmail }).eq("user_id", uid);
-      return json({ success: true });
-    }
     return json({ error: "unknown" }, 400);
   } catch (e) {
     console.error(e);

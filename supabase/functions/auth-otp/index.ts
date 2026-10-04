@@ -15,14 +15,26 @@ const Schema = z.discriminatedUnion("action", [
 ]);
 
 async function callOtp(body: Record<string, string>) {
-  const res = await fetch(OTP_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-api-key": Deno.env.get("OTP_API_KEY")! },
-    body: JSON.stringify(body),
-  });
+  let res: Response;
+  try {
+    res = await fetch(OTP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": Deno.env.get("OTP_API_KEY")! },
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    console.error(`[otp] network error action=${body.action}:`, e);
+    return { ok: false, message: "network_error" };
+  }
+  const raw = await res.text();
   let data: any = {};
-  try { data = await res.json(); } catch { /* ignore */ }
+  try { data = JSON.parse(raw); } catch { /* non-JSON body */ }
   const ok = res.ok && data?.success !== false && data?.valid !== false && data?.verified !== false && !data?.error;
+  if (!ok) {
+    console.error(`[otp] FAILED action=${body.action} status=${res.status} body=${raw.slice(0, 500)}`);
+  } else {
+    console.log(`[otp] OK action=${body.action} status=${res.status}`);
+  }
   return { ok, message: data?.error || data?.message };
 }
 

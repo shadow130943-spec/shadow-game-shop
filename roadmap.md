@@ -1,4 +1,5 @@
 ## Current tasks
-- [x] Connect language provider globally
-- [x] Translate Home, Header, Account, Navigation, Update Profile, Top Buyers
-- [x] Verify instant language switching and build health
+- [ ] Translate all customer-facing screens and states for EN/MM
+- [ ] Cache and preload authenticated profile avatars
+- [ ] Add old-email OTP verification before changing email
+- [ ] Verify language switching, avatar loading, email change, and build health

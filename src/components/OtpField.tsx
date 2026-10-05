@@ -1,3 +1,4 @@
+import { useLanguage } from '@/i18n/LanguageProvider';
 import { useEffect, useState } from 'react';
 import { KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';

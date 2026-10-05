@@ -11,6 +11,8 @@ const Schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("send"), email }),
   z.object({ action: z.literal("signup"), email, password: pw, name: z.string().trim().min(1).max(60), otp_code: otp }),
   z.object({ action: z.literal("login"), email, password: z.string().min(1).max(72), otp_code: otp }),
+  z.object({ action: z.literal("send_self") }),
+  z.object({ action: z.literal("change_email"), new_email: email, otp_code: otp }),
   z.object({ action: z.literal("change_password"), old_password: z.string().min(1).max(72), new_password: pw, otp_code: otp }),
 ]);
 
@@ -82,9 +84,35 @@ Deno.serve(async (req) => {
       return json({ success: true, session: { access_token: data.session.access_token, refresh_token: data.session.refresh_token } });
     }
 
-    if (p.action === "change_password") {
+    const sessionUser = async () => {
       const token = (req.headers.get("Authorization") || "").replace("Bearer ", "");
+      if (!token) return null;
       const { data: { user } } = await admin.auth.getUser(token);
+      return user?.email ? user : null;
+    };
+
+    if (p.action === "send_self") {
+      const user = await sessionUser();
+      if (!user) return json({ error: "unauthorized" }, 401);
+      const r = await callOtp({ action: "send", email: user.email! });
+      return r.ok ? json({ success: true }) : json({ error: "otp_send_failed" }, 400);
+    }
+
+    if (p.action === "change_email") {
+      const user = await sessionUser();
+      if (!user) return json({ error: "unauthorized" }, 401);
+      if (p.new_email === user.email!.toLowerCase()) return json({ error: "email_same" }, 400);
+      // OTP must have been sent to the CURRENT email (derived from the session, never the client).
+      const v = await callOtp({ action: "verify", email: user.email!, otp_code: p.otp_code });
+      if (!v.ok) return json({ error: "otp_invalid" }, 400);
+      const { error } = await admin.auth.admin.updateUserById(user.id, { email: p.new_email, email_confirm: true });
+      if (error) return json({ error: /already|registered|exists/i.test(error.message) ? "email_taken" : "change_failed" }, 400);
+      await admin.from("profiles").update({ phone: p.new_email }).eq("user_id", user.id);
+      return json({ success: true });
+    }
+
+    if (p.action === "change_password") {
+      const user = await sessionUser();
       if (!user?.email) return json({ error: "unauthorized" }, 401);
       const { error } = await anon().auth.signInWithPassword({ email: user.email, password: p.old_password });
       if (error) return json({ error: "bad_old_password" }, 400);

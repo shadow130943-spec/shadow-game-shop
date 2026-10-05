@@ -8,6 +8,8 @@ const MESSAGES: Record<string, string> = {
   email_taken: 'This email is already registered.',
   signup_failed: 'Sign up failed. Please try a stronger password.',
   invalid_input: 'Please check the form fields.',
+  email_same: 'Enter a different email address.',
+  change_failed: 'Could not complete the change. Please try again.',
   unauthorized: 'Please log in again.',
 };
 

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { BottomNav } from '@/components/BottomNav';
-import { ArrowLeft, Camera, Eye, EyeOff, Lock, UserRound } from 'lucide-react';
+import { ArrowLeft, Camera, Eye, EyeOff, Lock, Mail, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { OtpField } from '@/components/OtpField';
@@ -24,7 +24,9 @@ export default function UpdateProfile() {
   const { t } = useLanguage();
 
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [emailOtp, setEmailOtp] = useState('');
+  const [changingEmail, setChangingEmail] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
@@ -38,8 +40,7 @@ export default function UpdateProfile() {
 
   useEffect(() => {
     setName(profile?.name || '');
-    setPhone(profile?.phone || '');
-  }, [profile?.name, profile?.phone]);
+  }, [profile?.name]);
 
   useEffect(() => {
     if (!user) navigate('/login');
@@ -88,13 +89,8 @@ export default function UpdateProfile() {
     e.preventDefault();
     if (!user) return;
     const trimmedName = name.trim();
-    const trimmedPhone = phone.trim();
     if (trimmedName.length < 2 || trimmedName.length > 60) {
       toast.error(t('err_name_short'));
-      return;
-    }
-    if (trimmedPhone && !/^[0-9+\s-]{6,20}$/.test(trimmedPhone)) {
-      toast.error(t('err_phone_invalid'));
       return;
     }
 
@@ -102,7 +98,7 @@ export default function UpdateProfile() {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ name: trimmedName, phone: trimmedPhone || null })
+        .update({ name: trimmedName })
         .eq('user_id', user.id);
       if (error) throw error;
       await refreshProfile();
@@ -111,6 +107,35 @@ export default function UpdateProfile() {
       toast.error(err.message || t('err_save_failed'));
     }
     setSavingProfile(false);
+  };
+
+  const handleChangeEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const next = newEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(next) || next.length > 255) {
+      toast.error(t('email_invalid'));
+      return;
+    }
+    if (next === (user?.email || '').toLowerCase()) {
+      toast.error(t('err_email_same'));
+      return;
+    }
+    if (!/^\d{6}$/.test(emailOtp)) {
+      toast.error(t('otp_invalid_length'));
+      return;
+    }
+    setChangingEmail(true);
+    try {
+      await otpCall({ action: 'change_email', new_email: next, otp_code: emailOtp });
+      await supabase.auth.refreshSession();
+      await refreshProfile();
+      setNewEmail('');
+      setEmailOtp('');
+      toast.success(t('ok_email_changed'));
+    } catch (err: any) {
+      toast.error(err.message || t('err_email_change_failed'));
+    }
+    setChangingEmail(false);
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -129,7 +154,7 @@ export default function UpdateProfile() {
     }
 
     if (otp.length !== 6) {
-      toast.error('Enter the 6-digit OTP sent to your email');
+      toast.error(t('otp_invalid_length'));
       return;
     }
     setChangingPassword(true);
@@ -161,7 +186,7 @@ export default function UpdateProfile() {
           <div className="flex flex-col items-center gap-3">
             <div className="relative">
               {avatarSrc ? (
-                <img src={avatarSrc} alt="Profile picture" className="h-24 w-24 rounded-full object-cover" />
+                <img src={avatarSrc} alt={t('update_profile_title')} className="h-24 w-24 rounded-full object-cover" />
               ) : (
                 <div className="flex h-24 w-24 items-center justify-center rounded-full bg-primary/20 text-3xl font-bold text-primary">
                   {(profile?.name || 'U').charAt(0).toUpperCase()}
@@ -188,11 +213,30 @@ export default function UpdateProfile() {
               <Input id="name" value={name} maxLength={60} onChange={(e) => setName(e.target.value)} className="border-border bg-muted" />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="phone">{t('field_phone')}</Label>
-              <Input id="phone" value={phone} maxLength={20} inputMode="tel" onChange={(e) => setPhone(e.target.value)} className="border-border bg-muted" />
+              <Label htmlFor="email">{t('field_email')}</Label>
+              <Input id="email" value={user?.email || ''} readOnly className="border-border bg-muted/50 text-muted-foreground" />
             </div>
             <Button type="submit" disabled={savingProfile} className="gaming-btn w-full border-0">
               {savingProfile ? t('saving') : t('save')}
+            </Button>
+          </form>
+        </section>
+
+        {/* Email change */}
+        <section className="rounded-xl border border-border bg-card p-4">
+          <div className="mb-4 flex items-center gap-2">
+            <Mail className="h-5 w-5 text-primary" />
+            <h2 className="font-bold text-foreground">{t('email_change_otp')}</h2>
+          </div>
+          <form onSubmit={handleChangeEmail} className="flex flex-col gap-3">
+            <div className="grid gap-1.5">
+              <Label htmlFor="new-email">{t('field_new_email')}</Label>
+              <Input id="new-email" type="email" autoComplete="email" maxLength={255} value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="you@gmail.com" className="border-border bg-muted" />
+            </div>
+            <p className="text-xs text-muted-foreground">{t('current_email_hint')}: {user?.email}</p>
+            <OtpField email={user?.email || ''} value={emailOtp} onChange={setEmailOtp} toCurrentUser />
+            <Button type="submit" disabled={changingEmail || !newEmail} className="gaming-btn w-full border-0">
+              {changingEmail ? t('saving') : t('save')}
             </Button>
           </form>
         </section>
@@ -212,7 +256,7 @@ export default function UpdateProfile() {
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 className="border-border bg-muted pr-10"
               />
-              <button type="button" aria-label="Toggle password visibility" onClick={() => setShowPasswords(!showPasswords)} className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">
+              <button type="button" aria-label={t('password_toggle')} onClick={() => setShowPasswords(!showPasswords)} className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">
                 {showPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
@@ -230,7 +274,7 @@ export default function UpdateProfile() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="border-border bg-muted"
             />
-            <OtpField email={user?.email || ''} value={otp} onChange={setOtp} />
+            <OtpField email={user?.email || ''} value={otp} onChange={setOtp} toCurrentUser />
             <Button
               type="submit"
               disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}

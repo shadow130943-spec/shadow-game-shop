@@ -106,7 +106,7 @@ export default function ProductDetail() {
   const { id } = useParams<{ id: string }>(); // id = game_code
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { formatMmk } = useLanguage();
+  const { formatMmk, t } = useLanguage();
   const overrides = usePackageOverrides(id);
   const [game, setGame] = useState<GameData | null>(null);
   const [walletBalance, setWalletBalance] = useState(0);
@@ -176,7 +176,7 @@ export default function ProductDetail() {
 
   const handlePackageClick = (pkg: Package) => {
     if (!user) {
-      toast.error('ကျေးဇူးပြု၍ အကောင့်ဝင်ပါ');
+      toast.error(t('login_required_order'));
       navigate('/login');
       return;
     }
@@ -216,8 +216,8 @@ export default function ProductDetail() {
 
   const handleNameCheck = async () => {
     if (!game) return;
-    if (!gameId.trim()) { toast.error('Game Id ထည့်ပါ'); return; }
-    if (needsServerId && !serverId.trim()) { toast.error('Server Id ထည့်ပါ'); return; }
+    if (!gameId.trim()) { toast.error(t('enter_game_id')); return; }
+    if (needsServerId && !serverId.trim()) { toast.error(t('enter_server_id')); return; }
 
     setNameCheckLoading(true);
     setCheckedName(null);
@@ -241,7 +241,7 @@ export default function ProductDetail() {
         setCheckedName(payload.name);
         setCheckedAvatar(isTelegram ? findAvatarUrl(payload) : null);
         setNameCheckSuccess(true);
-        toast.success(`အကောင့်အမည်: ${payload.name}`);
+        toast.success(`${t('account_name')}: ${payload.name}`);
         setNameCheckLoading(false);
         return;
       }
@@ -282,18 +282,18 @@ export default function ProductDetail() {
     const lastOrderKey = `last_order_at_${user.id}`;
     const lastOrderAt = Number(sessionStorage.getItem(lastOrderKey) || 0);
     if (Date.now() - lastOrderAt < 5000) {
-      toast.error('ခဏစောင့်ပါ။ မှာယူမှုကို မြန်ဆန်စွာ ထပ်ခါမလုပ်ပါနှင့်။');
+      toast.error(t('too_many_orders'));
       return;
     }
 
-    if (!gameId.trim()) { toast.error('Game Id ထည့်ပါ'); return; }
-    if (needsServerId && !serverId.trim()) { toast.error('Server Id ထည့်ပါ'); return; }
-    if (!nameCheckSuccess) { toast.error('အကောင့်အမည် အရင်စစ်ဆေးပါ'); return; }
-    if (!confirmed) { toast.error('အချက်အလက်များမှန်ကန်ပါတယ် ကို အတည်ပြုပါ'); return; }
+    if (!gameId.trim()) { toast.error(t('enter_game_id')); return; }
+    if (needsServerId && !serverId.trim()) { toast.error(t('enter_server_id')); return; }
+    if (!nameCheckSuccess) { toast.error(t('verify_account_first')); return; }
+    if (!confirmed) { toast.error(t('confirm_details_first')); return; }
 
     const finalPrice = getMmkPrice(selectedPkg);
     if (walletBalance < finalPrice) {
-      toast.error('လက်ကျန်ငွေ မလုံလောက်ပါ');
+      toast.error(t('insufficient_balance'));
       setOrdering(false);
       return;
     }
@@ -326,7 +326,7 @@ export default function ProductDetail() {
         } else if (rawMsg) {
           toast.error(rawMsg);
         } else {
-          toast.error('မှာယူမှု မအောင်မြင်ပါ။ ခဏနေ ပြန်ကြိုးစားပါ။');
+          toast.error(t('order_failed'));
         }
 
         return;
@@ -360,7 +360,7 @@ export default function ProductDetail() {
     } catch (err: any) {
       console.error('[placeOrder] exception:', err);
       setOrderFailed(true);
-      toast.error(err?.message || 'မှာယူမှု မအောင်မြင်ပါ။ ခဏနေ ပြန်ကြိုးစားပါ။');
+      toast.error(err?.message || t('order_failed'));
     } finally {
       setOrdering(false);
     }
@@ -369,7 +369,7 @@ export default function ProductDetail() {
   if (gamesLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse text-lg text-muted-foreground">Loading...</div>
+        <div className="animate-pulse text-lg text-muted-foreground">{t('loading')}</div>
       </div>
     );
   }
@@ -407,7 +407,7 @@ export default function ProductDetail() {
       <div className="px-4 py-4">
         {visiblePackages.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
-            <p>ပစ္စည်းများ မရှိသေးပါ</p>
+            <p>{t('no_packages')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-2">
@@ -443,13 +443,13 @@ export default function ProductDetail() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-sm mx-auto rounded-2xl">
           <DialogTitle className="text-center text-lg font-bold bg-muted -mx-6 -mt-6 px-6 py-4 rounded-t-2xl">
-            အချက်အလက်များဖြည့်သွင်းပါ
+            {t('checkout_enter_details')}
           </DialogTitle>
 
           <div className="space-y-4 pt-2">
             <div className="flex items-center gap-2 text-sm font-semibold">
               <Link2 className="h-4 w-4" />
-              {needsServerId ? 'Account Info' : (id === 'Telegram' ? 'Telegram Username' : 'Player Id')}
+              {needsServerId ? t('account_info') : (id === 'Telegram' ? 'Telegram Username' : t('player_id'))}
             </div>
 
             {needsServerId ? (
@@ -471,7 +471,7 @@ export default function ProductDetail() {
             {nameCheckLoading && (
               <div className="rounded-lg px-4 py-2 text-center bg-muted flex items-center justify-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                အကောင့်အမည် စစ်ဆေးနေသည်...
+                {t('checking_account')}
               </div>
             )}
 
@@ -487,7 +487,7 @@ export default function ProductDetail() {
                   border: '1px solid rgba(34, 197, 94, 0.3)',
                 }}
               >
-                <p className="text-xs text-muted-foreground mb-0.5">အကောင့်အမည်</p>
+                <p className="text-xs text-muted-foreground mb-0.5">{t('account_name')}</p>
                 <div className="flex items-center justify-center gap-2">
                   {isTelegram && (
                     <Avatar className="h-8 w-8 border border-[rgba(34,197,94,0.4)]">
@@ -509,7 +509,7 @@ export default function ProductDetail() {
             )}
 
             <div>
-              <p className="text-sm font-semibold text-muted-foreground mb-1">ပမာဏ</p>
+              <p className="text-sm font-semibold text-muted-foreground mb-1">{t('amount')}</p>
               <div className="flex gap-2">
                 <div className="flex-1 bg-muted rounded-lg px-3 py-2 text-sm font-semibold">{selectedPkg?.catalogue_name}</div>
                 <div className="flex-1 bg-muted rounded-lg px-3 py-2 text-sm font-semibold">
@@ -520,7 +520,7 @@ export default function ProductDetail() {
 
 
             <div className="bg-primary/10 rounded-lg px-4 py-3 text-sm font-semibold text-center">
-              လက်ကျန်ငွေ = {formatMmk(walletBalance)}
+              {t('balance')} = {formatMmk(walletBalance)}
             </div>
 
             <div className="flex items-center gap-2">
@@ -545,14 +545,14 @@ export default function ProductDetail() {
 
               />
               <label htmlFor="confirm-order" className="text-sm font-semibold text-destructive cursor-pointer">
-                အချက်အလက်များမှန်ကန်ပါတယ်
+                {t('details_correct')}
               </label>
             </div>
 
 
             <div className="flex gap-3 justify-center pt-2">
               <Button variant="outline" className="rounded-full px-6" onClick={() => setDialogOpen(false)}>
-                မဝယ်သေးပါ
+                {t('not_now')}
               </Button>
               <Button
                 className={`rounded-full px-6 border-0 ${buyButtonDisabled ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'gaming-btn'}`}
@@ -562,9 +562,9 @@ export default function ProductDetail() {
                 {ordering ? (
                   <span className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    မှာယူနေပါသည်...
+                    {t('ordering')}
                   </span>
-                ) : 'ဝယ်မည်'}
+                ) : t('buy_now')}
               </Button>
             </div>
           </div>

@@ -17,11 +17,12 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (otp.length !== 6) {
-      toast.error('Enter the 6-digit OTP sent to your email');
+      toast.error(t('otp_invalid_length'));
       return;
     }
     setLoading(true);
@@ -31,7 +32,7 @@ export default function Login() {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Welcome back!');
+      toast.success(t('welcome_back_toast'));
       navigate('/');
     }
 
@@ -57,8 +58,8 @@ export default function Login() {
               GAME<span className="text-foreground">TOP</span>
             </span>
           </motion.div>
-          <h1 className="font-gaming text-xl text-foreground">Welcome Back</h1>
-          <p className="text-muted-foreground mt-1">Sign in to continue gaming</p>
+          <h1 className="font-gaming text-xl text-foreground">{t('auth_welcome')}</h1>
+          <p className="text-muted-foreground mt-1">{t('auth_signin_hint')}</p>
         </div>
 
         <motion.form
@@ -69,7 +70,7 @@ export default function Login() {
           className="gaming-card rounded-2xl p-6 space-y-5"
         >
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t('field_email')}</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
@@ -86,7 +87,7 @@ export default function Login() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t('field_password')}</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
@@ -100,6 +101,7 @@ export default function Login() {
               />
               <button
                 type="button"
+                aria-label={t('password_toggle')}
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
@@ -115,13 +117,13 @@ export default function Login() {
             disabled={loading}
             className="w-full gaming-btn border-0 py-6 text-base font-semibold"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? t('signing_in') : t('login')}
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">
-            Don't have an account?{' '}
+            {t('no_account')}{' '}
             <Link to="/signup" className="text-primary hover:underline font-medium">
-              Sign Up
+              {t('signup')}
             </Link>
           </p>
         </motion.form>

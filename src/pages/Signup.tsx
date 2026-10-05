@@ -1,3 +1,4 @@
+import { useLanguage } from '@/i18n/LanguageProvider';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -19,21 +20,22 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+      toast.error(t('err_password_short'));
       return;
     }
 
     if (password !== confirm) {
-      toast.error('Passwords do not match');
+      toast.error(t('err_password_mismatch'));
       return;
     }
     if (otp.length !== 6) {
-      toast.error('Enter the 6-digit OTP sent to your email');
+      toast.error(t('otp_invalid_length'));
       return;
     }
     setLoading(true);
@@ -43,7 +45,7 @@ export default function Signup() {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Account created successfully!');
+      toast.success(t('account_created'));
       navigate('/');
     }
 
@@ -69,8 +71,8 @@ export default function Signup() {
               GAME<span className="text-foreground">TOP</span>
             </span>
           </motion.div>
-          <h1 className="font-gaming text-xl text-foreground">Create Account</h1>
-          <p className="text-muted-foreground mt-1">Join the gaming community</p>
+          <h1 className="font-gaming text-xl text-foreground">{t('auth_create')}</h1>
+          <p className="text-muted-foreground mt-1">{t('auth_join_hint')}</p>
         </div>
 
         <motion.form
@@ -81,13 +83,13 @@ export default function Signup() {
           className="gaming-card rounded-2xl p-6 space-y-5"
         >
           <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="name">{t('field_name')}</Label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
                 id="name"
                 type="text"
-                placeholder="Your name"
+                placeholder={t('field_name_placeholder')}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -97,7 +99,7 @@ export default function Signup() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t('field_email')}</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
@@ -114,7 +116,7 @@ export default function Signup() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t('field_password')}</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
@@ -135,11 +137,11 @@ export default function Signup() {
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </div>
-            <p className="text-xs text-muted-foreground">Minimum 6 characters</p>
+            <p className="text-xs text-muted-foreground">{t('password_min_hint')}</p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirm">Confirm Password</Label>
+            <Label htmlFor="confirm">{t('field_confirm_password_short')}</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
@@ -161,13 +163,13 @@ export default function Signup() {
             disabled={loading}
             className="w-full gaming-btn border-0 py-6 text-base font-semibold"
           >
-            {loading ? 'Creating account...' : 'Create Account'}
+            {loading ? t('creating_account') : t('auth_create')}
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
+            {t('have_account')}{' '}
             <Link to="/login" className="text-primary hover:underline font-medium">
-              Sign In
+              {t('login')}
             </Link>
           </p>
         </motion.form>

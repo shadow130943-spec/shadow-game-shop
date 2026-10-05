@@ -1,3 +1,4 @@
+import { useLanguage } from '@/i18n/LanguageProvider';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Bell, CheckCheck } from 'lucide-react';
@@ -15,6 +16,7 @@ interface Notification {
 export default function Notifications() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t, lang, formatNumber } = useLanguage();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -67,11 +69,11 @@ export default function Notifications() {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'ယခုလေးတင်';
-    if (diffMins < 60) return `${diffMins} မိနစ်အကြာ`;
-    if (diffHours < 24) return `${diffHours} နာရီအကြာ`;
-    if (diffDays < 7) return `${diffDays} ရက်အကြာ`;
-    return date.toLocaleDateString('my-MM');
+    if (diffMins < 1) return t('just_now');
+    if (diffMins < 60) return `${formatNumber(diffMins)} ${t('minutes_ago')}`;
+    if (diffHours < 24) return `${formatNumber(diffHours)} ${t('hours_ago')}`;
+    if (diffDays < 7) return `${formatNumber(diffDays)} ${t('days_ago')}`;
+    return date.toLocaleDateString(lang === 'MM' ? 'my-MM' : 'en-US');
   };
 
   return (
@@ -83,12 +85,12 @@ export default function Notifications() {
             <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate(-1)}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="font-semibold text-lg">အသိပေးချက်များ</h1>
+            <h1 className="font-semibold text-lg">{t('notifications_title')}</h1>
           </div>
           {unreadCount > 0 && (
             <Button variant="ghost" size="sm" className="text-primary text-xs gap-1" onClick={markAllRead}>
               <CheckCheck className="h-4 w-4" />
-              အားလုံးဖတ်ပြီး
+              {t('mark_all_read')}
             </Button>
           )}
         </div>
@@ -97,14 +99,14 @@ export default function Notifications() {
       {/* Content */}
       <div className="max-w-lg mx-auto">
         {loading ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">Loading...</div>
+          <div className="p-8 text-center text-muted-foreground text-sm">{t('loading')}</div>
         ) : notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
             <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
               <Bell className="h-8 w-8 text-muted-foreground" />
             </div>
-            <p className="font-medium text-foreground mb-1">အသိပေးချက် မရှိသေးပါ</p>
-            <p className="text-sm text-muted-foreground">သင့်အတွက် အသိပေးချက်များ ဤနေရာတွင် ပေါ်လာပါမည်</p>
+            <p className="font-medium text-foreground mb-1">{t('notifications_empty')}</p>
+            <p className="text-sm text-muted-foreground">{t('notifications_empty_hint')}</p>
           </div>
         ) : (
           <div className="divide-y divide-border">

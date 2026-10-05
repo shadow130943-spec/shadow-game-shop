@@ -160,7 +160,7 @@ export default function Deposit() {
           .catch((e) => console.error('Telegram notify failed', e));
       }
 
-      toast.success('Deposit request submitted! Status: Processing');
+      toast.success(t('deposit_submitted'));
       navigate('/deposit-history');
     } catch (err: any) {
       toast.error(err.message || t('deposit_failed'));

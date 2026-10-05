@@ -1,3 +1,4 @@
+import { useLanguage } from '@/i18n/LanguageProvider';
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -28,13 +29,12 @@ type StatusFilter = 'all' | 'approved' | 'pending';
 
 const statusPill = (status: string) => {
   if (status === 'success')
-    return { label: 'Approved', cls: 'bg-primary/15 text-primary border border-primary/30' };
+    return { label: 'approved', cls: 'bg-primary/15 text-primary border border-primary/30' };
   if (status === 'failed')
-    return { label: 'Rejected', cls: 'bg-destructive/15 text-destructive border border-destructive/30' };
-  return { label: 'Pending', cls: 'bg-gaming-gold/15 text-gaming-gold border border-gaming-gold/30' };
+    return { label: 'rejected', cls: 'bg-destructive/15 text-destructive border border-destructive/30' };
+  return { label: 'status_pending', cls: 'bg-gaming-gold/15 text-gaming-gold border border-gaming-gold/30' };
 };
 
-const formatNum = (n: number) => new Intl.NumberFormat('my-MM').format(n);
 
 export default function DepositHistory() {
   const [deposits, setDeposits] = useState<Deposit[]>([]);
@@ -47,6 +47,7 @@ export default function DepositHistory() {
   const [lightbox, setLightbox] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t: tr, formatMmk } = useLanguage();
 
   // Screenshots live in a private bucket — resolve a signed URL for the selected slip.
   useEffect(() => {
@@ -104,9 +105,9 @@ export default function DepositHistory() {
   }, [deposits, statusFilter, dateFilter]);
 
   const tabs: { key: StatusFilter; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'approved', label: 'Approved' },
-    { key: 'pending', label: 'Pending' },
+    { key: 'all', label: 'all' },
+    { key: 'approved', label: 'approved' },
+    { key: 'pending', label: 'status_pending' },
   ];
 
   return (
@@ -117,7 +118,7 @@ export default function DepositHistory() {
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="font-bold text-base">TopUp Order History</h1>
+          <h1 className="font-bold text-base">{tr('deposit_history_title')}</h1>
         </div>
         <Popover>
           <PopoverTrigger asChild>
@@ -127,7 +128,7 @@ export default function DepositHistory() {
               className={cn('h-8 px-3 text-xs bg-card border-border', !dateFilter && 'text-muted-foreground')}
             >
               <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
-              {dateFilter ? format(dateFilter, 'dd MMM') : 'Date'}
+              {dateFilter ? format(dateFilter, 'dd MMM') : tr('date')}
               {dateFilter && (
                 <X
                   className="h-3 w-3 ml-1.5"
@@ -155,7 +156,7 @@ export default function DepositHistory() {
                 : 'bg-card border border-border text-muted-foreground'
             )}
           >
-            {t.label}
+            {tr(t.label)}
           </button>
         ))}
       </div>
@@ -165,7 +166,7 @@ export default function DepositHistory() {
         {loading ? (
           [1, 2, 3].map((i) => <div key={i} className="h-16 rounded-xl bg-muted animate-pulse" />)
         ) : filtered.length === 0 ? (
-          <p className="text-center text-muted-foreground py-12 text-sm">No deposits yet</p>
+          <p className="text-center text-muted-foreground py-12 text-sm">{tr('no_deposits')}</p>
         ) : (
           filtered.map((d) => {
             const pill = statusPill(d.status);
@@ -183,14 +184,14 @@ export default function DepositHistory() {
                   <p className="text-xs text-muted-foreground">
                     {format(dt, 'dd MMM yyyy')} • {format(dt, 'p')}
                   </p>
-                  <p className="text-sm font-bold text-foreground">+{formatNum(d.amount)} MMK</p>
+                  <p className="text-sm font-bold text-foreground">+{formatMmk(d.amount)}</p>
                   {isAdminTopup(d) && (
-                    <p className="text-[10px] text-muted-foreground">Admin ငွေဖြည့်</p>
+                    <p className="text-[10px] text-muted-foreground">{tr('admin_topup')}</p>
                   )}
 
                 </div>
                 <span className={cn('px-3 py-1 rounded-full text-[10px] font-semibold', pill.cls)}>
-                  {pill.label}
+                  {tr(pill.label)}
                 </span>
               </button>
             );
@@ -205,25 +206,25 @@ export default function DepositHistory() {
             <>
               <div className="bg-primary text-primary-foreground px-5 py-3 flex items-center justify-between">
                 <DialogTitle className="text-sm font-bold">
-                  Order Detail - #{selected.id.slice(0, 6).toUpperCase()}
+                  {tr('order_detail')} - #{selected.id.slice(0, 6).toUpperCase()}
                 </DialogTitle>
               </div>
               <div className="p-4 space-y-2.5">
-                <DetailRow label="ORDER ID" value={`#${selected.id.slice(0, 8).toUpperCase()}`} />
-                <DetailRow label="AMOUNT" value={`+${formatNum(selected.amount)} MMK`} valueClass="text-primary font-bold" />
-                <DetailRow label="DATE" value={format(new Date(selected.created_at), 'dd MMM yyyy, p')} />
-                <DetailRow label="STATUS" value={statusPill(selected.status).label} />
-                <DetailRow label="TYPE" value={isAdminTopup(selected) ? 'Admin Top-up' : 'Payment Slip'} />
+                <DetailRow label={tr('order_id')} value={`#${selected.id.slice(0, 8).toUpperCase()}`} />
+                <DetailRow label={tr('amount')} value={`+${formatMmk(selected.amount)}`} valueClass="text-primary font-bold" />
+                <DetailRow label={tr('date')} value={format(new Date(selected.created_at), 'dd MMM yyyy, p')} />
+                <DetailRow label={tr('status')} value={tr(statusPill(selected.status).label)} />
+                <DetailRow label={tr('type')} value={isAdminTopup(selected) ? tr('admin_topup') : tr('payment_slip')} />
 
                 {selected.screenshot_url && (
                   <div className="rounded-lg bg-muted/60 p-3">
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                      Payment Slip
+                      {tr('payment_slip')}
                     </p>
                     <div className="rounded-lg overflow-hidden bg-background">
                       {slipError ? (
                         <p className="text-xs text-muted-foreground text-center py-6">
-                          ပုံကို ဖွင့်၍မရပါ
+                          {tr('slip_unavailable')}
                         </p>
                       ) : slipUrl ? (
                         <button type="button" onClick={() => setLightbox(true)} className="w-full">

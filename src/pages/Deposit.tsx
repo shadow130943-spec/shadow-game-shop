@@ -1,3 +1,4 @@
+import { useLanguage } from '@/i18n/LanguageProvider';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -30,6 +31,7 @@ export default function Deposit() {
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t, formatMmk, formatNumber } = useLanguage();
 
 
   useEffect(() => {
@@ -43,7 +45,7 @@ export default function Deposit() {
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success('Copied!');
+    toast.success(t('copied'));
   };
 
   const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'];
@@ -71,15 +73,15 @@ export default function Deposit() {
       });
       if (error || data?.error || !data?.amount) {
         setScanFailed(true);
-        toast.error('ငွေပမာဏ ဖတ်၍မရပါ။ ပုံကို ပိုရှင်းအောင် ပြန်တင်ပါ (သို့) ကိုယ်တိုင် ရိုက်ထည့်ပါ');
+        toast.error(t('ocr_failed_long'));
         return;
       }
       setAmount(data.amount as number);
       setConfidence(Number(data.confidence) || 0);
-      toast.success(`ငွေပမာဏ ${new Intl.NumberFormat('my-MM').format(data.amount)} ကျပ် တွေ့ရှိပါသည်`);
+      toast.success(`${t('amount_detected')}: ${formatMmk(data.amount)}`);
     } catch {
       setScanFailed(true);
-      toast.error('ငွေပမာဏ ဖတ်၍မရပါ။ ပြန်ကြိုးစားပါ');
+      toast.error(t('ocr_failed'));
     } finally {
       setScanning(false);
     }
@@ -92,12 +94,12 @@ export default function Deposit() {
 
     // Validate MIME type (defence in depth, not just accept="image/*")
     if (!ALLOWED_IMAGE_TYPES.includes(selected.type)) {
-      toast.error('ဓာတ်ပုံဖိုင် (JPG, PNG, WEBP) သာ တင်နိုင်ပါသည်');
+      toast.error(t('image_only'));
       e.target.value = '';
       return;
     }
     if (selected.size > MAX_FILE_SIZE) {
-      toast.error('ဖိုင်အရွယ်အစား 10MB ထက် မပိုရပါ');
+      toast.error(t('file_too_large'));
       e.target.value = '';
       return;
     }
@@ -161,7 +163,7 @@ export default function Deposit() {
       toast.success('Deposit request submitted! Status: Processing');
       navigate('/deposit-history');
     } catch (err: any) {
-      toast.error(err.message || 'Failed to submit deposit');
+      toast.error(err.message || t('deposit_failed'));
     }
     setLoading(false);
   };
@@ -180,18 +182,18 @@ export default function Deposit() {
           className="max-w-md mx-auto space-y-4"
         >
           <div className="flex items-center justify-between gaming-card rounded-xl p-4">
-            <h1 className="font-bold text-lg text-foreground">ငွေဖြည့်မည်</h1>
+            <h1 className="font-bold text-lg text-foreground">{t('add_funds_title')}</h1>
             <Button variant="secondary" size="sm" onClick={() => navigate('/deposit-history')}>
-              <History className="h-4 w-4 mr-1" /> မှတ်တမ်း
+              <History className="h-4 w-4 mr-1" /> {t('history')}
             </Button>
           </div>
 
           <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">ငွေပမာဏ (ပုံမှ အလိုအလျောက် ဖတ်ပါမည်)</p>
+            <p className="text-sm font-medium text-muted-foreground">{t('detected_amount')}</p>
             <div className="flex items-center justify-between gap-2 border border-border rounded-lg px-4 py-3 bg-card">
               {scanning ? (
                 <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" /> ငွေပမာဏ ဖတ်နေသည်...
+                  <Loader2 className="h-4 w-4 animate-spin" /> {t('scanning_amount')}
                 </span>
               ) : manual ? (
                 <input
@@ -200,30 +202,30 @@ export default function Deposit() {
                   min={1}
                   value={manualValue}
                   onChange={(e) => setManualValue(e.target.value)}
-                  placeholder="ငွေပမာဏ ရိုက်ထည့်ပါ"
+                  placeholder={t('enter_amount')}
                   className="flex-1 bg-transparent text-lg font-bold text-foreground outline-none"
                 />
               ) : amount ? (
                 <span className="text-lg font-bold text-foreground">
-                  {new Intl.NumberFormat('my-MM').format(amount)}
+                  {formatNumber(amount)}
                 </span>
               ) : (
                 <span className="text-sm text-muted-foreground">
-                  {scanFailed ? 'ငွေပမာဏ မဖတ်နိုင်ပါ' : 'ငွေလွှဲပုံတင်ပါ'}
+                  {scanFailed ? t('amount_unreadable') : t('upload_receipt')}
                 </span>
               )}
-              <span className="text-muted-foreground shrink-0">ကျပ်</span>
+              <span className="text-muted-foreground shrink-0">{t('currency_suffix')}</span>
             </div>
 
             {!scanning && amount !== null && !manual && (
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs text-muted-foreground">
                   {confidence >= 0.6
-                    ? 'ပုံမှ ဖတ်ထားသော ငွေပမာဏ — မှန်/မမှန် စစ်ပေးပါ'
-                    : 'ငွေပမာဏ သေချာမသိပါ — Admin မှ ပြန်စစ်ပါမည်'}
+                    ? t('amount_detected')
+                    : t('amount_low_confidence')}
                 </p>
                 <Button type="button" variant="ghost" size="sm" className="text-xs" onClick={() => { setManual(true); setManualValue(String(amount)); }}>
-                  ပြင်မည်
+                  {t('edit')}
                 </Button>
               </div>
             )}
@@ -231,15 +233,15 @@ export default function Deposit() {
             {!scanning && scanFailed && (
               <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 space-y-2">
                 <p className="text-xs text-foreground">
-                  ပုံမှ ငွေပမာဏကို မဖတ်နိုင်ပါ။ ပုံရှင်းရှင်း (ငွေပမာဏ မြင်ရသော) ပြန်တင်ပါ၊ သို့မဟုတ် ကိုယ်တိုင် ရိုက်ထည့်ပါ — Admin မှ ပြန်စစ်ပေးပါမည်။
+                  {t('ocr_failed_long')}
                 </p>
                 <div className="flex gap-2">
                   <Button type="button" size="sm" variant="secondary" className="text-xs" disabled={!file} onClick={() => file && scanAmount(file)}>
-                    ပြန်စကန်ဖတ်မည်
+                    {t('scan_again')}
                   </Button>
                   {!manual && (
                     <Button type="button" size="sm" variant="outline" className="text-xs" onClick={() => setManual(true)}>
-                      ကိုယ်တိုင် ရိုက်ထည့်မည်
+                      {t('enter_manually')}
                     </Button>
                   )}
                 </div>
@@ -250,7 +252,7 @@ export default function Deposit() {
 
 
           <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">ငွေလွှဲနံပါတ်</p>
+            <p className="text-sm font-medium text-muted-foreground">{t('payment_accounts')}</p>
             <div className="space-y-3">
               {methods.map((method) => (
                 <div key={method.id} className="border border-border rounded-xl p-3 bg-card flex items-center gap-3">
@@ -270,7 +272,7 @@ export default function Deposit() {
                         className="text-xs shrink-0"
                         onClick={() => handleCopy(method.phone)}
                       >
-                        <Copy className="h-3 w-3 mr-1" /> Copy
+                        <Copy className="h-3 w-3 mr-1" /> {t('copy')}
                       </Button>
                     </div>
                     <p className="text-xs sm:text-sm text-muted-foreground">{method.holder}</p>
@@ -278,7 +280,7 @@ export default function Deposit() {
                 </div>
               ))}
               {methods.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">Payment method မရှိသေးပါ</p>
+                <p className="text-sm text-muted-foreground text-center py-4">{t('no_payment_methods')}</p>
               )}
             </div>
           </div>
@@ -286,7 +288,7 @@ export default function Deposit() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <p className="text-sm font-medium text-muted-foreground">
-                Payment Screenshot ( ငွေလွှဲ Id ပါတဲ့ပုံ )
+                {t('receipt_with_id')}
               </p>
               <div
                 className="border-2 border-dashed border-green-500/50 rounded-xl p-6 text-center cursor-pointer hover:border-green-500 transition-colors bg-card"
@@ -297,7 +299,7 @@ export default function Deposit() {
                 ) : (
                   <div className="space-y-2">
                     <Upload className="h-12 w-12 mx-auto text-primary" />
-                    <p className="text-sm text-primary font-medium">ငွေလွှဲပုံထည့်ရန်နှိပ်ပါ</p>
+                    <p className="text-sm text-primary font-medium">{t('tap_upload_receipt')}</p>
                   </div>
                 )}
               </div>
@@ -315,7 +317,7 @@ export default function Deposit() {
               disabled={loading || !file || !amount}
               className="w-full gaming-btn border-0 py-6 text-base font-semibold rounded-xl"
             >
-              {loading ? 'Submitting...' : 'ဝယ်ယူမည်'}
+              {loading ? t('submitting') : t('submit_deposit')}
             </Button>
           </form>
         </motion.div>

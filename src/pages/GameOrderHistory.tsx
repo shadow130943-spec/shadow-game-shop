@@ -1,3 +1,4 @@
+import { useLanguage } from '@/i18n/LanguageProvider';
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -26,14 +27,13 @@ interface GameOrder {
 
 const statusBadge = (status: string) => {
   const map: Record<string, { cls: string; label: string }> = {
-    success: { cls: 'bg-primary text-primary-foreground', label: 'Success' },
-    processing: { cls: 'bg-gaming-gold/90 text-black', label: 'Pending' },
-    failed: { cls: 'bg-destructive text-destructive-foreground', label: 'Failed' },
+    success: { cls: 'bg-primary text-primary-foreground', label: 'status_success' },
+    processing: { cls: 'bg-gaming-gold/90 text-black', label: 'status_pending' },
+    failed: { cls: 'bg-destructive text-destructive-foreground', label: 'status_failed' },
   };
   return map[status] || { cls: 'bg-muted text-foreground', label: status };
 };
 
-const formatNum = (n: number) => new Intl.NumberFormat('my-MM').format(n);
 
 export default function GameOrderHistory() {
   const [orders, setOrders] = useState<GameOrder[]>([]);
@@ -44,6 +44,7 @@ export default function GameOrderHistory() {
   const [selected, setSelected] = useState<GameOrder | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t, formatMmk } = useLanguage();
 
   useEffect(() => {
     if (!user) return;
@@ -93,7 +94,7 @@ export default function GameOrderHistory() {
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="font-bold text-lg">ဝယ်ယူမှုမှတ်တမ်း</h1>
+        <h1 className="font-bold text-lg">{t('order_history_title')}</h1>
       </div>
 
       {/* Filters */}
@@ -101,7 +102,7 @@ export default function GameOrderHistory() {
         <div className="relative">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search by order ID / package / game ID"
+            placeholder={t('order_search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 bg-card border-border"
@@ -109,9 +110,9 @@ export default function GameOrderHistory() {
         </div>
         <div className="grid grid-cols-2 gap-2">
           <Select value={gameFilter} onValueChange={setGameFilter}>
-            <SelectTrigger className="bg-card border-border"><SelectValue placeholder="All Games" /></SelectTrigger>
+            <SelectTrigger className="bg-card border-border"><SelectValue placeholder={t('all_games')} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Games</SelectItem>
+              <SelectItem value="all">{t('all_games')}</SelectItem>
               {games.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -119,7 +120,7 @@ export default function GameOrderHistory() {
             <PopoverTrigger asChild>
               <Button variant="outline" className={cn('justify-start font-normal bg-card border-border', !dateFilter && 'text-muted-foreground')}>
                 <CalendarIcon className="h-4 w-4 mr-2" />
-                {dateFilter ? format(dateFilter, 'PP') : 'Date'}
+                {dateFilter ? format(dateFilter, 'PP') : t('date')}
                 {dateFilter && (
                   <X className="h-3 w-3 ml-auto" onClick={(e) => { e.stopPropagation(); setDateFilter(undefined); }} />
                 )}
@@ -137,7 +138,7 @@ export default function GameOrderHistory() {
         {loading ? (
           [1, 2, 3].map((i) => <div key={i} className="h-20 rounded-xl bg-muted animate-pulse" />)
         ) : filtered.length === 0 ? (
-          <p className="text-center text-muted-foreground py-12 text-sm">အော်ဒါမရှိသေးပါ</p>
+          <p className="text-center text-muted-foreground py-12 text-sm">{t('no_orders')}</p>
         ) : (
           filtered.map((o) => {
             const badge = statusBadge(o.status);
@@ -160,10 +161,10 @@ export default function GameOrderHistory() {
 
                   <div className="text-right shrink-0">
                     <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold ${badge.cls}`}>
-                      {badge.label}
+                      {t(badge.label)}
                     </span>
                     <p className="text-[10px] text-muted-foreground mt-1">{format(date, 'p')}</p>
-                    <p className="text-xs font-bold text-primary mt-0.5">{formatNum(o.price)} Ks</p>
+                    <p className="text-xs font-bold text-primary mt-0.5">{formatMmk(o.price)}</p>
                   </div>
                 </div>
               </button>
@@ -175,16 +176,16 @@ export default function GameOrderHistory() {
       {/* Detail Modal */}
       <Dialog open={!!selected} onOpenChange={(v) => !v && setSelected(null)}>
         <DialogContent className="max-w-sm rounded-2xl">
-          <DialogTitle className="text-center text-lg font-bold">Order Details</DialogTitle>
+          <DialogTitle className="text-center text-lg font-bold">{t('order_details')}</DialogTitle>
           {selected && (
             <div className="space-y-2 pt-2">
-              <DetailRow label="PRODUCT" value={selected.product_name} />
-              <DetailRow label="GAME ID & SERVER" value={`${selected.game_id}${selected.server_id ? ` (${selected.server_id})` : ''}`} />
-              <DetailRow label="PACKAGE" value={selected.item_name} />
-              <DetailRow label="PRICE" value={`${formatNum(selected.price)} Ks`} valueClass="text-primary" />
-              <DetailRow label="DATE" value={format(new Date(selected.created_at), 'd MMM yyyy p')} />
-              <DetailRow label="STATUS" value={statusBadge(selected.status).label} />
-              <DetailRow label="ORDER ID" value={selected.id} valueClass="font-mono text-xs break-all" />
+              <DetailRow label={t('product')} value={selected.product_name} />
+              <DetailRow label={t('game_id_server')} value={`${selected.game_id}${selected.server_id ? ` (${selected.server_id})` : ''}`} />
+              <DetailRow label={t('package')} value={selected.item_name} />
+              <DetailRow label={t('price')} value={formatMmk(selected.price)} valueClass="text-primary" />
+              <DetailRow label={t('date')} value={format(new Date(selected.created_at), 'd MMM yyyy p')} />
+              <DetailRow label={t('status')} value={t(statusBadge(selected.status).label)} />
+              <DetailRow label={t('order_id')} value={selected.id} valueClass="font-mono text-xs break-all" />
             </div>
           )}
         </DialogContent>

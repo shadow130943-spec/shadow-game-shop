@@ -146,8 +146,8 @@ export default function Account() {
 
           <div className="space-y-2 px-4 pb-4 text-sm">
             <div className="flex items-center justify-between gap-3">
-              <span className="shrink-0 text-muted-foreground">{t('account_phone')}</span>
-              <span className="break-all text-right font-medium text-foreground">{profile?.phone || '—'}</span>
+              <span className="shrink-0 text-muted-foreground">{t('field_email')}</span>
+              <span className="break-all text-right font-medium text-foreground">{user?.email || '—'}</span>
             </div>
           </div>
         </section>

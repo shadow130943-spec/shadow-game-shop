@@ -2,6 +2,7 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { otpCall } from '@/lib/otpAuth';
+import { preloadAvatar } from '@/hooks/useAvatarUrl';
 
 interface Profile {
   id: string;
@@ -47,6 +48,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .maybeSingle();
 
     if (!error && data) {
+      // Resolve the avatar before exposing the profile so it renders without a letter fallback flash.
+      await preloadAvatar((data as Profile).avatar_url).catch(() => null);
       setProfile(data as Profile);
     } else if (retry < 3) {
       // Retry: profile row may be created by trigger right after signup,
@@ -116,7 +119,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `user_id=eq.${user.id}` },
         (payload) => {
-          if (payload.new) setProfile(payload.new as Profile);
+          if (payload.new) {
+            const next = payload.new as Profile;
+            void preloadAvatar(next.avatar_url).finally(() => setProfile(next));
+          }
         }
       )
       .subscribe();

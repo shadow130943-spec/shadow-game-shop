@@ -15,7 +15,16 @@ const pick = (o: Any | undefined, keys: string[]) => {
   return undefined;
 };
 
-const label = (k: string) => k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+const HIDDEN_KEYS = /^(source|source_url|url|link)$/i;
+
+const formatValue = (v: any, t: (k: string) => string): string => {
+  if (typeof v === 'boolean') return v ? t('status_available') : t('status_unavailable');
+  if (typeof v !== 'string' && typeof v !== 'number') return '';
+  const s = String(v).trim().toLowerCase();
+  if (s === 'available') return t('status_available');
+  if (s === 'unavailable') return t('status_unavailable');
+  return String(v);
+};
 
 export default function ServerCheck() {
   const navigate = useNavigate();

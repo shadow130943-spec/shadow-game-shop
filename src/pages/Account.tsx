@@ -38,6 +38,7 @@ import {
   Send,
   MessageCircle,
   Phone,
+  Server,
 } from 'lucide-react';
 import { BottomNav } from '@/components/BottomNav';
 import { TopBuyers } from '@/components/TopBuyers';
@@ -105,6 +106,7 @@ export default function Account() {
   const menuItems = [
     { key: 'update', icon: UserRound, label: t('menu_update_profile'), onClick: () => navigate('/update-profile') },
     { key: 'top-buyers', icon: Store, label: t('menu_top_buyers'), onClick: () => navigate('/top-buyers') },
+    { key: 'server-check', icon: Server, label: t('menu_server_check'), onClick: () => navigate('/server-check') },
     { key: 'reseller', icon: Store, label: t('menu_reseller'), onClick: comingSoon },
     { key: 'language', icon: Globe, label: t('menu_language'), value: language, onClick: () => setLanguageOpen(true) },
     { key: 'privacy', icon: FileText, label: t('menu_privacy'), onClick: comingSoon },

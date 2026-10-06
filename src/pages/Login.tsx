@@ -56,7 +56,7 @@ export default function Login() {
           >
             <Gamepad2 className="h-10 w-10 text-primary" />
             <span className="font-gaming text-3xl font-bold text-primary gaming-glow-text">
-              GAME<span className="text-foreground">TOP</span>
+              YK <span className="text-foreground">Game Shop</span>
             </span>
           </motion.div>
           <h1 className="font-gaming text-xl text-foreground">{t('auth_welcome')}</h1>

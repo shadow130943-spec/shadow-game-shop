@@ -53,26 +53,26 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 gaming-gradient">
+    <div className="min-h-screen flex items-center justify-center px-4 py-6 gaming-gradient">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
-        <div className="text-center mb-8">
+        <div className="text-center mb-4">
           <motion.div
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.1 }}
-            className="inline-flex items-center gap-2 mb-4"
+            className="inline-flex items-center gap-2 mb-2"
           >
-            <Gamepad2 className="h-10 w-10 text-primary" />
-            <span className="font-gaming text-3xl font-bold text-primary gaming-glow-text">
-              GAME<span className="text-foreground">TOP</span>
+            <Gamepad2 className="h-8 w-8 text-primary" />
+            <span className="font-gaming text-2xl font-bold text-primary gaming-glow-text">
+              YK <span className="text-foreground">Game Shop</span>
             </span>
           </motion.div>
-          <h1 className="font-gaming text-xl text-foreground">{t('auth_create')}</h1>
-          <p className="text-muted-foreground mt-1">{t('auth_join_hint')}</p>
+          <h1 className="font-gaming text-lg text-foreground">{t('auth_create')}</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{t('auth_join_hint')}</p>
         </div>
 
         <motion.form
@@ -80,9 +80,9 @@ export default function Signup() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
           onSubmit={handleSubmit}
-          className="gaming-card rounded-2xl p-6 space-y-5"
+          className="gaming-card rounded-2xl p-4 space-y-3"
         >
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="name">{t('field_name')}</Label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -93,12 +93,12 @@ export default function Signup() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="pl-10 bg-muted border-border"
+                className="pl-10 bg-muted border-border h-10 text-sm"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="email">{t('field_email')}</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -110,12 +110,12 @@ export default function Signup() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="pl-10 bg-muted border-border"
+                className="pl-10 bg-muted border-border h-10 text-sm"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="password">{t('field_password')}</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -127,7 +127,7 @@ export default function Signup() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="pl-10 pr-10 bg-muted border-border"
+                className="pl-10 pr-10 bg-muted border-border h-10 text-sm"
               />
               <button
                 type="button"
@@ -140,7 +140,7 @@ export default function Signup() {
             <p className="text-xs text-muted-foreground">{t('password_min_hint')}</p>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="confirm">{t('field_confirm_password_short')}</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -151,7 +151,7 @@ export default function Signup() {
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 required
-                className="pl-10 bg-muted border-border"
+                className="pl-10 bg-muted border-border h-10 text-sm"
               />
             </div>
           </div>
@@ -161,7 +161,7 @@ export default function Signup() {
           <Button
             type="submit"
             disabled={loading}
-            className="w-full gaming-btn border-0 py-6 text-base font-semibold"
+            className="w-full gaming-btn border-0 h-11 text-sm font-semibold"
           >
             {loading ? t('creating_account') : t('auth_create')}
           </Button>

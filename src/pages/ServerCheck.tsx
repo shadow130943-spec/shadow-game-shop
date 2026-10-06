@@ -58,26 +58,46 @@ export default function ServerCheck() {
 
   const renderStats = () => {
     if (stats === undefined) return null;
+    const rows: React.ReactNode[] = [];
+    const pushRow = (key: string, value: React.ReactNode, i: number) => (
+      <div key={`${key}-${i}`} className="flex justify-between gap-3 rounded-lg bg-muted/60 px-3 py-2 text-sm">
+        <span className="text-muted-foreground">{key}</span>
+        <span className="font-semibold text-foreground">{value}</span>
+      </div>
+    );
+    const pushEntries = (obj: Any, base = '') => {
+      Object.entries(obj).forEach(([k, v]) => {
+        if (HIDDEN_KEYS.test(k)) return;
+        const displayKey = base
+          ? `${base} ${label(k)}`
+          : label(k);
+        if (Array.isArray(v)) {
+          if (v.every((item) => typeof item === 'object' && item !== null)) {
+            v.forEach((item, i) => pushEntries(item, `${displayKey} ${i + 1}`));
+          } else {
+            v.forEach((item, i) => rows.push(pushRow(displayKey, formatValue(item, t), i)));
+          }
+          return;
+        }
+        if (typeof v === 'object' && v !== null) {
+          pushEntries(v, displayKey);
+          return;
+        }
+        rows.push(pushRow(displayKey, formatValue(v, t), rows.length));
+      });
+    };
+
     if (Array.isArray(stats)) {
-      return stats.map((s, i) => (
-        <div key={i} className="rounded-lg bg-muted/60 px-3 py-2 text-sm">
-          {typeof s === 'object'
-            ? Object.entries(s).map(([k, v]) => (
-                <div key={k} className="flex justify-between gap-3"><span className="text-muted-foreground">{label(k)}</span><span className="font-semibold text-foreground">{String(v)}</span></div>
-              ))
-            : String(s)}
-        </div>
-      ));
+      stats.forEach((s, i) => {
+        if (typeof s === 'object' && s !== null) pushEntries(s);
+        else rows.push(pushRow('Tier', formatValue(s, t), i));
+      });
+    } else if (typeof stats === 'object' && stats !== null) {
+      pushEntries(stats);
+    } else {
+      rows.push(pushRow('Tier', formatValue(stats, t), 0));
     }
-    if (typeof stats === 'object') {
-      return Object.entries(stats).map(([k, v]) => (
-        <div key={k} className="flex justify-between gap-3 rounded-lg bg-muted/60 px-3 py-2 text-sm">
-          <span className="text-muted-foreground">{label(k)}</span>
-          <span className="font-semibold text-foreground">{typeof v === 'object' ? JSON.stringify(v) : String(v)}</span>
-        </div>
-      ));
-    }
-    return <p className="text-sm text-foreground">{String(stats)}</p>;
+    return rows.length ? rows : null;
   };
 
   return (

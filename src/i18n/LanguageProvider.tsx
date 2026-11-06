@@ -45,7 +45,6 @@ export const translations: Dict = {
   server_region: { EN: 'Region', MM: 'ဒေသ' },
   double_diamond_stats: { EN: 'Double Diamond Tiers', MM: 'Double Diamond အဆင့်များ' },
   tier: { EN: 'Tier', MM: 'အဆင့်' },
-  status: { EN: 'Status', MM: 'အခြေအနေ' },
   status_available: { EN: 'Available', MM: 'ရနိုင်' },
   status_unavailable: { EN: 'Not available', MM: 'မရနိုင်' },
   menu_reseller: { EN: 'Register Reseller Account', MM: 'Reseller အကောင့် ဖွင့်ရန်' },

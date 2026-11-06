@@ -15,6 +15,7 @@ const pick = (o: Any | undefined, keys: string[]) => {
   return undefined;
 };
 
+const label = (k: string) => k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 const HIDDEN_KEYS = /^(source|source_url|url|link)$/i;
 
 const formatValue = (v: any, t: (k: string) => string): string => {
